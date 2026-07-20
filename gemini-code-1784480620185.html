@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>マダミス専用メモアプリ（色分け拡張版）</title>
+  <style>
+    /* 全体の見た目（image_0.pngに合わせて調整） */
+    body { font-family: sans-serif; margin: 0; padding: 10px; background: #2c3e50; color: #fff; }
+    .main-container { display: flex; flex-direction: column; gap: 15px; max-width: 1400px; margin: auto; }
+    
+    @media (min-width: 900px) { .main-container { flex-direction: row; align-items: flex-start; } }
+    
+    /* パネルの基本設定（image_0.pngに合わせて調整） */
+    .panel { background: #34495e; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    h2 { margin-top: 0; font-size: 1.1rem; padding-bottom: 5px; display: inline-block; }
+    
+    /* 入力フォーム（image_0.pngに合わせて調整） */
+    .input-group { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
+    input[type="text"], select, textarea { padding: 8px; border: 1px solid #4a627a; border-radius: 4px; font-size: 0.9rem; background: #ecf0f1; color: #333; }
+    .btn-add { background: #3b82f6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+    .btn-add:hover { background: #2563eb; }
+    
+    /* キャラクターパネル（新規） */
+    #charPanel { flex: 0 0 250px; }
+    .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #4a627a; }
+    .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff; }
+    .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.8rem; }
+    
+    /* 時系列パネル */
+    #timelinePanel { flex: 1; min-width: 0; } /* min-width: 0 は重要 */
+    
+    /* 時系列カード（色分け対応に拡張） */
+    .timeline-item { display: flex; gap: 8px; align-items: center; padding: 10px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
+    .timeline-item-inner { flex-grow: 1; display: flex; align-items: center; gap: 8px; }
+    
+    .char-badge { font-weight: bold; padding: 4px 8px; border-radius: 20px; font-size: 0.8rem; white-space: nowrap; min-width: 30px; text-align: center; color: white; display: flex; align-items: center; gap: 4px;}
+    .char-badge-dot { width: 10px; height: 10px; border-radius: 50%; }
+    
+    .time-badge { background: #e2e8f0; font-weight: bold; padding: 5px 10px; border-radius: 20px; font-size: 0.9rem; white-space: nowrap; text-align: center; color: #333;}
+    .event-text { flex-grow: 1; font-size: 0.95rem; line-height: 1.4; word-break: break-all;}
+    
+    /* 移動・削除ボタン */
+    .controls button { background: transparent; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #555; }
+    .controls button:hover { background: #e2e8f0; }
+    .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
+
+    /* カードの色設定（JavaScriptで動的に生成するCSS） */
+    #cardColorsStyle { display: none; }
+    
+    /* メモパネル */
+    #memoPanel { flex: 0 0 300px; }
+    textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 400px; line-height: 1.6; background: #fff; color: #333; padding: 10px; border-radius: 4px;}
+
+    /* image_0.png のスタイルを再現するための調整 */
+    #characterSelect { background: #ecf0f1; color: #333; border-radius: 4px; width: auto; flex-grow: 1; }
+    #timeInput { width: 80px; text-align: center; }
+    #eventInput { flex-grow: 4; }
+  </style>
+  <style id="cardColorsStyle"></style> <!-- JavaScriptで動的にCSSを生成 -->
+</head>
+<body>
+
+  <div class="main-container">
+    <!-- 左側：キャラクターパネル（新規） -->
+    <div id="charPanel" class="panel">
+      <h2>👤 キャラクター一覧</h2>
+      <div class="input-group">
+        <input type="text" id="newCharName" placeholder="キャラ名" style="flex: 2;">
+        <input type="color" id="newCharColor" value="#3b82f6" style="flex: 1; height: 36px; padding: 2px; border-radius: 4px;">
+        <button class="btn-add" onclick="addCharacter()">追加</button>
+      </div>
+      <div id="characterList"></div>
+    </div>
+
+    <!-- 中央：時系列パネル（拡張） -->
+    <div id="timelinePanel" class="panel">
+      <h2>⏳ 時系列整理</h2>
+      <div class="input-group">
+        <select id="characterSelect" onchange="updateNewEventColor()">
+          <option value="" data-color="#fafafa">なし (default)</option>
+        </select>
+        <input type="text" id="timeInput" placeholder="時間 (例: 10:30)">
+        <input type="text" id="eventInput" placeholder="誰が何をした？">
+        <button class="btn-add" onclick="addEvent()">追加</button>
+      </div>
+      <div id="timelineContainer"></div>
+    </div>
+
+    <!-- 右側：メモパネル -->
+    <div id="memoPanel" class="panel">
+      <h2>📝 秘密のメモ</h2>
+      <textarea id="memoInput" placeholder="自分の推理や、嘘をつくポイントなどを自由に書き込めます...（自動保存されます）"></textarea>
+    </div>
+  </div>
+
+  <script>
+    // データの読み込み
+    let events = JSON.parse(localStorage.getItem('madamisu_events')) || [];
+    let characters = JSON.parse(localStorage.getItem('madamisu_characters')) || [];
+    const memoInput = document.getElementById('memoInput');
+    const characterSelect = document.getElementById('characterSelect');
+    const timelineContainer = document.getElementById('timelineContainer');
+    const characterList = document.getElementById('characterList');
+    const cardColorsStyle = document.getElementById('cardColorsStyle');
+
+    // 初期化：メモと、キャラクター・色のスタイルを適用
+    memoInput.value = localStorage.getItem('madamisu_memo') || '';
+    renderCharacters();
+    renderEvents();
+    updateCardColorCss(); // キャラクターごとのCSSを生成
+
+    // --- メモ帳の自動保存 ---
+    memoInput.addEventListener('input', () => {
+      localStorage.setItem('madamisu_memo', memoInput.value);
+    });
+
+    // --- キャラクター管理機能 ---
+    function saveCharacters() {
+      localStorage.setItem('madamisu_characters', JSON.stringify(characters));
+      renderCharacters();
+      updateCharacterSelect();
+      updateCardColorCss(); // キャラクターの色が変わったかもしれないので、CSSを再生成
+    }
+
+    function addCharacter() {
+      const name = document.getElementById('newCharName').value;
+      const color = document.getElementById('newCharColor').value;
+      if (!name) return;
+      if (characters.some(c => c.name === name)) { alert('そのキャラクター名は既に登録されています'); return; }
+      
+      characters.push({ name, color });
+      document.getElementById('newCharName').value = '';
+      saveCharacters();
+    }
+
+    function deleteCharacter(index) {
+      if (confirm(`キャラクター「${characters[index].name}」を削除しますか？\nこのキャラクターが設定された時系列カードの色もリセットされます。`)) {
+        // このキャラクターが設定されているイベントのキャラクター設定をリセット
+        const deletedCharName = characters[index].name;
+        events.forEach(ev => { if (ev.character === deletedCharName) { ev.character = ""; ev.color = ""; } });
+        localStorage.setItem('madamisu_events', JSON.stringify(events)); // イベントも保存
+
+        characters.splice(index, 1);
+        saveCharacters();
+        renderEvents(); // 時系列を再描画して色を更新
+      }
+    }
+
+    function renderCharacters() {
+      characterList.innerHTML = '';
+      characters.forEach((char, index) => {
+        const div = document.createElement('div');
+        div.className = 'char-item';
+        div.innerHTML = `
+          <div class="char-color-dot" style="background: ${char.color};"></div>
+          <div style="flex-grow: 1;">${char.name}</div>
+          <button class="btn-delete-char" onclick="deleteCharacter(${index})">✕</button>
+        `;
+        characterList.appendChild(div);
+      });
+      updateCharacterSelect();
+    }
+
+    function updateCharacterSelect() {
+      const currentSelected = characterSelect.value;
+      characterSelect.innerHTML = '<option value="" data-color="#fafafa">なし (default)</option>';
+      characters.forEach(char => {
+        const option = document.createElement('option');
+        option.value = char.name;
+        option.textContent = char.name;
+        option.setAttribute('data-color', char.color); // 色をデータ属性に持たせる
+        characterSelect.appendChild(option);
+      });
+      characterSelect.value = currentSelected;
+      updateNewEventColor(); // 入力欄の色を更新
+    }
+
+    // 入力プルダウンの色を、選択されているキャラクターの色に合わせる
+    function updateNewEventColor() {
+      const selectedOption = characterSelect.options[characterSelect.selectedIndex];
+      const color = selectedOption.getAttribute('data-color');
+      characterSelect.style.background = color;
+      characterSelect.style.color = (parseInt(color.replace('#',''), 16) > 0xffffff / 2) ? '#333' : '#fff'; // 可読性調整
+    }
+
+    // キャラクターごとの色設定をCSSとして動的に生成する
+    // (これでrenderEvents内のHTML生成をシンプルにする)
+    function updateCardColorCss() {
+      let css = '';
+      characters.forEach(char => {
+        // .timeline-item.char-A { background: #fee2e2; } のようなCSSを生成
+        const className = `char-${char.name.replace(/\s+/g, '_')}`; // スペースを_に置換
+        css += `.timeline-item.${className} { background: ${char.color}; }\n`;
+      });
+      cardColorsStyle.textContent = css;
+    }
+
+
+    // --- 時系列管理機能 ---
+    function saveEvents() {
+      localStorage.setItem('madamisu_events', JSON.stringify(events));
+      renderEvents();
+    }
+
+    function addEvent() {
+      const time = document.getElementById('timeInput').value;
+      const text = document.getElementById('eventInput').value;
+      const selectedOption = characterSelect.options[characterSelect.selectedIndex];
+      const characterName = selectedOption.value; // キャラクター名
+      
+      if (!text) return;
+      
+      // イベントデータにキャラクター名と色を持たせる
+      events.push({ 
+        time, 
+        text, 
+        character: characterName, 
+        color: selectedOption.getAttribute('data-color') // 削除時のリセット用に色も持たせておく
+      });
+      
+      document.getElementById('timeInput').value = '';
+      document.getElementById('eventInput').value = '';
+      // characterSelect はそのままにする（連続して同じキャラの行動を入力しやすいように）
+      
+      saveEvents();
+    }
+
+    function moveEvent(index, direction) {
+      if (direction === -1 && index > 0) { [events[index], events[index - 1]] = [events[index - 1], events[index]]; }
+      else if (direction === 1 && index < events.length - 1) { [events[index], events[index + 1]] = [events[index + 1], events[index]]; }
+      saveEvents();
+    }
+
+    function deleteEvent(index) {
+      if (confirm('このカードを削除しますか？')) { events.splice(index, 1); saveEvents(); }
+    }
+
+    function renderEvents() {
+      timelineContainer.innerHTML = '';
+      
+      events.forEach((ev, index) => {
+        const div = document.createElement('div');
+        div.className = 'timeline-item';
+        
+        // キャラクターに対応するCSSクラスを追加
+        if (ev.character) {
+          const className = `char-${ev.character.replace(/\s+/g, '_')}`;
+          div.classList.add(className);
+        }
+
+        // キャラクターバッジ（頭文字とドット）
+        let charBadge = '';
+        if (ev.character) {
+          const charInitial = ev.character.charAt(0);
+          charBadge = `
+            <div class="char-badge" style="background: ${ev.color}; color: ${(parseInt(ev.color.replace('#',''), 16) > 0xffffff / 2) ? '#333' : '#fff'};">
+              <div class="char-badge-dot" style="background: ${ev.color};"></div>
+              ${charInitial}
+            </div>
+          `;
+        }
+
+        div.innerHTML = `
+          <div class="controls">
+            <button onclick="moveEvent(${index}, -1)">↑</button>
+            <button onclick="moveEvent(${index}, 1)">↓</button>
+          </div>
+          <div class="timeline-item-inner">
+            ${charBadge}
+            <div class="time-badge">${ev.time || '不詳'}</div>
+            <div class="event-text">${ev.text}</div>
+          </div>
+          <div class="controls">
+            <button class="btn-delete" onclick="deleteEvent(${index})">✕</button>
+          </div>
+        `;
+        timelineContainer.appendChild(div);
+      });
+    }
+
+  </script>
+
+</body>
+</html>
