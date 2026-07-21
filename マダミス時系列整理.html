@@ -9,7 +9,15 @@
     body { font-family: sans-serif; margin: 0; padding: 10px; background: #2c3e50; color: #fff; }
     .main-container { display: flex; flex-direction: column; gap: 15px; max-width: 1400px; margin: auto; }
     
-    @media (min-width: 900px) { .main-container { flex-direction: row; align-items: flex-start; } }
+    /* PC版（横並び）は body.view-pc で制御する */
+    body.view-pc .main-container { flex-direction: row; align-items: flex-start; }
+
+    /* 表示モード切替トグル */
+    .view-toggle { display: flex; justify-content: flex-end; max-width: 1400px; margin: 0 auto 12px; }
+    .view-toggle button { background: #34495e; color: #cbd5e1; border: 1px solid #4a627a; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
+    .view-toggle button:first-child { border-radius: 6px 0 0 6px; }
+    .view-toggle button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+    .view-toggle button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
     
     /* パネルの基本設定（image_0.pngに合わせて調整） */
     .panel { background: #34495e; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
@@ -25,7 +33,7 @@
     
     /* 左列（キャラクター一覧＋秘密のメモを縦積み） */
     .side-column { display: flex; flex-direction: column; gap: 15px; }
-    @media (min-width: 900px) { .side-column { flex: 0 0 280px; } }
+    body.view-pc .side-column { flex: 0 0 280px; }
     /* キャラクターパネル（新規） */
     #charPanel .input-group { flex-wrap: nowrap; }
     #newCharName { min-width: 0; }
@@ -117,6 +125,16 @@
     /* 🎨を押したときだけキャラの色を隠して背景に近いグレーにする */
     .timeline-item.color-hidden { background: #e5e7eb !important; }
 
+    /* ── スマホ版の時系列カード調整 ── */
+    body.view-mobile .timeline-item { flex-wrap: wrap; }
+    body.view-mobile .timeline-item-inner { flex-wrap: wrap; row-gap: 6px; }
+    body.view-mobile .event-text { flex: 1 1 100%; }
+    body.view-mobile .char-badge { flex: 0 1 auto; max-width: 100%; }
+    body.view-mobile .controls { width: 100%; justify-content: flex-end; margin-top: 4px; }
+    body.view-mobile .timeline-item-inner.edit-mode { flex-wrap: wrap; }
+    body.view-mobile .edit-char { flex: 1 1 auto; }
+    body.view-mobile .edit-text { flex: 1 1 100%; }
+
     /* カードの色設定（JavaScriptで動的に生成するCSS） */
     #cardColorsStyle { display: none; }
     
@@ -138,6 +156,12 @@
   <style id="cardColorsStyle"></style> <!-- JavaScriptで動的にCSSを生成 -->
 </head>
 <body>
+
+  <!-- 表示モード切替（スマホ版 / PC版） -->
+  <div class="view-toggle">
+    <button type="button" id="btnMobile" onclick="setView('mobile')">📱 スマホ版</button>
+    <button type="button" id="btnPC" onclick="setView('pc')">💻 PC版</button>
+  </div>
 
   <div class="main-container">
     <!-- 左列：キャラクター一覧＋秘密のメモ（縦積み） -->
@@ -250,6 +274,8 @@
     let deathTo = localStorage.getItem('madamisu_death_to') || '';     // 死亡推定時刻（終了）
     let deathEnabled = localStorage.getItem('madamisu_death_enabled') === 'true'; // 死亡推定時刻のトグルがONか
     let editingIndex = -1; // 現在編集中のカードの番号（-1は編集なし）
+    // 表示モード（スマホ版 / PC版）。未設定なら画面幅で自動判定
+    let currentView = localStorage.getItem('madamisu_view') || (window.innerWidth < 900 ? 'mobile' : 'pc');
     const memoInput = document.getElementById('memoInput');
     const characterSelect = document.getElementById('characterSelect');
     const timelineContainer = document.getElementById('timelineContainer');
@@ -258,6 +284,7 @@
 
     // 初期化：メモと、キャラクター・色のスタイルを適用
     memoInput.value = localStorage.getItem('madamisu_memo') || '';
+    applyView();
     applyMemoConceal();
     populateDeathSelects();
     updateDeathToggleBtn();
@@ -272,6 +299,20 @@
     memoInput.addEventListener('input', () => {
       localStorage.setItem('madamisu_memo', memoInput.value);
     });
+
+    // 表示モード（スマホ版 / PC版）を適用する
+    function applyView() {
+      document.body.classList.toggle('view-pc', currentView === 'pc');
+      document.body.classList.toggle('view-mobile', currentView === 'mobile');
+      document.getElementById('btnPC').classList.toggle('active', currentView === 'pc');
+      document.getElementById('btnMobile').classList.toggle('active', currentView === 'mobile');
+    }
+    // 表示モードを切り替えて保存する
+    function setView(v) {
+      currentView = v;
+      localStorage.setItem('madamisu_view', v);
+      applyView();
+    }
 
     // 秘密のメモの表示/非表示を切り替える
     function applyMemoConceal() {
