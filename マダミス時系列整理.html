@@ -12,8 +12,17 @@
     /* PC版（横並び）は body.view-pc で制御する */
     body.view-pc .main-container { flex-direction: row; align-items: flex-start; }
 
+    /* 上部バー：左にデータ削除、右に表示モード切替を配置 */
+    .top-bar { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; max-width: 1400px; margin: 0 auto 12px; }
+    /* データ削除ボタン（危険操作） */
+    .data-actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .confirm-delete-toggle { display: inline-flex; align-items: center; gap: 4px; font-size: 0.8rem; color: #cbd5e1; cursor: pointer; user-select: none; }
+    .confirm-delete-toggle input { cursor: pointer; }
+    .btn-danger { background: #7f1d1d; color: #fecaca; border: 1px solid #b91c1c; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+    .btn-danger:hover { background: #991b1b; color: #fff; }
+
     /* 表示モード切替トグル */
-    .view-toggle { display: flex; justify-content: flex-end; max-width: 1400px; margin: 0 auto 12px; }
+    .view-toggle { display: flex; justify-content: flex-end; }
     .view-toggle button { background: #34495e; color: #cbd5e1; border: 1px solid #4a627a; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
     .view-toggle button:first-child { border-radius: 6px 0 0 6px; }
     .view-toggle button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
@@ -69,6 +78,8 @@
     .death-range .tilde { color: #cbd5e1; padding: 0 4px; line-height: 1; }
     .btn-death-toggle { border: 1px solid #64748b; border-radius: 999px; padding: 5px 16px; cursor: pointer; font-weight: bold; white-space: nowrap; background: #64748b; color: #fff; min-width: 54px; }
     .btn-death-toggle.active { background: #b91c1c; border-color: #b91c1c; }
+    .death-warn { display: none; margin: 8px 0 4px; padding: 6px 10px; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; border-radius: 4px; font-size: 0.85rem; }
+    .death-warn.show { display: block; }
     /* 使い方（ヘルプ）モーダル */
     .help-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; justify-content: center; align-items: flex-start; padding: 40px 16px; overflow-y: auto; }
     .help-overlay.open { display: flex; }
@@ -82,21 +93,26 @@
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
     .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 16px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
-    .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; gap: 8px; }
+    .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
+    /* 時間の右側にキャラ名と本文をまとめる。本文が折り返すときは時間の下ではなくキャラ名の開始位置に揃う */
+    .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 6px; }
     
     .char-badge { font-weight: bold; padding: 4px 10px; border-radius: 20px; font-size: 0.9rem; white-space: nowrap; flex: 0 0 152px; box-sizing: border-box; color: white; display: flex; align-items: center; justify-content: flex-start; gap: 5px; overflow: hidden;}
     .char-badge-empty { background: transparent !important; }
     .char-badge-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
     .time-badge { background: #e2e8f0; font-weight: bold; padding: 5px 8px; border-radius: 20px; font-size: 0.9rem; white-space: nowrap; flex: 0 0 60px; box-sizing: border-box; text-align: center; color: #333;}
-    .event-text { flex: 1 1 auto; min-width: 0; font-size: 0.95rem; line-height: 1.4; word-break: break-all;}
+    /* 複数人物カードでは、時間をカード内容の縦中央に揃える */
+    .timeline-item.multi-character .time-badge { align-self: center; }
+    /* 内容の残り幅が狭くなったら（編集ボタンに重なりそうになったら）時間・キャラの下の行に折り返す */
+    .event-text { flex: 1 1 200px; min-width: 0; font-size: 0.95rem; line-height: 1.4; word-break: break-all;}
     
     /* 移動・削除・フラグボタン */
     .controls { display: flex; gap: 4px; }
     .controls button { background: transparent; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #555; }
     .controls button:hover { background: #e2e8f0; }
     .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
-    .btn-flag-card { font-size: 0.95rem; line-height: 1; filter: grayscale(1); opacity: 0.4; }
+    .btn-flag-card { font-size: 0.95rem; line-height: 1; filter: grayscale(1); }
     .btn-flag-card.active { filter: none; opacity: 1; background: #fefce8; border-color: #fde047; }
     /* フラグ（金色）：キャラクター用パレットと被らない色 */
     .timeline-item.flagged { box-shadow: inset 4px 0 0 #facc15; }
@@ -107,14 +123,18 @@
     /* 目アイコンで内容を非表示（目とフラグ以外を隠す） */
     .btn-conceal { font-size: 0.95rem; line-height: 1; }
     .btn-edit-card { font-size: 0.9rem; line-height: 1; }
+    /* 不詳カードの上下移動ボタン */
+    .btn-move-up, .btn-move-down { font-size: 0.8rem; line-height: 1; font-weight: bold; }
     /* 登録内容の編集フォーム */
     .timeline-item-inner.edit-mode { gap: 6px; }
     .edit-time { flex: 0 0 64px; text-align: center; }
-    .edit-char { flex: 0 0 auto; }
     .edit-text { flex: 1 1 auto; min-width: 0; }
     .btn-edit-save { background: #dcfce7 !important; color: #16a34a !important; border-color: #86efac !important; font-weight: bold; }
     .timeline-item.concealed .timeline-item-inner,
     .timeline-item.concealed .btn-edit-card,
+    .timeline-item.concealed .card-char-wrap,
+    .timeline-item.concealed .btn-move-up,
+    .timeline-item.concealed .btn-move-down,
     .timeline-item.concealed .btn-delete { display: none; }
     .concealed-label { display: none; color: #94a3b8; font-size: 0.85rem; font-style: italic; }
     .timeline-item.concealed .concealed-label { display: block; flex: 1 1 auto; }
@@ -125,22 +145,108 @@
     /* 🎨を押したときだけキャラの色を隠して背景に近いグレーにする */
     .timeline-item.color-hidden { background: #e5e7eb !important; }
 
+    /* ── 複数キャラ対応：バッジ縦並び ── */
+    .char-badges { flex: 0 0 152px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box; min-width: 0; }
+    .char-badges-empty { flex: 0 0 152px; }
+    .char-badges .char-badge { flex: 0 0 auto; width: 100%; }
+    .char-badges .char-badge.badge-hidden { display: none; }
+    .char-badges.expanded .char-badge.badge-hidden { display: flex; }
+    .badge-more { background: #e2e8f0; color: #334155; border: 1px dashed #94a3b8; border-radius: 20px; font-size: 0.8rem; padding: 2px 8px; cursor: pointer; width: 100%; box-sizing: border-box; text-align: center; }
+    .badge-more:hover { background: #cbd5e1; }
+    /* 非表示中の色隠しで、バッジもまとめてグレーアウト */
+    .timeline-item.color-hidden .char-badge { background: #e5e7eb !important; color: #9ca3af !important; }
+
+    /* ── 人物の複数選択ポップアップ（追加フォーム・カード共通） ── */
+    .char-multi-wrap, .card-char-wrap { position: relative; display: inline-flex; }
+    #charSelectBtn { background: #ecf0f1; color: #333; border: 1px solid #4a627a; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+    .char-select-popup, .char-assign-popup { display: none; position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; background: #2c3e50; border: 1px solid #4a627a; border-radius: 6px; padding: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); min-width: 170px; max-height: 260px; overflow-y: auto; }
+    .char-assign-popup { left: auto; right: 0; }
+    .char-select-popup.open, .char-assign-popup.open { display: block; }
+    .char-check-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 4px; cursor: pointer; color: #e2e8f0; font-size: 0.9rem; white-space: nowrap; }
+    .char-check-row:hover { background: #3b4b5e; }
+    .char-check-row .dot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 auto; border: 1px solid rgba(255,255,255,0.5); }
+    .char-check-row input { accent-color: #3b82f6; margin: 0; }
+    .char-select-empty { color: #94a3b8; font-size: 0.85rem; padding: 6px 4px; white-space: normal; }
+    .btn-add-char-card { font-size: 0.9rem; line-height: 1; }
+
+    /* ── キャラ絞り込みフィルタ ── */
+    .char-filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
+    .char-filter-bar .filter-label { font-size: 0.8rem; color: #cbd5e1; margin-right: 2px; }
+    .filter-chip { border: 1px solid #4a627a; background: #2c3e50; color: #cbd5e1; border-radius: 999px; padding: 3px 12px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .filter-chip .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .filter-chip.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+    .filter-chip-all.active { background: #64748b; border-color: #64748b; }
+    .filter-chip-flag.active { background: #eab308; border-color: #eab308; color: #422006; }
+
+    /* ── 表示モード切替（リスト / 人物比較） ── */
+    .timeline-mode-toggle { display: inline-flex; margin-bottom: 12px; }
+    .timeline-mode-toggle .mode-btn { background: #2c3e50; color: #cbd5e1; border: 1px solid #4a627a; padding: 5px 14px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+    .timeline-mode-toggle .mode-btn:first-child { border-radius: 6px 0 0 6px; }
+    .timeline-mode-toggle .mode-btn:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+    .timeline-mode-toggle .mode-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+
+    /* ── 人物比較表示（時間を左端に、選択した人物を列に並べる） ── */
+    .compare-wrap { overflow-x: auto; max-width: 100%; border-radius: 6px; }
+    .compare-table { border-collapse: separate; border-spacing: 0; width: 100%; }
+    .compare-table th, .compare-table td { border-right: 1px solid #4a627a; border-bottom: 1px solid #4a627a; padding: 6px; vertical-align: top; text-align: left; }
+    .compare-table thead th { position: sticky; top: 0; z-index: 2; background: #2c3e50; color: #fff; white-space: nowrap; text-align: center; border-top: 1px solid #4a627a; }
+    .compare-table .time-col { position: sticky; left: 0; z-index: 1; background: #2c3e50; color: #e2e8f0; font-weight: bold; white-space: nowrap; text-align: center; border-left: 1px solid #4a627a; }
+    .compare-table thead .time-col { z-index: 3; }
+    .compare-table .compare-time-death { color: #fca5a5; }
+    .compare-cell { min-width: 150px; }
+    .compare-card { border-radius: 6px; padding: 5px 8px; margin-bottom: 4px; font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
+    .compare-card:last-child { margin-bottom: 0; }
+    .compare-card.flagged { box-shadow: inset 3px 0 0 #facc15; }
+    .compare-empty { color: #cbd5e1; font-size: 0.9rem; padding: 12px 4px; line-height: 1.6; }
+
+    /* ── 期間（開始〜終了）の入力 ── */
+    .range-toggle-btn { background: #ecf0f1; color: #333; border: 1px solid #4a627a; border-radius: 4px; padding: 8px 10px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+    .range-toggle-btn.active { background: #dbeafe; border-color: #3b82f6; color: #1e40af; font-weight: bold; }
+    #endTimeInput { width: 80px; text-align: center; display: none; }
+    #addEventGroup.range-mode #endTimeInput { display: inline-block; }
+    .range-sep { display: none; align-items: center; color: #cbd5e1; }
+    #addEventGroup.range-mode .range-sep { display: inline-flex; }
+
+    /* ── 期間カード（分割時は右側に「太い塗りバンド」を表示してコの字型を作る） ── */
+    /* 終了カードは開始と同じ人物色（char-idx）で塗られることで、下の横棒となりコの字を作る */
+    .timeline-item.range-end-card { background: var(--conn-color, #e8edf3); }
+    /* 縦バンドは JS が生成する子要素（.conn-bar）。カード内容より背面に置く */
+    .timeline-item > .timeline-item-inner,
+    .timeline-item > .controls,
+    .timeline-item > .concealed-label { position: relative; z-index: 1; }
+    .timeline-item .conn-bar { position: absolute; width: 42px; top: 0; bottom: -8px; z-index: 0; background: var(--conn-color, #334155); }
+    /* すき間（カード間の8px）をまたいで縦線を連続させ、終端では下を閉じる */
+    .timeline-item .conn-bar.cap-top { border-top-right-radius: 6px; }
+    .timeline-item .conn-bar.cap-bottom { bottom: 0; border-bottom-right-radius: 6px; }
+    /* 期間の時刻バッジは「開始〜終了」で少し広め（フォントサイズは変えない） */
+    .timeline-item.range-single .time-badge { flex: 0 0 auto; min-width: 60px; }
+    .range-badge-sep { margin: 0 2px; opacity: 0.7; }
+    /* 人物比較：期間イベントは開始〜終了の行をまたぐ塗りセル（rowspan）で表示 */
+    .compare-table td.compare-cell-range { vertical-align: top; }
+    /* 期間の塗りは内側の角丸ブロックで表現し、点カードと同じく四隅を丸くする */
+    .compare-range-card { border-radius: 6px; padding: 5px 8px; height: 100%; box-sizing: border-box; }
+    .compare-range-card.flagged { box-shadow: inset 3px 0 0 #facc15; }
+    .compare-range-label { font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
+    /* 期間が重なるときはレーン（サブ列）に分けて入れ子表示するため、幅を控えめにする */
+    .compare-table td.compare-lane { min-width: 120px; }
+    .range-sep-edit { display: inline-flex; align-items: center; color: #94a3b8; }
+    .edit-endtime { flex: 0 0 64px; text-align: center; }
+
     /* ── スマホ版の時系列カード調整 ── */
     body.view-mobile .timeline-item { flex-wrap: wrap; }
-    body.view-mobile .timeline-item-inner { flex-wrap: wrap; row-gap: 6px; }
     body.view-mobile .event-text { flex: 1 1 100%; }
     body.view-mobile .char-badge { flex: 0 1 auto; max-width: 100%; }
+    body.view-mobile .char-badges { flex: 0 1 auto; max-width: 100%; }
     body.view-mobile .controls { width: 100%; justify-content: flex-end; margin-top: 4px; }
     body.view-mobile .timeline-item-inner.edit-mode { flex-wrap: wrap; }
-    body.view-mobile .edit-char { flex: 1 1 auto; }
     body.view-mobile .edit-text { flex: 1 1 100%; }
 
     /* カードの色設定（JavaScriptで動的に生成するCSS） */
     #cardColorsStyle { display: none; }
     
     /* メモパネル（キャラクター一覧の下へ移動） */
-    .memo-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-    .memo-header h2 { padding-bottom: 0; }
+    .memo-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 0.83em; }
+    .memo-header h2 { padding-bottom: 0; margin-bottom: 0; line-height: 1.2; }
     .memo-conceal-btn { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 4px 9px; font-size: 0.95rem; line-height: 1; }
     .memo-concealed-label { display: none; }
     #memoPanel.concealed #memoInput { display: none; }
@@ -157,10 +263,20 @@
 </head>
 <body>
 
-  <!-- 表示モード切替（スマホ版 / PC版） -->
-  <div class="view-toggle">
-    <button type="button" id="btnMobile" onclick="setView('mobile')">📱 スマホ版</button>
-    <button type="button" id="btnPC" onclick="setView('pc')">💻 PC版</button>
+  <!-- 表示モード切替（スマホ版 / PC版）とデータ削除 -->
+  <div class="top-bar">
+    <div class="data-actions">
+      <label class="confirm-delete-toggle" title="OFFにすると、カードの✕削除時に確認ダイアログを出しません">
+        <input type="checkbox" id="confirmDeleteToggle" onchange="toggleConfirmDelete()">
+        <span>削除時に確認</span>
+      </label>
+      <button type="button" class="btn-danger" onclick="clearAllData()" title="キャラクター・メモ・時系列など、すべての保存データを削除します">🗑 全データ削除</button>
+      <button type="button" class="btn-danger" onclick="clearAllTimelineData()" title="時系列（タイムライン）のカードだけをすべて削除します">🧹 全タイムラインデータ削除</button>
+    </div>
+    <div class="view-toggle">
+      <button type="button" id="btnMobile" onclick="setView('mobile')">📱 スマホ版</button>
+      <button type="button" id="btnPC" onclick="setView('pc')">💻 PC版</button>
+    </div>
   </div>
 
   <div class="main-container">
@@ -211,14 +327,24 @@
           <button type="button" id="deathToggleBtn" class="btn-death-toggle" onclick="toggleDeathTime()">OFF</button>
         </div>
       </div>
-      <div class="input-group">
+      <div id="deathWarn" class="death-warn">⚠️ 開始が終了より後です。日付を跨ぐ範囲（例: 23:00〜翌1:00）として扱います。</div>
+      <div class="input-group" id="addEventGroup">
         <input type="text" id="timeInput" placeholder="時間 (例: 10:30)">
-        <select id="characterSelect" onchange="updateNewEventColor()">
-          <option value="" data-color="#fafafa">人物</option>
-        </select>
+        <span class="range-sep">〜</span>
+        <input type="text" id="endTimeInput" placeholder="終了">
+        <button type="button" id="rangeToggleBtn" class="range-toggle-btn" onclick="toggleRangeMode()" title="開始〜終了の期間で登録">⏱ 期間</button>
+        <div class="char-multi-wrap">
+          <button type="button" id="charSelectBtn" onclick="toggleCharSelectPopup(event)" title="登場人物を選ぶ（複数可）">人物 ▾</button>
+          <div id="charSelectPopup" class="char-select-popup"></div>
+        </div>
         <input type="text" id="eventInput" placeholder="できごと">
         <button type="button" id="flagToggleBtn" class="btn-flag" onclick="toggleNewFlag()" title="重要フラグを付けて追加">🚩</button>
         <button class="btn-add" onclick="addEvent()">追加</button>
+      </div>
+      <div id="charFilterBar" class="char-filter-bar"></div>
+      <div class="timeline-mode-toggle">
+        <button type="button" id="modeListBtn" class="mode-btn active" onclick="setTimelineMode('list')" title="通常のリスト表示">📋 リスト</button>
+        <button type="button" id="modeCompareBtn" class="mode-btn" onclick="setTimelineMode('compare')" title="時間を左端に、人物ごとに横に並べて比較">📊 人物比較</button>
       </div>
       <div id="timelineContainer"></div>
     </div>
@@ -233,15 +359,18 @@
       <h4>📌 基本の登録方法</h4>
       <ul>
         <li>入力欄に「時間」「人物」「できごと」を入れて <strong>［追加］</strong> を押すと1件登録されます。</li>
+        <li><strong>人物は複数選べます</strong>。「人物 ▾」を押してチェックを入れると、同じ出来事に複数の登場人物を紐づけられます。</li>
         <li>登録した出来事は <strong>時間の早い順に自動で並びます</strong>。</li>
         <li>時間は <code>20:5</code> のように分が1桁でも <code>20:05</code> に自動補完されます。</li>
+        <li>時間欄は「夕方」「翼朝」「不明」など <strong>自由な言葉でも登録できます</strong>（時刻の形式でなくてもOK）。時刻で入れたものは早い順に、言葉で入れたものは末尾にまとまります。</li>
         <li>キャラ名の横の <strong>色ボタン</strong> を押すとカラーパレットから色を選べます。</li>
       </ul>
 
       <h4>🔘 各ボタンでできること</h4>
       <ul>
         <li><strong>🚩（入力欄）</strong>：押してから追加すると、その出来事に重要フラグ（左端に金色の線）が付きます。</li>
-        <li><strong>✏️ 編集</strong>：登録済みカードの時間・人物・内容を修正できます（✓で保存／✕で取消）。</li>
+        <li><strong>✏️ 編集</strong>：登録済みカードの時間・内容を修正できます（✓で保存／✕で取消）。</li>
+        <li><strong>👥 登場人物</strong>：カードに後から人物を追加・削除できます（チェックのオン／オフ）。</li>
         <li><strong>🚩 フラグ</strong>：カードごとに重要フラグのオン/オフを切り替えます。</li>
         <li><strong>👁 非表示</strong>：カードの内容を隠します（👁と🚩以外が非表示に。もう一度押すと再表示）。ネタバレ隠しに便利です。</li>
         <li><strong>✕ 削除</strong>：そのカードを削除します。</li>
@@ -249,55 +378,144 @@
         <li><strong>📝 秘密のメモの 👁</strong>：メモ全体をまとめて隠せます。</li>
       </ul>
 
+      <h4>👥 複数の登場人物と絞り込み</h4>
+      <ul>
+        <li>複数の人物が紐づいたカードは、名前バッジが <strong>縦に並んで表示</strong> されます。</li>
+        <li>1人だけのカードは、その人物の色でカード全体が色分けされます。</li>
+        <li>3人以上のときは2人まで表示し、<strong>「＋他を表示」</strong> で残りを展開できます。</li>
+        <li>上部の <strong>表示対象絞り込み</strong> で人物を選ぶと、その人物が登場するカードだけを表示します（複数選択可。「全員」で解除）。</li>
+      </ul>
+
+      <h4>📊 リスト表示と人物比較表示</h4>
+      <ul>
+        <li>時系列の上にある <strong>「📋 リスト」／「📊 人物比較」</strong> で表示を切り替えられます。</li>
+        <li><strong>📊 人物比較</strong>：<strong>左端に時間</strong>、<strong>上に人物名</strong>を並べ、その時間に各人物のカードがあればその欄に表示します（なければ空欄）。「誰がいつ何をしていたか」を横並びで見比べられます。</li>
+        <li>比較に並ぶ人物は <strong>表示対象絞り込みで選んだ人</strong>です（「全員」のときは全員分の列が並びます）。</li>
+      </ul>
+
+      <h4>⏱ 期間（開始〜終了）で登録</h4>
+      <ul>
+        <li>入力欄の <strong>「⏱ 期間」</strong> を押すと、時間の隣に <strong>終了時刻の欄</strong> が現れます。開始と終了を入れて追加すると、<strong>「開始〜終了」を示す1枚のカード</strong>として並びます（右端に、その人物の色の縦バーが付きます）。</li>
+        <li>その期間の <strong>途中の時刻に別の出来事があるとき</strong>は、自動で開始カードと終了カードに分かれ、<strong>右側の太い縦ライン（その人物の色）で開始〜終了がつながって見え</strong>、「この間ずっと～していた」が一目でわかります。</li>
+        <li>人物・内容・フラグなどは <strong>開始カードに</strong>登録されます（終了時刻も時刻として扱われます）。</li>
+        <li>編集（✒）で <strong>終了時刻を後から変更・追加・削除</strong>できます（終了欄を空にすると普通の1点の出来事に戻ります）。</li>
+      </ul>
+
       <h4>⬜ 人物・時間を空欄で登録すると？</h4>
       <ul>
         <li><strong>人物を空欄（「人物」のまま）</strong>：名前・色なしで登録され、名前バッジは空欄になります（列の位置は揃ったまま）。</li>
-        <li><strong>時間を空欄</strong>：時間指定なしとして扱われ、時間ありのカードより <strong>下（末尾）</strong> にまとめて並びます。</li>
+        <li><strong>時間を空欄</strong>：時間指定なし（不詳）として扱われ、時間ありのカードより <strong>下（末尾）</strong> に並びます。不詳カードにだけ現れる <strong>△（上へ）／▽（下へ）</strong> で、時刻ありカードの間を含む好きな位置に移動できます（表示は「不詳」のまま）。</li>
         <li><strong>できごとは必須</strong>：空欄のままだと追加されません（編集でも空にはできません）。</li>
       </ul>
     </div>
   </div>
 
   <script>
+    // localStorage の保存キーを1か所に集約（打ち間違いによるバグを防ぐ）
+    const KEYS = {
+      events: 'madamisu_events',
+      characters: 'madamisu_characters',
+      charFilter: 'madamisu_char_filter',
+      memo: 'madamisu_memo',
+      memoConcealed: 'madamisu_memo_concealed',
+      deathFrom: 'madamisu_death_from',
+      deathTo: 'madamisu_death_to',
+      deathEnabled: 'madamisu_death_enabled',
+      view: 'madamisu_view',
+      timelineMode: 'madamisu_timeline_mode',
+      flagFilter: 'madamisu_flag_filter',
+      confirmDelete: 'madamisu_confirm_delete'
+    };
+    // localStorage の入出力ヘルパー（破損・容量超過・プライベートモードでも落ちないように）
+    function loadJSON(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) {
+        console.warn(`${key} の読み込みに失敗しました。初期化します`, e);
+        return fallback;
+      }
+    }
+    let storageWarned = false; // 保存失敗の警告は1回だけ出す
+    function safeSet(key, value) {
+      try { localStorage.setItem(key, value); return true; }
+      catch (e) {
+        console.warn(`${key} の保存に失敗しました`, e);
+        if (!storageWarned) {
+          storageWarned = true;
+          alert('保存に失敗しました（ブラウザの容量制限やプライベートモードの可能性があります）');
+        }
+        return false;
+      }
+    }
+
     // データの読み込み
-    let events = JSON.parse(localStorage.getItem('madamisu_events')) || [];
-    let characters = JSON.parse(localStorage.getItem('madamisu_characters')) || [];
+    let events = loadJSON(KEYS.events, []);
+    let characters = loadJSON(KEYS.characters, []);
     let newEventFlag = false; // 新規追加時にフラグを立てるか
+    let newEventRange = false; // 新規追加時に「期間（開始〜終了）」で登録するか
+    let newEventChars = []; // 新規追加時に選択している人物名（複数可）
+    // 後方互換：旧データ（character 単数）を characters 配列に移行する
+    events.forEach(ev => {
+      if (!Array.isArray(ev.characters)) ev.characters = ev.character ? [ev.character] : [];
+    });
     // カラーパレットの候補色と、現在選択している色
     const PALETTE_COLORS = [
       '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#14b8a6',
       '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899', '#78716c'
     ];
     let selectedCharColor = '#3b82f6';
-    let memoConcealed = localStorage.getItem('madamisu_memo_concealed') === 'true'; // 秘密のメモを非表示中か
-    let deathFrom = localStorage.getItem('madamisu_death_from') || ''; // 死亡推定時刻（開始）
-    let deathTo = localStorage.getItem('madamisu_death_to') || '';     // 死亡推定時刻（終了）
-    let deathEnabled = localStorage.getItem('madamisu_death_enabled') === 'true'; // 死亡推定時刻のトグルがONか
+    let memoConcealed = localStorage.getItem(KEYS.memoConcealed) === 'true'; // 秘密のメモを非表示中か
+    let deathFrom = localStorage.getItem(KEYS.deathFrom) || ''; // 死亡推定時刻（開始）
+    let deathTo = localStorage.getItem(KEYS.deathTo) || '';     // 死亡推定時刻（終了）
+    let deathEnabled = localStorage.getItem(KEYS.deathEnabled) === 'true'; // 死亡推定時刻のトグルがONか
     let editingIndex = -1; // 現在編集中のカードの番号（-1は編集なし）
+    let charFilter = loadJSON(KEYS.charFilter, []); // 絞り込み中の人物名（空なら全表示）
+    let flagFilter = localStorage.getItem(KEYS.flagFilter) === 'true'; // フラグ付きのみ表示するか
+    let timelineMode = localStorage.getItem(KEYS.timelineMode) || 'list'; // 時系列の表示モード（list / compare）
+    // カード削除時に確認ダイアログを出すか（既定はON。'false' のときだけOFF）
+    let confirmDelete = localStorage.getItem(KEYS.confirmDelete) !== 'false';
     // 表示モード（スマホ版 / PC版）。未設定なら画面幅で自動判定
-    let currentView = localStorage.getItem('madamisu_view') || (window.innerWidth < 900 ? 'mobile' : 'pc');
+    let currentView = localStorage.getItem(KEYS.view) || (window.innerWidth < 900 ? 'mobile' : 'pc');
     const memoInput = document.getElementById('memoInput');
-    const characterSelect = document.getElementById('characterSelect');
     const timelineContainer = document.getElementById('timelineContainer');
     const characterList = document.getElementById('characterList');
     const cardColorsStyle = document.getElementById('cardColorsStyle');
 
     // 初期化：メモと、キャラクター・色のスタイルを適用
-    memoInput.value = localStorage.getItem('madamisu_memo') || '';
+    memoInput.value = localStorage.getItem(KEYS.memo) || '';
     applyView();
     applyMemoConceal();
+    document.getElementById('confirmDeleteToggle').checked = confirmDelete;
     populateDeathSelects();
     updateDeathToggleBtn();
+    updateDeathWarn();
     renderColorPalettePopup();
     updateColorPickerBtn();
     renderCharacters();
+    updateTimelineModeBtn();
     sortEvents();
     renderEvents();
     updateCardColorCss(); // キャラクターごとのCSSを生成
 
-    // --- メモ帳の自動保存 ---
+    // --- メモ帳の自動保存（キー入力ごとの書き込みをデバウンス） ---
+    let memoSaveTimer = null;
     memoInput.addEventListener('input', () => {
-      localStorage.setItem('madamisu_memo', memoInput.value);
+      clearTimeout(memoSaveTimer);
+      memoSaveTimer = setTimeout(() => safeSet(KEYS.memo, memoInput.value), 300);
+    });
+
+    // 時間入力欄（追加・編集）は入力したそばから全角を半角に変換する
+    document.addEventListener('input', (e) => {
+      const el = e.target;
+      if (el.id === 'timeInput' || el.id === 'endTimeInput' || el.classList.contains('edit-time') || el.classList.contains('edit-endtime')) {
+        const converted = toHalfWidth(el.value);
+        if (converted !== el.value) {
+          const pos = el.selectionStart;
+          el.value = converted;
+          try { el.setSelectionRange(pos, pos); } catch (_) {}
+        }
+      }
     });
 
     // 表示モード（スマホ版 / PC版）を適用する
@@ -310,8 +528,33 @@
     // 表示モードを切り替えて保存する
     function setView(v) {
       currentView = v;
-      localStorage.setItem('madamisu_view', v);
+      safeSet(KEYS.view, v);
       applyView();
+    }
+
+    // すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除する
+    function clearAllData() {
+      if (!confirm('すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除します。\nこの操作は元に戻せません。よろしいですか？')) return;
+      try { Object.values(KEYS).forEach(k => localStorage.removeItem(k)); }
+      catch (e) { console.warn('データ削除に失敗しました', e); }
+      location.reload();
+    }
+
+    // カード削除時に確認ダイアログを出すかを切り替える
+    function toggleConfirmDelete() {
+      confirmDelete = document.getElementById('confirmDeleteToggle').checked;
+      safeSet(KEYS.confirmDelete, confirmDelete ? 'true' : 'false');
+    }
+
+    // 時系列（タイムライン）のカードだけをすべて削除する（キャラクターやメモは残す）
+    function clearAllTimelineData() {
+      if (!confirm('時系列（タイムライン）のカードをすべて削除します。\nキャラクターやメモは残ります。よろしいですか？')) return;
+      try {
+        localStorage.removeItem(KEYS.events);
+        localStorage.removeItem(KEYS.charFilter);
+        localStorage.removeItem(KEYS.flagFilter);
+      } catch (e) { console.warn('タイムライン削除に失敗しました', e); }
+      location.reload();
     }
 
     // 秘密のメモの表示/非表示を切り替える
@@ -320,7 +563,7 @@
     }
     function toggleMemoConceal() {
       memoConcealed = !memoConcealed;
-      localStorage.setItem('madamisu_memo_concealed', memoConcealed);
+      safeSet(KEYS.memoConcealed, memoConcealed);
       applyMemoConceal();
     }
 
@@ -333,6 +576,10 @@
       }
       // キャラ色の選び直しパレットも外側クリックで閉じる
       document.querySelectorAll('.char-palette.open').forEach(p => {
+        if (!p.parentElement.contains(e.target)) p.classList.remove('open');
+      });
+      // 人物の複数選択ポップアップ（追加フォーム・カード）も外側クリックで閉じる
+      document.querySelectorAll('.char-select-popup.open, .char-assign-popup.open').forEach(p => {
         if (!p.parentElement.contains(e.target)) p.classList.remove('open');
       });
     });
@@ -370,14 +617,14 @@
 
     // --- キャラクター管理機能 ---
     function saveCharacters() {
-      localStorage.setItem('madamisu_characters', JSON.stringify(characters));
+      safeSet(KEYS.characters, JSON.stringify(characters));
       renderCharacters();
       updateCharacterSelect();
       updateCardColorCss(); // キャラクターの色が変わったかもしれないので、CSSを再生成
     }
 
     function addCharacter() {
-      const name = document.getElementById('newCharName').value;
+      const name = document.getElementById('newCharName').value.trim();
       const color = selectedCharColor;
       if (!name) return;
       if (characters.some(c => c.name === name)) { alert('そのキャラクター名は既に登録されています'); return; }
@@ -388,16 +635,21 @@
     }
 
     function deleteCharacter(index) {
-      if (confirm(`キャラクター「${characters[index].name}」を削除しますか？\nこのキャラクターが設定された時系列カードが削除されます。`)) {
-        // このキャラクターが設定されているイベントごと削除する
-        const deletedCharName = characters[index].name;
-        events = events.filter(ev => ev.character !== deletedCharName);
-        localStorage.setItem('madamisu_events', JSON.stringify(events)); // イベントも保存
+      const name = characters[index].name;
+      if (!confirm(`キャラクター「${name}」を削除しますか？\nこの人物は各カードの登場人物から外れます（カード自体は残ります）。`)) return;
+      // 各イベントの登場人物からこのキャラを外す
+      events.forEach(ev => {
+        ev.characters = eventCharNames(ev).filter(n => n !== name);
+        ev.character = ev.characters[0] || '';
+      });
+      safeSet(KEYS.events, JSON.stringify(events));
+      newEventChars = newEventChars.filter(n => n !== name);
+      charFilter = charFilter.filter(n => n !== name);
+      safeSet(KEYS.charFilter, JSON.stringify(charFilter));
 
-        characters.splice(index, 1);
-        saveCharacters();
-        renderEvents(); // 時系列を再描画して更新
-      }
+      characters.splice(index, 1);
+      saveCharacters();
+      renderEvents(); // 時系列を再描画して更新
     }
 
     // キャラの色選び直しパレットを開閉する
@@ -424,14 +676,11 @@
       popup.classList.add('open');
     }
 
-    // キャラクターの色を変更し、そのキャラのカードにも反映する
+    // キャラクターの色を変更し、そのキャラのカードバッジにも反映する
     function recolorCharacter(index, color) {
-      const targetName = characters[index].name;
       characters[index].color = color;
-      events.forEach(ev => { if (ev.character === targetName) ev.color = color; });
-      localStorage.setItem('madamisu_events', JSON.stringify(events));
       saveCharacters();
-      renderEvents();
+      renderEvents(); // バッジは名前から現在の色を引くので再描画すれば反映される
     }
 
     function renderCharacters() {
@@ -440,8 +689,8 @@
         const div = document.createElement('div');
         div.className = 'char-item';
         div.innerHTML = `
-          <div class="char-color-dot" style="background: ${char.color};"></div>
-          <div style="flex-grow: 1;">${char.name}</div>
+          <div class="char-color-dot" style="background: ${safeColor(char.color)};"></div>
+          <div style="flex-grow: 1;">${escapeHtml(char.name)}</div>
           <div class="color-picker-wrap">
             <button class="btn-recolor" onclick="toggleCharPalette(event, ${index})" title="色を選び直す">🎨</button>
             <div class="color-palette-popup char-palette" id="charPalette-${index}"></div>
@@ -453,36 +702,203 @@
       updateCharacterSelect();
     }
 
+    // 追加フォームの人物選択と絞り込みフィルタをまとめて再描画する
     function updateCharacterSelect() {
-      const currentSelected = characterSelect.value;
-      characterSelect.innerHTML = '<option value="" data-color="#fafafa">人物</option>';
-      characters.forEach(char => {
-        const option = document.createElement('option');
-        option.value = char.name;
-        option.textContent = char.name;
-        option.setAttribute('data-color', char.color); // 色をデータ属性に持たせる
-        characterSelect.appendChild(option);
-      });
-      characterSelect.value = currentSelected;
-      updateNewEventColor(); // 入力欄の色を更新
+      // すでに削除されたキャラが選択・絞り込みに残っていたら除去する
+      const names = characters.map(c => c.name);
+      newEventChars = newEventChars.filter(n => names.includes(n));
+      charFilter = charFilter.filter(n => names.includes(n));
+      renderCharSelect();
+      renderCharSelectBtn();
+      renderCharFilter();
     }
 
-    // 入力プルダウンの色を、選択されているキャラクターの色に合わせる
-    function updateNewEventColor() {
-      const selectedOption = characterSelect.options[characterSelect.selectedIndex];
-      const color = selectedOption.getAttribute('data-color');
-      characterSelect.style.background = color;
-      characterSelect.style.color = (parseInt(color.replace('#',''), 16) > 0xffffff / 2) ? '#333' : '#fff'; // 可読性調整
+    // キャラの色を名前から引く（未登録・削除済みはグレー）
+    function colorForChar(name) {
+      const c = characters.find(c => c.name === name);
+      return c ? c.color : '#94a3b8';
+    }
+    // インラインstyleやCSSに差し込む色は #RRGGBB のみ許可（属性抜け・インジェクション対策）
+    function safeColor(c) {
+      return /^#[0-9a-fA-F]{6}$/.test(c) ? c : '#94a3b8';
+    }
+    // 背景色に対して読みやすい文字色を返す（知覚輝度で判定）
+    function textColorFor(bg) {
+      const n = parseInt(String(bg).replace('#', ''), 16);
+      if (Number.isNaN(n)) return '#333';
+      const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#333' : '#fff';
+    }
+    // イベントに紐づく人物名の配列を返す（後方互換：character単数→配列）
+    function eventCharNames(ev) {
+      if (Array.isArray(ev.characters)) return ev.characters;
+      return ev.character ? [ev.character] : [];
+    }
+
+    // 追加フォームの複数選択ポップアップ（チェックボックス）を描画する
+    function renderCharSelect() {
+      const popup = document.getElementById('charSelectPopup');
+      if (!popup) return;
+      if (characters.length === 0) {
+        popup.innerHTML = '<div class="char-select-empty">先にキャラクターを登録してください</div>';
+        return;
+      }
+      popup.innerHTML = '';
+      characters.forEach(char => {
+        const row = document.createElement('label');
+        row.className = 'char-check-row';
+        const checked = newEventChars.includes(char.name) ? 'checked' : '';
+        row.innerHTML = `<input type="checkbox" ${checked}><span class="dot" style="background:${safeColor(char.color)}"></span><span>${escapeHtml(char.name)}</span>`;
+        row.querySelector('input').addEventListener('change', (e) => {
+          e.stopPropagation();
+          toggleNewEventChar(char.name);
+        });
+        popup.appendChild(row);
+      });
+    }
+
+    // 追加フォームのボタン表示（選択人数・名前）を更新する
+    function renderCharSelectBtn() {
+      const btn = document.getElementById('charSelectBtn');
+      if (!btn) return;
+      if (newEventChars.length === 0) { btn.textContent = '人物 ▾'; return; }
+      if (newEventChars.length <= 2) { btn.textContent = newEventChars.join('・') + ' ▾'; return; }
+      btn.textContent = `${newEventChars.length}人選択 ▾`;
+    }
+
+    // 追加フォームの人物チェックを切り替える
+    function toggleNewEventChar(name) {
+      if (newEventChars.includes(name)) newEventChars = newEventChars.filter(n => n !== name);
+      else newEventChars.push(name);
+      renderCharSelectBtn();
+    }
+
+    // 追加フォームの人物ポップアップを開閉する
+    function toggleCharSelectPopup(e) {
+      e.stopPropagation();
+      const popup = document.getElementById('charSelectPopup');
+      const willOpen = !popup.classList.contains('open');
+      closeAllCharPopups();
+      if (willOpen) { renderCharSelect(); popup.classList.add('open'); }
+    }
+
+    // 開いている人物ポップアップをすべて閉じる
+    function closeAllCharPopups() {
+      document.querySelectorAll('.char-select-popup.open, .char-assign-popup.open').forEach(p => p.classList.remove('open'));
+    }
+
+    // --- キャラ絞り込みフィルタ（D-2） ---
+    function renderCharFilter() {
+      const bar = document.getElementById('charFilterBar');
+      if (!bar) return;
+      bar.innerHTML = '';
+      if (characters.length === 0) return;
+      const label = document.createElement('span');
+      label.className = 'filter-label';
+      label.textContent = '表示対象絞り込み';
+      bar.appendChild(label);
+      const allBtn = document.createElement('button');
+      allBtn.type = 'button';
+      allBtn.className = 'filter-chip filter-chip-all' + (charFilter.length === 0 ? ' active' : '');
+      allBtn.textContent = '全員';
+      allBtn.onclick = clearCharFilter;
+      bar.appendChild(allBtn);
+      // フラグ付き（🚩）だけに絞り込むチップ（人物の絞り込みと併用可）
+      const flagBtn = document.createElement('button');
+      flagBtn.type = 'button';
+      flagBtn.className = 'filter-chip filter-chip-flag' + (flagFilter ? ' active' : '');
+      flagBtn.textContent = '🚩 フラグ付き';
+      flagBtn.onclick = toggleFlagFilter;
+      bar.appendChild(flagBtn);
+      characters.forEach(c => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'filter-chip' + (charFilter.includes(c.name) ? ' active' : '');
+        chip.innerHTML = `<span class="dot" style="background:${safeColor(c.color)}"></span>${escapeHtml(c.name)}`;
+        chip.onclick = () => toggleCharFilter(c.name);
+        bar.appendChild(chip);
+      });
+    }
+    function toggleCharFilter(name) {
+      if (charFilter.includes(name)) charFilter = charFilter.filter(n => n !== name);
+      else charFilter.push(name);
+      safeSet(KEYS.charFilter, JSON.stringify(charFilter));
+      renderCharFilter();
+      renderEvents();
+    }
+    function clearCharFilter() {
+      charFilter = [];
+      safeSet(KEYS.charFilter, JSON.stringify(charFilter));
+      renderCharFilter();
+      renderEvents();
+    }
+    function toggleFlagFilter() {
+      flagFilter = !flagFilter;
+      safeSet(KEYS.flagFilter, flagFilter ? 'true' : 'false');
+      renderCharFilter();
+      renderEvents();
+    }
+
+    // バッジの折りたたみ表示を切り替える（C-2）
+    function toggleBadgeExpand(btn) {
+      const wrap = btn.closest('.char-badges');
+      const expanded = wrap.classList.toggle('expanded');
+      btn.textContent = expanded ? '－ 閉じる' : '＋他を表示';
+    }
+
+    // カードの登場人物ポップアップを開閉する（B-5：後から人物を追加/削除）
+    function toggleCardCharPopup(e, index) {
+      e.stopPropagation();
+      const popup = document.getElementById(`charAssign-${index}`);
+      const willOpen = !popup.classList.contains('open');
+      closeAllCharPopups();
+      if (!willOpen) return;
+      renderCardCharPopup(index);
+      popup.classList.add('open');
+    }
+    function renderCardCharPopup(index) {
+      const popup = document.getElementById(`charAssign-${index}`);
+      if (!popup) return;
+      if (characters.length === 0) {
+        popup.innerHTML = '<div class="char-select-empty">先にキャラクターを登録してください</div>';
+        return;
+      }
+      const selected = eventCharNames(events[index]);
+      popup.innerHTML = '';
+      characters.forEach(char => {
+        const row = document.createElement('label');
+        row.className = 'char-check-row';
+        const checked = selected.includes(char.name) ? 'checked' : '';
+        row.innerHTML = `<input type="checkbox" ${checked}><span class="dot" style="background:${safeColor(char.color)}"></span><span>${escapeHtml(char.name)}</span>`;
+        row.querySelector('input').addEventListener('change', (e) => {
+          e.stopPropagation();
+          toggleCardChar(index, char.name);
+        });
+        popup.appendChild(row);
+      });
+    }
+    // カードの登場人物を追加/削除する
+    function toggleCardChar(index, name) {
+      const list = eventCharNames(events[index]).slice();
+      const pos = list.indexOf(name);
+      if (pos >= 0) list.splice(pos, 1); else list.push(name);
+      events[index].characters = list;
+      events[index].character = list[0] || '';        // 後方互換
+      events[index].color = list[0] ? colorForChar(list[0]) : '#fafafa';
+      safeSet(KEYS.events, JSON.stringify(events));
+      renderEvents();
+      // 再描画でポップアップが作り直されるので、続けて操作できるよう開き直す
+      const popup = document.getElementById(`charAssign-${index}`);
+      if (popup) { renderCardCharPopup(index); popup.classList.add('open'); }
     }
 
     // キャラクターごとの色設定をCSSとして動的に生成する
-    // (これでrenderEvents内のHTML生成をシンプルにする)
+    // (キャラ名をそのままセレクタに使うとCSSインジェクションの危険があるため、インデックス由来の安全なクラス名にする)
     function updateCardColorCss() {
       let css = '';
-      characters.forEach(char => {
-        // .timeline-item.char-A { background: #fee2e2; } のようなCSSを生成
-        const className = `char-${char.name.replace(/\s+/g, '_')}`; // スペースを_に置換
-        css += `.timeline-item.${className} { background: ${char.color}; }\n`;
+      characters.forEach((char, i) => {
+        // 色は #RRGGBB 形式のみ許可（パレット外の不正な値を弾く）
+        css += `.timeline-item.char-idx-${i} { background: ${safeColor(char.color)}; }\n`;
       });
       cardColorsStyle.textContent = css;
     }
@@ -490,11 +906,31 @@
 
     // --- 時系列管理機能 ---
     // 入力された時間を正規化（例: "20:5" → "20:05" のように分を2桁に補完）
+    // 全角の英数字・記号・スペースを半角に変換する
+    function toHalfWidth(str) {
+      return String(str)
+        .replace(/[\uFF01-\uFF5E]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
+        .replace(/\u3000/g, ' ');
+    }
+
     function normalizeTime(t) {
       if (!t) return t;
-      const m = String(t).trim().match(/^(\d{1,2}):(\d{1,2})$/);
-      if (!m) return String(t).trim();
-      return `${m[1]}:${m[2].padStart(2, '0')}`;
+      // 全角→半角に変換し、区切り文字のゆらぎ（: ： ; ；）をすべて「:」へ統一する
+      let s = toHalfWidth(t).trim().replace(/[:;\uFF1A\uFF1B]/g, ':').replace(/:+/g, ':');
+      // 「:」が含まれる場合は 時:分 として整形する
+      if (s.includes(':')) {
+        const parts = s.split(':');
+        const h = parts[0].replace(/\D/g, '');
+        const m = parts[1].replace(/\D/g, '');
+        if (h === '' && m === '') return '';
+        if (m === '') return h;               // 分がまだ入力されていない
+        return `${h || '0'}:${m.slice(0, 2).padStart(2, '0')}`;
+      }
+      // 数字だけのときは自動で「:」を入れる（4桁→HH:MM／3桁→H:MM）
+      const digits = s.replace(/\D/g, '');
+      if (digits.length === 4) return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+      if (digits.length === 3) return `${digits.slice(0, 1)}:${digits.slice(1)}`;
+      return s;
     }
 
     // 時間文字列を分単位に変換（ソート用、不正・未入力は末尾へ）
@@ -505,9 +941,17 @@
       return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
     }
 
-    // 時間の早い順に並べ替える（同時刻は追加順を維持）
+    // 不詳（時刻なし）カードの基本位置。実時刻（0〜1439分）より十分大きな値にして末尾側に置く
+    // 並べ替えに使う実効な時刻値。時刻ありはその分、不詳は手動位置（anchor）か基本位置(100000)
+    function effectiveSortMinutes(ev) {
+      const t = timeToMinutes(ev.time);
+      if (t !== Infinity) return t;
+      return (typeof ev.anchor === 'number') ? ev.anchor : 100000;
+    }
+
+    // 早い順に並べ替える（同値は追加順を維持）
     function sortEvents() {
-      events.sort((a, b) => timeToMinutes(a.time) - timeToMinutes(b.time));
+      events.sort((a, b) => effectiveSortMinutes(a) - effectiveSortMinutes(b));
     }
 
     // --- 死亡推定時刻（トグル式） ---
@@ -547,17 +991,39 @@
       const tm = document.getElementById('deathToM').value;
       deathFrom = (fh && fm) ? `${fh}:${fm}` : '';
       deathTo = (th && tm) ? `${th}:${tm}` : '';
-      localStorage.setItem('madamisu_death_from', deathFrom);
-      localStorage.setItem('madamisu_death_to', deathTo);
+      safeSet(KEYS.deathFrom, deathFrom);
+      safeSet(KEYS.deathTo, deathTo);
+      updateDeathWarn();
       if (deathEnabled) renderEvents();
+    }
+
+    // 開始＞終了（日付を跨ぐ可能性）のときに注意書きを表示する
+    function updateDeathWarn() {
+      const warn = document.getElementById('deathWarn');
+      const f = timeToMinutes(deathFrom);
+      const to = timeToMinutes(deathTo);
+      const reversed = f !== Infinity && to !== Infinity && f > to;
+      warn.classList.toggle('show', reversed);
     }
 
     // 死亡推定時刻の適用をON/OFFで切り替える
     function toggleDeathTime() {
       deathEnabled = !deathEnabled;
-      localStorage.setItem('madamisu_death_enabled', deathEnabled);
+      safeSet(KEYS.deathEnabled, deathEnabled);
       updateDeathToggleBtn();
       renderEvents();
+    }
+
+    // 時系列の表示モード（リスト / 人物比較）を切り替える
+    function setTimelineMode(m) {
+      timelineMode = m;
+      safeSet(KEYS.timelineMode, m);
+      updateTimelineModeBtn();
+      renderEvents();
+    }
+    function updateTimelineModeBtn() {
+      document.getElementById('modeListBtn').classList.toggle('active', timelineMode === 'list');
+      document.getElementById('modeCompareBtn').classList.toggle('active', timelineMode === 'compare');
     }
 
     // 使い方（ヘルプ）モーダルの開閉
@@ -584,37 +1050,64 @@
       const f = timeToMinutes(deathFrom);
       const to = timeToMinutes(deathTo);
       if (t === Infinity || f === Infinity || to === Infinity) return false;
-      return t >= f && t <= to;
+      // 開始≦終了：通常の範囲。開始＞終了：日付を跨ぐ範囲（例: 23:00〜翲1:00）
+      return (f <= to) ? (t >= f && t <= to) : (t >= f || t <= to);
     }
 
     function saveEvents() {
-      localStorage.setItem('madamisu_events', JSON.stringify(events));
+      safeSet(KEYS.events, JSON.stringify(events));
       renderEvents();
+    }
+
+    // 全件を作り直さずに保存だけ行う（軽量更新用）
+    function persistEvents() {
+      safeSet(KEYS.events, JSON.stringify(events));
+    }
+
+    // 指定カードの見た目状態（フラグ・非表示・色）だけを更新する（全再描画を避ける）
+    function refreshCard(index) {
+      const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
+      if (!card) { renderEvents(); return; } // 見つからなければ安全側に全描画
+      const ev = events[index];
+      card.classList.toggle('flagged', !!ev.flag);
+      card.classList.toggle('in-death-range', isInDeathRange(ev.time));
+      card.classList.toggle('concealed', !!ev.concealed);
+      card.classList.toggle('color-hidden', !!ev.colorHidden);
+      const flagBtn = card.querySelector('.btn-flag-card');
+      if (flagBtn) flagBtn.classList.toggle('active', !!ev.flag);
+      const colorBtn = card.querySelector('.btn-color-toggle');
+      if (colorBtn) colorBtn.classList.toggle('active', !!ev.colorHidden);
     }
 
     function addEvent() {
       const time = normalizeTime(document.getElementById('timeInput').value);
       const text = document.getElementById('eventInput').value;
-      const selectedOption = characterSelect.options[characterSelect.selectedIndex];
-      const characterName = selectedOption.value; // キャラクター名
-      
       if (!text) return;
-      
-      // イベントデータにキャラクター名と色を持たせる
-      events.push({ 
-        time, 
-        text, 
-        character: characterName, 
-        color: selectedOption.getAttribute('data-color'), // 削除時のリセット用に色も持たせておく
-        flag: newEventFlag // 重要フラグ
-      });
-      
+
+      const chars = [...newEventChars];
+      // イベントデータに登場人物（複数可）を持たせる
+      const ev = {
+        time,
+        text,
+        characters: chars,
+        character: chars[0] || '',                     // 後方互換（先頭の1人）
+        color: chars[0] ? colorForChar(chars[0]) : '#fafafa',
+        flag: newEventFlag                             // 重要フラグ
+      };
+      // 期間モードのときは終了時刻も保存する（正しい時刻のときだけ）
+      if (newEventRange) {
+        const endTime = normalizeTime(document.getElementById('endTimeInput').value);
+        if (endTime && timeToMinutes(endTime) !== Infinity) ev.endTime = endTime;
+      }
+      events.push(ev);
+
       document.getElementById('timeInput').value = '';
+      document.getElementById('endTimeInput').value = '';
       document.getElementById('eventInput').value = '';
-      // characterSelect はそのままにする（連続して同じキャラの行動を入力しやすいように）
+      // 選択中の人物はそのまま（同じ人物の行動を連続で入力しやすいように）
       newEventFlag = false; // フラグは毎回リセット
       document.getElementById('flagToggleBtn').classList.remove('active');
-      
+
       sortEvents(); // 時間順に並べ替えてから保存
       saveEvents();
     }
@@ -625,27 +1118,64 @@
       document.getElementById('flagToggleBtn').classList.toggle('active', newEventFlag);
     }
 
+    // 「期間（開始〜終了）」入力のオン/オフを切り替える
+    function toggleRangeMode() {
+      newEventRange = !newEventRange;
+      document.getElementById('addEventGroup').classList.toggle('range-mode', newEventRange);
+      document.getElementById('rangeToggleBtn').classList.toggle('active', newEventRange);
+      if (!newEventRange) document.getElementById('endTimeInput').value = '';
+    }
+
     // 登録済みカードのフラグを切り替える
     function toggleEventFlag(index) {
       events[index].flag = !events[index].flag;
-      saveEvents();
+      persistEvents();
+      if (isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
     }
 
     // カードの内容の表示/非表示を切り替える
     function toggleEventConceal(index) {
       events[index].concealed = !events[index].concealed;
       if (!events[index].concealed) events[index].colorHidden = false; // 表示に戻したら色隠しも解除
-      saveEvents();
+      persistEvents();
+      if (isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
     }
 
     // 🎨：非表示中のカードの色を隠す/戻すを切り替える
     function toggleEventColor(index) {
       events[index].colorHidden = !events[index].colorHidden;
-      saveEvents();
+      persistEvents();
+      if (isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
     }
 
     function deleteEvent(index) {
-      if (confirm('このカードを削除しますか？')) { events.splice(index, 1); saveEvents(); }
+      if (confirmDelete && !confirm('このカードを削除しますか？')) return;
+      events.splice(index, 1);
+      saveEvents();
+    }
+
+    // 不詳（時刻なし）カードを、タイムライン上で上（-1）/下（+1）に1つ分動かす
+    function moveUnknownEvent(index, dir) {
+      const ev = events[index];
+      if (timeToMinutes(ev.time) !== Infinity) return; // 不詳カードのみ対象
+      // 絞り込みに左右されないよう、全カードの並びで隣を見る
+      const rows = buildSortedRows(false);
+      const p = rows.findIndex(r => r.index === index);
+      if (p < 0) return;
+      const dest = p + dir;
+      if (dest < 0 || dest >= rows.length) return; // 端なら何もしない
+      // 移動先で上下に来る行の実効時刻を求め、その中間を位置（anchor）にする
+      let aboveT, belowT;
+      if (dir < 0) { // 上へ：rows[dest] のさらに上に入る
+        belowT = rows[dest].sortT;
+        aboveT = dest - 1 >= 0 ? rows[dest - 1].sortT : belowT - 60;
+      } else {       // 下へ：rows[dest] のさらに下に入る
+        aboveT = rows[dest].sortT;
+        belowT = dest + 1 < rows.length ? rows[dest + 1].sortT : aboveT + 60;
+      }
+      ev.anchor = (aboveT === belowT) ? aboveT + (dir < 0 ? -0.5 : 0.5) : (aboveT + belowT) / 2;
+      sortEvents();
+      saveEvents();
     }
 
     // カードを編集モードにする
@@ -660,32 +1190,26 @@
       renderEvents();
     }
 
-    // 編集内容を保存する
+    // 編集内容を保存する（時間・終了時間・内容。人物はカードの👥で編集）
     function saveEditEvent(index, btn) {
       const card = btn.closest('.timeline-item');
       const timeEl = card.querySelector('.edit-time');
-      const charEl = card.querySelector('.edit-char');
+      const endEl = card.querySelector('.edit-endtime');
       const textEl = card.querySelector('.edit-text');
       const newText = textEl.value.trim();
       if (!newText) { alert('内容を入力してください'); return; }
-      const selOpt = charEl.options[charEl.selectedIndex];
       events[index].time = normalizeTime(timeEl.value);
-      events[index].character = charEl.value;
-      events[index].color = selOpt.getAttribute('data-color');
       events[index].text = newText;
+      // 終了時刻：入力があれば期間イベントに、空なら単一時刻に戻す
+      if (endEl) {
+        const nt = normalizeTime(endEl.value);
+        events[index].endTime = (nt && timeToMinutes(nt) !== Infinity) ? nt : '';
+      }
+      // 時刻が入ったら手動位置（anchor）は不要なので片付ける
+      if (timeToMinutes(events[index].time) !== Infinity) delete events[index].anchor;
       editingIndex = -1;
       sortEvents(); // 時間を変えた場合に備えて並べ替え
       saveEvents();
-    }
-
-    // 編集フォーム用の人物選択肢を生成する
-    function buildCharOptions(selected) {
-      let html = `<option value="" data-color="#fafafa"${selected ? '' : ' selected'}>人物</option>`;
-      characters.forEach(c => {
-        const sel = c.name === selected ? ' selected' : '';
-        html += `<option value="${escapeHtml(c.name)}" data-color="${c.color}"${sel}>${escapeHtml(c.name)}</option>`;
-      });
-      return html;
     }
 
     // HTML特殊文字のエスケープ
@@ -693,19 +1217,200 @@
       return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
-    function renderEvents() {
-      timelineContainer.innerHTML = '';
-      
+    // 期間イベント（開始〜終了）かどうか。開始・終了の両方が正しい時刻のときだけ
+    function isRangeEvent(ev) {
+      return !!ev.endTime && timeToMinutes(ev.time) !== Infinity && timeToMinutes(ev.endTime) !== Infinity;
+    }
+
+    // 並べ替え済みの行に対して、開始〜終了をつなぐ左ラインのクラスを決める
+    // （物理的な上下で判定するので、日跨ぎで終了が上に来ても崩れない）
+    // 表示する行を組み立てる（期間イベントは「開始行」と「終了行」の2つに分ける）。
+    // useFilter=true のときは絞り込みを反映。移動計算では false（全カードを対象）で呼ぶ。
+    function buildSortedRows(useFilter) {
+      const filterActive = useFilter && charFilter.length > 0;
+      const flagActive = useFilter && flagFilter;
+      // まず表示対象のイベントを確定する（絞り込みを反映）
+      const shown = [];
       events.forEach((ev, index) => {
+        // フラグ絞り込み中は、🚩のついたカードだけ表示
+        if (flagActive && !ev.flag) return;
+        if (filterActive) {
+          const names = eventCharNames(ev);
+          if (!names.some(n => charFilter.includes(n))) return;
+        }
+        shown.push({ ev, index });
+      });
+      // 期間の「開始〜終了の間」に他イベントがあるか判定するための時刻マーカー
+      const markers = [];
+      shown.forEach(({ ev, index }) => {
+        if (isRangeEvent(ev)) {
+          markers.push({ index, t: timeToMinutes(ev.time) });
+          markers.push({ index, t: timeToMinutes(ev.endTime) });
+        } else if (timeToMinutes(ev.time) !== Infinity) {
+          markers.push({ index, t: timeToMinutes(ev.time) });
+        }
+      });
+      const rows = [];
+      shown.forEach(({ ev, index }) => {
+        if (isRangeEvent(ev)) {
+          const s = timeToMinutes(ev.time), e = timeToMinutes(ev.endTime);
+          const lo = Math.min(s, e), hi = Math.max(s, e);
+          // 期間の途中に別のイベントがある場合だけ、開始行・終了行に分割する
+          const hasBetween = markers.some(m => m.index !== index && m.t > lo && m.t < hi);
+          if (hasBetween) {
+            rows.push({ index, ev, kind: 'start', sortT: s });
+            rows.push({ index, ev, kind: 'end', sortT: e });
+          } else {
+            // 間に何もなければ「開始〜終了」を1枚のカードとして表示する
+            rows.push({ index, ev, kind: 'range', sortT: s });
+          }
+        } else {
+          rows.push({ index, ev, kind: 'point', sortT: effectiveSortMinutes(ev) });
+        }
+      });
+      // 実効時間の早い順に安定ソート（同値は元の順序を維持）
+      rows.sort((a, b) => a.sortT - b.sortT);
+      return rows;
+    }
+
+    // 期間コネクタ（コの字の縦バンド）のレイアウトを計算する。
+    // 重なった期間は「入れ子（ネスト）」で内側へインデントして表示する。
+    function computeConnectorLayout(rows) {
+      const CONN_STEP = 42; // バンド1本の幅（＝インデント量）
+      const CONN_GAP = 10;  // 内容とバンドの間の余白
+      const n = rows.length;
+      // イベントindex → { start:行位置, end:行位置, ev }
+      const posByIndex = new Map();
+      rows.forEach((r, pos) => {
+        if (r.kind === 'range') {
+          posByIndex.set(r.index, { start: pos, end: pos, ev: r.ev });
+        } else if (r.kind === 'start' || r.kind === 'end') {
+          let e = posByIndex.get(r.index);
+          if (!e) { e = { ev: r.ev }; posByIndex.set(r.index, e); }
+          e[r.kind] = pos;
+        }
+      });
+      // 開始・終了がそろった期間だけを対象にする
+      const ranges = [];
+      posByIndex.forEach((e, index) => {
+        if (e.start == null || e.end == null) return;
+        ranges.push({ index, top: Math.min(e.start, e.end), bot: Math.max(e.start, e.end), color: rangeColor(e.ev) });
+      });
+      // 入れ子の深さを割り当てる。外側（先に始まり広く覆う）ほど depth=0（右端）、
+      // 重なるものは空いている最小の深さへ入れて内側（左）へインデントさせる。
+      ranges.sort((a, b) => a.top - b.top || b.bot - a.bot || a.index - b.index);
+      const placed = [];
+      ranges.forEach(r => {
+        const used = new Set();
+        placed.forEach(p => { if (p.top <= r.bot && r.top <= p.bot) used.add(p.depth); });
+        let d = 0; while (used.has(d)) d++;
+        r.depth = d;
+        placed.push(r);
+      });
+      // 行ごとに通過するバンドを集める
+      const barsByRow = Array.from({ length: n }, () => []);
+      ranges.forEach(r => {
+        for (let p = r.top; p <= r.bot; p++) {
+          barsByRow[p].push({ depth: r.depth, color: r.color, index: r.index, isTop: p === r.top, isBottom: p === r.bot });
+        }
+      });
+      // 各カードの右余白（バンドを避ける量）を計算する
+      const boxMargin = new Array(n).fill(0);   // カード自体（背景）の右マージン
+      const contentPad = new Array(n).fill(0);  // 内容の右パディング
+      rows.forEach((row, p) => {
+        const bars = barsByRow[p];
+        if (!bars.length) return;
+        // このカード自身の期間の端（＝腕として同色で溶け込ませるバンド）
+        const ownBar = bars.find(b => b.index === row.index && (b.isTop || b.isBottom));
+        const dOwn = ownBar ? ownBar.depth : null;
+        const maxAll = Math.max(...bars.map(b => b.depth));
+        // 背景をどこまで縮めるか（右マージン）を決める。
+        // ・自分の腕がない点カードなどは、すべてのバンドを避けて左に寄せる。
+        // ・自分の腕がある開始/終了カードは、自分より「外側（浅い depth＝右側）」の
+        //   バンドだけを避ける。内側（深い depth）のバンドはカードの上に重ねて描くので
+        //   縮めない。外側にバンドが無い場合でも、背景は「自分の腕の右端」までに
+        //   とどめる（フル幅まで伸ばすと腕より右に色がはみ出て、コの字がユの字になる）。
+        let bg;
+        if (dOwn === null) {
+          bg = (maxAll + 1) * CONN_STEP + CONN_GAP;
+        } else {
+          const shallower = bars.filter(b => b !== ownBar && b.depth < dOwn);
+          bg = shallower.length
+            ? (Math.max(...shallower.map(b => b.depth)) + 1) * CONN_STEP + CONN_GAP
+            : dOwn * CONN_STEP;
+        }
+        boxMargin[p] = bg;
+        contentPad[p] = Math.max(CONN_GAP, (maxAll + 1) * CONN_STEP + CONN_GAP - bg); // 内容は全バンドを避ける
+        // バンドの水平位置（カード右端基準の right 値）。全カードで同じ絶対位置に揃う
+        bars.forEach(b => { b.right = b.depth * CONN_STEP - bg; });
+      });
+      return { barsByRow, boxMargin, contentPad };
+    }
+
+    // 期間バンドの色。1人ならその人物色（開始・終了カードの色と繋がってコの字に見える）、それ以外は既定色
+    function rangeColor(ev) {
+      const names = eventCharNames(ev);
+      return names.length ? colorForChar(names[0]) : '#94a3b8';
+    }
+    // 色を同系のまま暗くする（キャラ色の背景でも縦ラインが見えるように）
+    function darkenColor(hex, f) {
+      const c = safeColor(hex);
+      const n = parseInt(c.slice(1), 16);
+      const r = Math.round(((n >> 16) & 255) * f);
+      const g = Math.round(((n >> 8) & 255) * f);
+      const b = Math.round((n & 255) * f);
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    function renderEvents() {
+      // 人物比較モードのときは専用の描画に切り替える
+      if (timelineMode === 'compare') { renderCompare(); return; }
+      timelineContainer.innerHTML = '';
+      // バッジの色引きをO(1)にするためのマップ（名前→色 / 名前→index）
+      const colorMap = new Map(characters.map(c => [c.name, c.color]));
+      const indexMap = new Map(characters.map((c, i) => [c.name, i]));
+
+      // 表示する行を組み立て（絞り込み反映）、時間の早い順に並べる
+      const rows = buildSortedRows(true);
+      const { barsByRow, boxMargin, contentPad } = computeConnectorLayout(rows);
+
+      rows.forEach((row, pos) => {
+        const { ev, index, kind } = row;
+        const names = eventCharNames(ev);
+
         const div = document.createElement('div');
         div.className = 'timeline-item';
-        
-        // キャラクターに対応するCSSクラスを追加
-        if (ev.character) {
-          const className = `char-${ev.character.replace(/\s+/g, '_')}`;
-          div.classList.add(className);
+        div.dataset.index = index; // 軽量更新（refreshCard）でカードを特定するため
+        // 期間コネクタ：このカードを通るバンドを追加し、内容がバンドに重ならないよう余白を付ける
+        const bars = barsByRow[pos];
+        if (bars && bars.length) {
+          if (boxMargin[pos]) div.style.marginRight = boxMargin[pos] + 'px';
+          div.style.paddingRight = contentPad[pos] + 'px';
         }
 
+        // 終了マーカー：終了時刻だけを表示する（内容は上の開始カードにある）
+        if (kind === 'end') {
+          if (isInDeathRange(ev.endTime)) div.classList.add('in-death-range');
+          div.classList.add('range-end-card');
+          // 終了カードも開始カードと同じ人物色で塗る
+          div.style.setProperty('--conn-color', rangeColor(ev));
+          if (names.length === 1 && indexMap.has(names[0])) div.classList.add(`char-idx-${indexMap.get(names[0])}`);
+          div.innerHTML = `
+            <div class="timeline-item-inner">
+              <div class="time-badge">${escapeHtml(ev.endTime || '不詳')}</div>
+            </div>
+          `;
+          appendConnBars(div, bars);
+          timelineContainer.appendChild(div);
+          return;
+        }
+
+        // 単一カードの期間（間に何もない）：右端に人物色のバーを付ける
+        if (kind === 'range') {
+          div.classList.add('range-single');
+        }
+
+        if (names.length >= 2) div.classList.add('multi-character');
         // フラグが立っているカードに印をつける
         if (ev.flag) div.classList.add('flagged');
         // 死亡推定時刻の範囲内ならフラグと同じ表示にする
@@ -714,23 +1419,39 @@
         if (ev.concealed) div.classList.add('concealed');
         // 🎨でグレーアウト中のカード
         if (ev.colorHidden) div.classList.add('color-hidden');
+        // 1人だけのカードは、以前のようにその人物の色でカード全体を表示する
+        if (names.length === 1 && indexMap.has(names[0])) div.classList.add(`char-idx-${indexMap.get(names[0])}`);
 
-        // 名前バッジ（フル名）。人物なしのときも列を揃えるために空の枚を入れる
-        let charBadge = '<div class="char-badge char-badge-empty"></div>';
-        if (ev.character) {
-          charBadge = `
-            <div class="char-badge" style="background: ${ev.color}; color: ${(parseInt(ev.color.replace('#',''), 16) > 0xffffff / 2) ? '#333' : '#fff'};" title="${escapeHtml(ev.character)}">
-              <span class="char-badge-name">${escapeHtml(ev.character)}</span>
-            </div>
-          `;
+        // 人物バッジ（縦並び）。人物なしのときは列を揃えるための空スペーサーを入れる（C）
+        let charBadges;
+        if (names.length === 0) {
+          charBadges = '<div class="char-badges char-badges-empty"></div>';
+        } else {
+          const badgeHtml = names.map((n, i) => {
+            const color = safeColor(colorMap.get(n));
+            const hidden = i >= 2 ? ' badge-hidden' : ''; // 3人目以降は折りたたむ（C-2）
+            return `<div class="char-badge${hidden}" style="background:${color}; color:${textColorFor(color)};" title="${escapeHtml(n)}"><span class="char-badge-name">${escapeHtml(n)}</span></div>`;
+          }).join('');
+          const more = names.length > 2
+            ? `<button type="button" class="badge-more" onclick="toggleBadgeExpand(this)">＋他を表示</button>`
+            : '';
+          charBadges = `<div class="char-badges">${badgeHtml}${more}</div>`;
         }
 
+        // 不詳（時刻なし）カードだけ、タイムライン上を上下に動かせる△▽を出す
+        const isUnknownTime = timeToMinutes(ev.time) === Infinity;
+        const moveBtns = isUnknownTime
+          ? `<button class="btn-move-up" onclick="moveUnknownEvent(${index}, -1)" title="1つ上へ移動">▲</button>
+              <button class="btn-move-down" onclick="moveUnknownEvent(${index}, 1)" title="1つ下へ移動">▼</button>`
+          : '';
+
         if (index === editingIndex) {
-          // 編集モード：時間・人物・内容を編集できるフォームを表示
+          // 編集モード：時間・終了時間・内容を編集できるフォームを表示（人物はカードの👥で編集）
           div.innerHTML = `
             <div class="timeline-item-inner edit-mode">
               <input type="text" class="edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間">
-              <select class="edit-char">${buildCharOptions(ev.character)}</select>
+              <span class="range-sep-edit">〜</span>
+              <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="終了(任意)">
               <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容">
             </div>
             <div class="controls">
@@ -739,15 +1460,25 @@
             </div>
           `;
         } else {
+          const timeBadge = (kind === 'range')
+            ? `${escapeHtml(ev.time)}<span class="range-badge-sep">〜</span>${escapeHtml(ev.endTime)}`
+            : escapeHtml(ev.time || '不詳');
           div.innerHTML = `
             <div class="timeline-item-inner">
-              <div class="time-badge">${ev.time || '不詳'}</div>
-              ${charBadge}
-              <div class="event-text">${ev.text}</div>
+              <div class="time-badge">${timeBadge}</div>
+              <div class="event-body">
+                ${charBadges}
+                <div class="event-text">${escapeHtml(ev.text)}</div>
+              </div>
             </div>
             <div class="concealed-label">（内容を非表示中）</div>
             <div class="controls">
-              <button class="btn-edit-card" onclick="startEditEvent(${index})" title="内容を編集">✏️</button>
+              ${moveBtns}
+              <button class="btn-edit-card" onclick="startEditEvent(${index})" title="時間・内容を編集">✏️</button>
+              <div class="card-char-wrap">
+                <button class="btn-add-char-card" onclick="toggleCardCharPopup(event, ${index})" title="登場人物を追加/削除">👥</button>
+                <div class="char-assign-popup" id="charAssign-${index}"></div>
+              </div>
               <button class="btn-flag-card ${ev.flag ? 'active' : ''}" onclick="toggleEventFlag(${index})" title="フラグ切り替え">🚩</button>
               <button class="btn-conceal" onclick="toggleEventConceal(${index})" title="内容の表示/非表示">👁️</button>
               <button class="btn-color-toggle ${ev.colorHidden ? 'active' : ''}" onclick="toggleEventColor(${index})" title="色を隠す/戻す">🎨</button>
@@ -755,8 +1486,140 @@
             </div>
           `;
         }
+        appendConnBars(div, bars);
         timelineContainer.appendChild(div);
       });
+    }
+
+    // 期間コネクタのバンド（縦の塗り）をカードに追加する
+    function appendConnBars(div, bars) {
+      if (!bars || !bars.length) return;
+      bars.forEach(b => {
+        const bar = document.createElement('div');
+        bar.className = 'conn-bar';
+        if (b.isTop) bar.classList.add('cap-top');
+        if (b.isBottom) bar.classList.add('cap-bottom');
+        bar.style.setProperty('--conn-color', b.color);
+        bar.style.right = b.right + 'px';
+        div.appendChild(bar);
+      });
+    }
+
+    // 人物比較表示：左端に時間、上に人物を並べ、各人物のカードをその欄に表示する
+    function renderCompare() {
+      timelineContainer.innerHTML = '';
+      // 列に並べる人物：絞り込み中はその人、「全員」のときは全キャラ
+      const cols = charFilter.length > 0 ? characters.filter(c => charFilter.includes(c.name)) : characters;
+      if (cols.length === 0) {
+        const msg = document.createElement('div');
+        msg.className = 'compare-empty';
+        msg.textContent = characters.length === 0
+          ? '先にキャラクターを登録すると、人物ごとに時系列を並べて比較できます。'
+          : '上の「表示対象絞り込み」で比較したい人物を選ぶと、その人たちの時系列が横に並びます。';
+        timelineContainer.appendChild(msg);
+        return;
+      }
+      const colNames = cols.map(c => c.name);
+      // 列の人物が1人でも含まれるイベントだけを対象にする（フラグ絞り込み中は🚩のみ）
+      const relevant = events.filter(ev =>
+        (!flagFilter || ev.flag) && eventCharNames(ev).some(n => colNames.includes(n)));
+      const timed = relevant.filter(ev => timeToMinutes(ev.time) !== Infinity);
+      const untimed = relevant.filter(ev => timeToMinutes(ev.time) === Infinity);
+      // 時間行を作る。期間イベントは「開始」も「終了」も時間として認識してまとめる（早い順）
+      const timeSet = new Set();
+      timed.forEach(ev => {
+        timeSet.add(ev.time);
+        if (isRangeEvent(ev)) timeSet.add(ev.endTime);
+      });
+      const timeKeys = [...timeSet].sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
+      const rowIndexOf = new Map(timeKeys.map((t, i) => [t, i]));
+
+      // 点イベント（期間でない）のセル内容（色付きの小カード）
+      const pointCard = (ev, name) => {
+        const color = safeColor(colorForChar(name));
+        const tc = textColorFor(color);
+        const flag = ev.flag ? '🚩 ' : '';
+        const body = ev.concealed ? '（非表示中）' : escapeHtml(ev.text);
+        return `<div class="compare-card${ev.flag ? ' flagged' : ''}" style="background:${color}; color:${tc};">${flag}${body}</div>`;
+      };
+
+      // 各人物の列内で、イベントを「レーン（サブ列）」に割り当てる。
+      // 期間どうしが重なるときは、先に登録されたものを外側（左レーン）、
+      // あとから重なったものを内側（右レーン）にして入れ子表示する。
+      const nRows = timeKeys.length;
+      const colLanes = colNames.map(name => {
+        const evs = timed.filter(ev => eventCharNames(ev).includes(name)); // 登録順を保持
+        const occ = [];          // occ[lane][row] = 占有中か
+        const placed = [];       // { ev, lane, startRow, endRow }
+        evs.forEach(ev => {
+          const s = rowIndexOf.get(ev.time);
+          let e = isRangeEvent(ev) ? rowIndexOf.get(ev.endTime) : s;
+          if (e == null || e < s) e = s;
+          let lane = 0;
+          while (true) {
+            if (!occ[lane]) occ[lane] = new Array(nRows).fill(false);
+            let free = true;
+            for (let r = s; r <= e; r++) { if (occ[lane][r]) { free = false; break; } }
+            if (free) break;
+            lane++;
+          }
+          for (let r = s; r <= e; r++) occ[lane][r] = true;
+          placed.push({ ev, lane, startRow: s, endRow: e });
+        });
+        const laneCount = Math.max(1, occ.length);
+        // グリッド化：grid[lane][row] = {kind:'start', ev, span} | {kind:'span'} | null
+        const grid = [];
+        for (let l = 0; l < laneCount; l++) grid[l] = new Array(nRows).fill(null);
+        placed.forEach(p => {
+          grid[p.lane][p.startRow] = { kind: 'start', ev: p.ev, span: p.endRow - p.startRow + 1 };
+          for (let r = p.startRow + 1; r <= p.endRow; r++) grid[p.lane][r] = { kind: 'span' };
+        });
+        return { name, laneCount, grid };
+      });
+
+      let html = '<div class="compare-wrap"><table class="compare-table"><thead><tr>';
+      html += '<th class="time-col">時間</th>';
+      cols.forEach((c, ci) => {
+        const color = safeColor(c.color);
+        html += `<th colspan="${colLanes[ci].laneCount}" style="background:${color}; color:${textColorFor(color)};">${escapeHtml(c.name)}</th>`;
+      });
+      html += '</tr></thead><tbody>';
+
+      timeKeys.forEach((key, i) => {
+        const deathCls = isInDeathRange(key) ? ' compare-time-death' : '';
+        html += `<tr><td class="time-col${deathCls}">${escapeHtml(key)}</td>`;
+        colLanes.forEach(col => {
+          const name = col.name;
+          for (let l = 0; l < col.laneCount; l++) {
+            const cell = col.grid[l][i];
+            if (cell && cell.kind === 'span') continue; // 上のセルのrowspanで埋まっている
+            if (!cell) { html += '<td class="compare-cell compare-lane"></td>'; continue; }
+            const ev = cell.ev;
+            const color = safeColor(colorForChar(name));
+            const tc = textColorFor(color);
+            const flag = ev.flag ? '🚩 ' : '';
+            const body = ev.concealed ? '（非表示中）' : escapeHtml(ev.text);
+            const spanAttr = cell.span > 1 ? ` rowspan="${cell.span}"` : '';
+            if (isRangeEvent(ev)) {
+              html += `<td class="compare-cell compare-lane compare-cell-range"${spanAttr}><div class="compare-range-card${ev.flag ? ' flagged' : ''}" style="background:${color}; color:${tc};"><div class="compare-range-label">${flag}${body}</div></div></td>`;
+            } else {
+              html += `<td class="compare-cell compare-lane"><div class="compare-card${ev.flag ? ' flagged' : ''}" style="background:${color}; color:${tc};">${flag}${body}</div></td>`;
+            }
+          }
+        });
+        html += '</tr>';
+      });
+
+      if (untimed.length > 0) {
+        html += '<tr><td class="time-col">時間なし</td>';
+        colLanes.forEach(col => {
+          const items = untimed.filter(ev => eventCharNames(ev).includes(col.name));
+          html += `<td class="compare-cell" colspan="${col.laneCount}">${items.map(ev => pointCard(ev, col.name)).join('')}</td>`;
+        });
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+      timelineContainer.innerHTML = html;
     }
 
   </script>
