@@ -51,6 +51,9 @@
     .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.8rem; }
     .btn-recolor { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.85rem; line-height: 1; }
     .btn-recolor:hover { background: #dbe4e8; }
+    .btn-edit-char { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.85rem; line-height: 1; }
+    .btn-edit-char:hover { background: #dbe4e8; }
+    .char-name-edit { flex: 1 1 auto; min-width: 0; background: #fff; color: #333; border: 1px solid #94a3b8; border-radius: 4px; padding: 3px 6px; }
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
     .color-picker-wrap { position: relative; display: inline-flex; }
@@ -96,6 +99,7 @@
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
     /* 時間の右側にキャラ名と本文をまとめる。本文が折り返すときは時間の下ではなくキャラ名の開始位置に揃う */
     .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 6px; }
+    .timeline-item.multi-character { background: #c1d2e3; }
     
     .char-badge { font-weight: bold; padding: 4px 10px; border-radius: 20px; font-size: 0.9rem; white-space: nowrap; flex: 0 0 152px; box-sizing: border-box; color: white; display: flex; align-items: center; justify-content: flex-start; gap: 5px; overflow: hidden;}
     .char-badge-empty { background: transparent !important; }
@@ -136,8 +140,13 @@
     .timeline-item.concealed .btn-move-up,
     .timeline-item.concealed .btn-move-down,
     .timeline-item.concealed .btn-delete { display: none; }
-    .concealed-label { display: none; color: #94a3b8; font-size: 0.85rem; font-style: italic; }
+    .concealed-label { display: none; color: inherit; font-size: 0.85rem; font-style: italic; }
     .timeline-item.concealed .concealed-label { display: block; flex: 1 1 auto; }
+    /* 非表示中の目アイコンは、フラグより目立たない暗い青灰色で表示する */
+    .timeline-item.concealed .btn-conceal { background: #cbd5e1; color: #475569; border-color: #94a3b8; filter: grayscale(0.65); opacity: 0.75; }
+    /* 🎨でカード色を隠した場合も、非表示中と同じ控えめな色調に揃える */
+    .timeline-item.concealed.color-hidden .concealed-label { color: #333; }
+    .timeline-item.concealed .btn-color-toggle.active { background: #cbd5e1; color: #475569; border-color: #94a3b8; filter: grayscale(0.65); opacity: 0.75; }
     /* 🎨ボタンは非表示中のカードだけ表示する */
     .btn-color-toggle { display: none; font-size: 0.95rem; line-height: 1; }
     .timeline-item.concealed .btn-color-toggle { display: inline-flex; }
@@ -184,6 +193,7 @@
     .timeline-mode-toggle .mode-btn:first-child { border-radius: 6px 0 0 6px; }
     .timeline-mode-toggle .mode-btn:last-child { border-radius: 0 6px 6px 0; border-left: none; }
     .timeline-mode-toggle .mode-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+    .timeline-mode-toggle .confirm-delete-toggle { margin-left: 10px; }
 
     /* ── 人物比較表示（時間を左端に、選択した人物を列に並べる） ── */
     .compare-wrap { overflow-x: auto; max-width: 100%; border-radius: 6px; }
@@ -197,7 +207,16 @@
     .compare-card { border-radius: 6px; padding: 5px 8px; margin-bottom: 4px; font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
     .compare-card:last-child { margin-bottom: 0; }
     .compare-card.flagged { box-shadow: inset 3px 0 0 #facc15; }
+    .compare-card-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
+    .compare-card-actions button { background: transparent; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; }
+    .compare-card-actions button:hover { background: #e2e8f0; }
+    .compare-card-actions .compare-delete { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
+    .compare-card.concealed .compare-conceal { background: #cbd5e1; color: #475569; border-color: #94a3b8; filter: grayscale(0.65); opacity: 0.75; }
+    .compare-range-fill.concealed .compare-conceal { background: #cbd5e1; color: #475569; border-color: #94a3b8; filter: grayscale(0.65); opacity: 0.75; }
+    .compare-range-fill .compare-card-actions { position: relative; z-index: 1; }
     .compare-empty { color: #cbd5e1; font-size: 0.9rem; padding: 12px 4px; line-height: 1.6; }
+    .compare-concealed-toggle { display: none; }
+    #modeCompareBtn.active ~ .compare-concealed-toggle { display: inline-flex; }
 
     /* ── 期間（開始〜終了）の入力 ── */
     .range-toggle-btn { background: #ecf0f1; color: #333; border: 1px solid #4a627a; border-radius: 4px; padding: 8px 10px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
@@ -214,18 +233,20 @@
     .timeline-item > .timeline-item-inner,
     .timeline-item > .controls,
     .timeline-item > .concealed-label { position: relative; z-index: 1; }
-    .timeline-item .conn-bar { position: absolute; width: 42px; top: 0; bottom: -8px; z-index: 0; background: var(--conn-color, #334155); }
+    /* 線幅25px。階層間は6pxの余白、通常カードとの余白は8px */
+    .timeline-item .conn-bar { position: absolute; width: 25px; top: 0; bottom: -8px; z-index: 0; background: var(--conn-color, #334155); }
     /* すき間（カード間の8px）をまたいで縦線を連続させ、終端では下を閉じる */
     .timeline-item .conn-bar.cap-top { border-top-right-radius: 6px; }
     .timeline-item .conn-bar.cap-bottom { bottom: 0; border-bottom-right-radius: 6px; }
     /* 期間の時刻バッジは「開始〜終了」で少し広め（フォントサイズは変えない） */
     .timeline-item.range-single .time-badge { flex: 0 0 auto; min-width: 60px; }
+    .timeline-item.range-end-card .time-badge { color: #7c8799; }
     .range-badge-sep { margin: 0 2px; opacity: 0.7; }
     /* 人物比較：期間イベントは開始〜終了の行をまたぐ塗りセル（rowspan）で表示 */
-    .compare-table td.compare-cell-range { vertical-align: top; }
-    /* 期間の塗りは内側の角丸ブロックで表現し、点カードと同じく四隅を丸くする */
-    .compare-range-card { border-radius: 6px; padding: 5px 8px; height: 100%; box-sizing: border-box; }
-    .compare-range-card.flagged { box-shadow: inset 3px 0 0 #facc15; }
+    /* 塗りはセル内側に余白を空けた角丸ブロックで表現し、点カードと同じ見た目にする */
+    .compare-table td.compare-cell-range { vertical-align: top; position: relative; padding: 0; }
+    .compare-range-fill { position: absolute; inset: 4px; border-radius: 6px; padding: 5px 8px; box-sizing: border-box; overflow: auto; }
+    .compare-range-fill.flagged { box-shadow: inset 3px 0 0 #facc15; }
     .compare-range-label { font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
     /* 期間が重なるときはレーン（サブ列）に分けて入れ子表示するため、幅を控えめにする */
     .compare-table td.compare-lane { min-width: 120px; }
@@ -233,11 +254,31 @@
     .edit-endtime { flex: 0 0 64px; text-align: center; }
 
     /* ── スマホ版の時系列カード調整 ── */
-    body.view-mobile .timeline-item { flex-wrap: wrap; }
-    body.view-mobile .event-text { flex: 1 1 100%; }
+    body.view-mobile .main-container { flex-direction: column; }
+    body.view-mobile .side-column { order: 1; }
+    body.view-mobile #timelinePanel { order: 2; }
+    body.view-pc .time-badge { align-self: center; }
+    body.view-pc .event-body { align-items: flex-start; }
+    body.view-pc .timeline-item > .controls { align-self: flex-end; }
+    body.view-pc .event-text { flex: 1 1 100%; margin-left: 10px; }
+    body.view-pc .timeline-item { row-gap: 11px; }
+    body.view-mobile .timeline-item { flex-wrap: wrap; align-items: center; row-gap: 8px; }
+    /* スマホ版のみ：名前の横に各操作ボタンを並べる。
+       inner と event-body を display:contents で解除し、カード直下の flex に
+      「時間・名前・本文・操作ボタン（操作ボタンは100%幅で次の行へ）」を並べる。 */
+    body.view-mobile .timeline-item:not(.concealed) > .timeline-item-inner:not(.edit-mode),
+    body.view-mobile .timeline-item:not(.concealed) .event-body { display: contents; }
+    /* inner の z-index が効かなくなるため、コネクタ(.conn-bar)より前面へ個別指定 */
+    body.view-mobile .time-badge,
+    body.view-mobile .char-badges,
+    body.view-mobile .char-badges-empty,
+    body.view-mobile .controls,
+    body.view-mobile .event-text { position: relative; z-index: 1; }
+    body.view-mobile .event-text { flex: 1 1 100%; order: 4; }
     body.view-mobile .char-badge { flex: 0 1 auto; max-width: 100%; }
     body.view-mobile .char-badges { flex: 0 1 auto; max-width: 100%; }
-    body.view-mobile .controls { width: 100%; justify-content: flex-end; margin-top: 4px; }
+    body.view-mobile .char-badges-empty { flex: 0 1 auto; }
+    body.view-mobile .controls { flex: 1 1 100%; justify-content: flex-end; order: 5; }
     body.view-mobile .timeline-item-inner.edit-mode { flex-wrap: wrap; }
     body.view-mobile .edit-text { flex: 1 1 100%; }
 
@@ -251,6 +292,7 @@
     .memo-concealed-label { display: none; }
     #memoPanel.concealed #memoInput { display: none; }
     #memoPanel.concealed .memo-concealed-label { display: block; }
+    #memoPanel.concealed .memo-conceal-btn { background: #cbd5e1; color: #475569; border-color: #94a3b8; filter: grayscale(0.65); opacity: 0.75; }
     #memoInput { min-height: 260px; }
     textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 400px; line-height: 1.6; background: #fff; color: #333; padding: 10px; border-radius: 4px;}
 
@@ -266,11 +308,8 @@
   <!-- 表示モード切替（スマホ版 / PC版）とデータ削除 -->
   <div class="top-bar">
     <div class="data-actions">
-      <label class="confirm-delete-toggle" title="OFFにすると、カードの✕削除時に確認ダイアログを出しません">
-        <input type="checkbox" id="confirmDeleteToggle" onchange="toggleConfirmDelete()">
-        <span>削除時に確認</span>
-      </label>
       <button type="button" class="btn-danger" onclick="clearAllData()" title="キャラクター・メモ・時系列など、すべての保存データを削除します">🗑 全データ削除</button>
+      <button type="button" class="btn-danger" onclick="clearAllCharacters()" title="登録したキャラクターをすべて削除します">👤 全キャラクター削除</button>
       <button type="button" class="btn-danger" onclick="clearAllTimelineData()" title="時系列（タイムライン）のカードだけをすべて削除します">🧹 全タイムラインデータ削除</button>
     </div>
     <div class="view-toggle">
@@ -345,6 +384,14 @@
       <div class="timeline-mode-toggle">
         <button type="button" id="modeListBtn" class="mode-btn active" onclick="setTimelineMode('list')" title="通常のリスト表示">📋 リスト</button>
         <button type="button" id="modeCompareBtn" class="mode-btn" onclick="setTimelineMode('compare')" title="時間を左端に、人物ごとに横に並べて比較">📊 人物比較</button>
+        <label class="confirm-delete-toggle" title="OFFにすると、カードの✕削除時に確認ダイアログを出しません">
+          <input type="checkbox" id="confirmDeleteToggle" onchange="toggleConfirmDelete()">
+          <span>削除時に確認画面を表示</span>
+        </label>
+        <label class="confirm-delete-toggle compare-concealed-toggle" title="人物比較で非表示フラグ付きカードをビューから除外します">
+          <input type="checkbox" id="showConcealedCompareToggle" onchange="toggleShowConcealedCompare()">
+          <span>非表示フラグつきはビューから削除</span>
+        </label>
       </div>
       <div id="timelineContainer"></div>
     </div>
@@ -424,7 +471,8 @@
       view: 'madamisu_view',
       timelineMode: 'madamisu_timeline_mode',
       flagFilter: 'madamisu_flag_filter',
-      confirmDelete: 'madamisu_confirm_delete'
+      confirmDelete: 'madamisu_confirm_delete',
+      showConcealedCompare: 'madamisu_show_concealed_compare'
     };
     // localStorage の入出力ヘルパー（破損・容量超過・プライベートモードでも落ちないように）
     function loadJSON(key, fallback) {
@@ -455,6 +503,7 @@
     let newEventFlag = false; // 新規追加時にフラグを立てるか
     let newEventRange = false; // 新規追加時に「期間（開始〜終了）」で登録するか
     let newEventChars = []; // 新規追加時に選択している人物名（複数可）
+    let editingCharacterIndex = -1;
     // 後方互換：旧データ（character 単数）を characters 配列に移行する
     events.forEach(ev => {
       if (!Array.isArray(ev.characters)) ev.characters = ev.character ? [ev.character] : [];
@@ -473,6 +522,7 @@
     let charFilter = loadJSON(KEYS.charFilter, []); // 絞り込み中の人物名（空なら全表示）
     let flagFilter = localStorage.getItem(KEYS.flagFilter) === 'true'; // フラグ付きのみ表示するか
     let timelineMode = localStorage.getItem(KEYS.timelineMode) || 'list'; // 時系列の表示モード（list / compare）
+    let hideConcealedInCompare = localStorage.getItem(KEYS.showConcealedCompare) === 'true';
     // カード削除時に確認ダイアログを出すか（既定はON。'false' のときだけOFF）
     let confirmDelete = localStorage.getItem(KEYS.confirmDelete) !== 'false';
     // 表示モード（スマホ版 / PC版）。未設定なら画面幅で自動判定
@@ -487,6 +537,7 @@
     applyView();
     applyMemoConceal();
     document.getElementById('confirmDeleteToggle').checked = confirmDelete;
+    document.getElementById('showConcealedCompareToggle').checked = hideConcealedInCompare;
     populateDeathSelects();
     updateDeathToggleBtn();
     updateDeathWarn();
@@ -530,6 +581,7 @@
       currentView = v;
       safeSet(KEYS.view, v);
       applyView();
+      alignControlsToShortestCard();
     }
 
     // すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除する
@@ -537,6 +589,21 @@
       if (!confirm('すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除します。\nこの操作は元に戻せません。よろしいですか？')) return;
       try { Object.values(KEYS).forEach(k => localStorage.removeItem(k)); }
       catch (e) { console.warn('データ削除に失敗しました', e); }
+      location.reload();
+    }
+
+    // キャラクターとカード上の登場人物だけをすべて削除する（メモ・カード・各種設定は残す）
+    function clearAllCharacters() {
+      if (!confirm('登録したキャラクターをすべて削除します。\nカード・メモ・その他の設定は残ります。よろしいですか？')) return;
+      try {
+        events.forEach(ev => {
+          ev.characters = [];
+          ev.character = '';
+        });
+        safeSet(KEYS.events, JSON.stringify(events));
+        localStorage.removeItem(KEYS.characters);
+        localStorage.removeItem(KEYS.charFilter);
+      } catch (e) { console.warn('キャラクター削除に失敗しました', e); }
       location.reload();
     }
 
@@ -634,6 +701,48 @@
       saveCharacters();
     }
 
+    function startEditCharacter(index) {
+      editingCharacterIndex = index;
+      renderCharacters();
+      const input = document.querySelector(`#characterNameEdit-${index}`);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    }
+
+    function cancelEditCharacter() {
+      editingCharacterIndex = -1;
+      renderCharacters();
+    }
+
+    function saveEditCharacter(index) {
+      const oldName = characters[index].name;
+      const input = document.getElementById(`characterNameEdit-${index}`);
+      const trimmedName = input ? input.value.trim() : '';
+      if (!trimmedName || trimmedName === oldName) {
+        cancelEditCharacter();
+        return;
+      }
+      if (characters.some((c, i) => i !== index && c.name === trimmedName)) {
+        alert('そのキャラクター名は既に登録されています');
+        return;
+      }
+
+      characters[index].name = trimmedName;
+      events.forEach(ev => {
+        ev.characters = eventCharNames(ev).map(name => name === oldName ? trimmedName : name);
+        ev.character = ev.characters[0] || '';
+      });
+      newEventChars = newEventChars.map(name => name === oldName ? trimmedName : name);
+      charFilter = charFilter.map(name => name === oldName ? trimmedName : name);
+      safeSet(KEYS.events, JSON.stringify(events));
+      safeSet(KEYS.charFilter, JSON.stringify(charFilter));
+      editingCharacterIndex = -1;
+      saveCharacters();
+      renderEvents();
+    }
+
     function deleteCharacter(index) {
       const name = characters[index].name;
       if (!confirm(`キャラクター「${name}」を削除しますか？\nこの人物は各カードの登場人物から外れます（カード自体は残ります）。`)) return;
@@ -688,9 +797,17 @@
       characters.forEach((char, index) => {
         const div = document.createElement('div');
         div.className = 'char-item';
+        const nameHtml = editingCharacterIndex === index
+          ? `<input type="text" class="char-name-edit" id="characterNameEdit-${index}" value="${escapeHtml(char.name)}" aria-label="キャラクター名">`
+          : `<div style="flex-grow: 1;">${escapeHtml(char.name)}</div>`;
+        const editButton = editingCharacterIndex === index
+          ? `<button class="btn-edit-char" onclick="saveEditCharacter(${index})" title="名前を保存">✓</button>
+             <button class="btn-edit-char" onclick="cancelEditCharacter()" title="編集をキャンセル">✕</button>`
+          : `<button class="btn-edit-char" onclick="startEditCharacter(${index})" title="名前を編集">✏️</button>`;
         div.innerHTML = `
           <div class="char-color-dot" style="background: ${safeColor(char.color)};"></div>
-          <div style="flex-grow: 1;">${escapeHtml(char.name)}</div>
+          ${nameHtml}
+          ${editButton}
           <div class="color-picker-wrap">
             <button class="btn-recolor" onclick="toggleCharPalette(event, ${index})" title="色を選び直す">🎨</button>
             <div class="color-palette-popup char-palette" id="charPalette-${index}"></div>
@@ -1025,6 +1142,11 @@
       document.getElementById('modeListBtn').classList.toggle('active', timelineMode === 'list');
       document.getElementById('modeCompareBtn').classList.toggle('active', timelineMode === 'compare');
     }
+    function toggleShowConcealedCompare() {
+      hideConcealedInCompare = document.getElementById('showConcealedCompareToggle').checked;
+      safeSet(KEYS.showConcealedCompare, hideConcealedInCompare);
+      if (timelineMode === 'compare') renderEvents();
+    }
 
     // 使い方（ヘルプ）モーダルの開閉
     function toggleHelp() {
@@ -1276,8 +1398,8 @@
     // 期間コネクタ（コの字の縦バンド）のレイアウトを計算する。
     // 重なった期間は「入れ子（ネスト）」で内側へインデントして表示する。
     function computeConnectorLayout(rows) {
-      const CONN_STEP = 42; // バンド1本の幅（＝インデント量）
-      const CONN_GAP = 10;  // 内容とバンドの間の余白
+      const CONN_STEP = 31; // 線幅25px＋線同士の余白6px
+      const CONN_GAP = 7;   // 通常カードとコネクタ線の間の余白
       const n = rows.length;
       // イベントindex → { start:行位置, end:行位置, ev }
       const posByIndex = new Map();
@@ -1489,6 +1611,28 @@
         appendConnBars(div, bars);
         timelineContainer.appendChild(div);
       });
+      alignControlsToShortestCard();
+    }
+
+    // 幅が最短のカードを基準に、操作アイコン群の右端を揃える
+    function alignControlsToShortestCard() {
+      const controls = [...timelineContainer.querySelectorAll('.timeline-item:not(.range-end-card) .controls')];
+      if (controls.length === 0) return;
+      const pcView = document.body.classList.contains('view-pc');
+      const innerByControls = new Map(controls.map(c => [c, c.closest('.timeline-item')?.querySelector('.timeline-item-inner:not(.edit-mode)')]));
+      controls.forEach(c => {
+        c.style.transform = '';
+        const inner = innerByControls.get(c);
+        if (inner) inner.style.paddingRight = '';
+      });
+      const anchorRight = Math.min(...controls.map(c => c.getBoundingClientRect().right));
+      controls.forEach(c => {
+        const offset = Math.round(anchorRight - c.getBoundingClientRect().right);
+        const inner = innerByControls.get(c);
+        if (pcView && inner && offset < 0) inner.style.paddingRight = `${-offset + 8}px`;
+        const adjustedOffset = Math.round(anchorRight - c.getBoundingClientRect().right);
+        c.style.transform = adjustedOffset ? `translateX(${adjustedOffset}px)` : '';
+      });
     }
 
     // 期間コネクタのバンド（縦の塗り）をカードに追加する
@@ -1522,7 +1666,7 @@
       const colNames = cols.map(c => c.name);
       // 列の人物が1人でも含まれるイベントだけを対象にする（フラグ絞り込み中は🚩のみ）
       const relevant = events.filter(ev =>
-        (!flagFilter || ev.flag) && eventCharNames(ev).some(n => colNames.includes(n)));
+        (!flagFilter || ev.flag) && (!hideConcealedInCompare || !ev.concealed) && eventCharNames(ev).some(n => colNames.includes(n)));
       const timed = relevant.filter(ev => timeToMinutes(ev.time) !== Infinity);
       const untimed = relevant.filter(ev => timeToMinutes(ev.time) === Infinity);
       // 時間行を作る。期間イベントは「開始」も「終了」も時間として認識してまとめる（早い順）
@@ -1534,37 +1678,51 @@
       const timeKeys = [...timeSet].sort((a, b) => timeToMinutes(a) - timeToMinutes(b));
       const rowIndexOf = new Map(timeKeys.map((t, i) => [t, i]));
 
+      const compareBody = ev => ev.concealed ? '（非表示中）' : escapeHtml(ev.text);
+      const compareActions = ev => {
+        const index = events.indexOf(ev);
+        return `<div class="compare-card-actions">
+          <button type="button" class="compare-conceal" onclick="toggleEventConceal(${index})" title="内容の表示/非表示">👁️</button>
+          <button type="button" class="compare-delete" onclick="deleteEvent(${index})" title="削除">✕</button>
+        </div>`;
+      };
+      const compareCardClass = ev => `compare-card${ev.flag ? ' flagged' : ''}${ev.concealed ? ' concealed' : ''}`;
+
       // 点イベント（期間でない）のセル内容（色付きの小カード）
       const pointCard = (ev, name) => {
         const color = safeColor(colorForChar(name));
         const tc = textColorFor(color);
         const flag = ev.flag ? '🚩 ' : '';
-        const body = ev.concealed ? '（非表示中）' : escapeHtml(ev.text);
-        return `<div class="compare-card${ev.flag ? ' flagged' : ''}" style="background:${color}; color:${tc};">${flag}${body}</div>`;
+        return `<div class="${compareCardClass(ev)}" style="background:${color}; color:${tc};">${flag}${compareBody(ev)}${compareActions(ev)}</div>`;
       };
 
       // 各人物の列内で、イベントを「レーン（サブ列）」に割り当てる。
-      // 期間どうしが重なるときは、先に登録されたものを外側（左レーン）、
-      // あとから重なったものを内側（右レーン）にして入れ子表示する。
+      // 期間と通常カードは別グループとしてレーンを分け、両方ある場合も
+      // 同じ人物欄の中でそれぞれを確認できるようにする。
+      // 同じグループ内で重なるときは、先に登録されたものを左レーンに置く。
       const nRows = timeKeys.length;
       const colLanes = colNames.map(name => {
         const evs = timed.filter(ev => eventCharNames(ev).includes(name)); // 登録順を保持
         const occ = [];          // occ[lane][row] = 占有中か
         const placed = [];       // { ev, lane, startRow, endRow }
-        evs.forEach(ev => {
-          const s = rowIndexOf.get(ev.time);
-          let e = isRangeEvent(ev) ? rowIndexOf.get(ev.endTime) : s;
-          if (e == null || e < s) e = s;
-          let lane = 0;
-          while (true) {
-            if (!occ[lane]) occ[lane] = new Array(nRows).fill(false);
-            let free = true;
-            for (let r = s; r <= e; r++) { if (occ[lane][r]) { free = false; break; } }
-            if (free) break;
-            lane++;
-          }
-          for (let r = s; r <= e; r++) occ[lane][r] = true;
-          placed.push({ ev, lane, startRow: s, endRow: e });
+        // 期間を左、通常カードを右に固定するため、グループ単位で配置する。
+        [evs.filter(isRangeEvent), evs.filter(ev => !isRangeEvent(ev))].forEach(group => {
+          const groupStartLane = occ.length;
+          group.forEach(ev => {
+            const s = rowIndexOf.get(ev.time);
+            let e = isRangeEvent(ev) ? rowIndexOf.get(ev.endTime) : s;
+            if (e == null || e < s) e = s;
+            let lane = groupStartLane;
+            while (true) {
+              if (!occ[lane]) occ[lane] = new Array(nRows).fill(false);
+              let free = true;
+              for (let r = s; r <= e; r++) { if (occ[lane][r]) { free = false; break; } }
+              if (free) break;
+              lane++;
+            }
+            for (let r = s; r <= e; r++) occ[lane][r] = true;
+            placed.push({ ev, lane, startRow: s, endRow: e });
+          });
         });
         const laneCount = Math.max(1, occ.length);
         // グリッド化：grid[lane][row] = {kind:'start', ev, span} | {kind:'span'} | null
@@ -1598,12 +1756,12 @@
             const color = safeColor(colorForChar(name));
             const tc = textColorFor(color);
             const flag = ev.flag ? '🚩 ' : '';
-            const body = ev.concealed ? '（非表示中）' : escapeHtml(ev.text);
+            const body = compareBody(ev);
             const spanAttr = cell.span > 1 ? ` rowspan="${cell.span}"` : '';
             if (isRangeEvent(ev)) {
-              html += `<td class="compare-cell compare-lane compare-cell-range"${spanAttr}><div class="compare-range-card${ev.flag ? ' flagged' : ''}" style="background:${color}; color:${tc};"><div class="compare-range-label">${flag}${body}</div></div></td>`;
+              html += `<td class="compare-cell compare-lane compare-cell-range"${spanAttr}><div class="compare-range-fill${ev.flag ? ' flagged' : ''}${ev.concealed ? ' concealed' : ''}" style="background:${color}; color:${tc};"><div class="compare-range-label">${flag}${body}</div>${compareActions(ev)}</div></td>`;
             } else {
-              html += `<td class="compare-cell compare-lane"><div class="compare-card${ev.flag ? ' flagged' : ''}" style="background:${color}; color:${tc};">${flag}${body}</div></td>`;
+              html += `<td class="compare-cell compare-lane"><div class="${compareCardClass(ev)}" style="background:${color}; color:${tc};">${flag}${body}${compareActions(ev)}</div></td>`;
             }
           }
         });
