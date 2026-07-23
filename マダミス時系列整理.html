@@ -276,9 +276,17 @@
     .compare-card { border-radius: 6px; padding: 5px 8px; margin-bottom: 4px; font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
     .compare-card:last-child { margin-bottom: 0; }
     .compare-card.flagged { box-shadow: inset 3px 0 0 #eaff00, inset 4px 0 0 rgba(255,255,255,0.85); }
-    /* 時間不詳カードの左端の🕐（時間を登録する）ボタン */
-    /* 時計（🕒）は他のアクションボタンと同じ見た目（.compare-card-actions button）を継承する */
-    .compare-time-input { width: 58px; font-size: 0.8rem; padding: 1px 4px; border: 1px solid #94a3b8; border-radius: 4px; vertical-align: baseline; }
+    .compare-card, .compare-range-fill { box-sizing: border-box; }
+    /* 人物比較ビューのカード内インライン編集（✏️） */
+    .compare-edit { display: flex; flex-direction: column; gap: 5px; }
+    /* できごと（内容）は、カードを直接書き換えているような大きめの編集ビュー */
+    .compare-edit-text { width: 100%; box-sizing: border-box; min-height: 3.4em; resize: vertical; font-size: 0.9rem; line-height: 1.4; padding: 6px 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; color: #1e293b; font-family: inherit; }
+    /* 時間（開始・終了）は小さめの枠を上下に並べる */
+    .compare-edit-time, .compare-edit-endtime { flex: 0 0 auto; align-self: flex-start; width: 92px; box-sizing: border-box; font-size: 0.8rem; padding: 2px 6px; border: 1px solid #94a3b8; border-radius: 4px; background: #fff; color: #1e293b; text-align: center; }
+    .compare-edit-actions { display: flex; justify-content: flex-end; gap: 4px; }
+    .compare-edit-actions button { background: #fff; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 8px; line-height: 1; color: #1e293b; }
+    .compare-edit-actions .compare-edit-save { background: #dcfce7; border-color: #86efac; color: #16a34a; }
+    .compare-edit-actions button:hover { filter: brightness(0.95); }
     .compare-card-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
     .compare-card-actions button { background: transparent; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; }
     .compare-card-actions button:hover { background: #e2e8f0; }
@@ -335,8 +343,10 @@
     .compare-range-fill { position: absolute; inset: 4px; border-radius: 6px; padding: 5px 8px; box-sizing: border-box; overflow: auto; }
     .compare-range-fill.flagged { box-shadow: inset 3px 0 0 #eaff00, inset 4px 0 0 rgba(255,255,255,0.85); }
     .compare-range-label { font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
-    /* 期間が重なるときはレーン（サブ列）に分けて入れ子表示するため、幅を控えめにする */
-    .compare-table td.compare-lane { min-width: 120px; }
+    /* どんなに内容が少なくても、操作アイコン（✏️🚩👁️✕の4つ）＋余白が必ず入る横幅を確保する。
+       時間不明カード（⬆⬇付き＝6つのアイコン）を含む列はさらに広い最小幅にする。 */
+    .compare-table td.compare-lane { min-width: 152px; }
+    .compare-table td.compare-lane-untimed { min-width: 232px; }
     .range-sep-edit { display: inline-flex; align-items: center; color: #94a3b8; }
     .edit-endtime { flex: 0 0 64px; text-align: center; }
 
@@ -786,7 +796,7 @@
     }
     function isTimeField(el) {
       return el.id === 'timeInput' || el.id === 'endTimeInput'
-        || (el.classList && (el.classList.contains('edit-time') || el.classList.contains('edit-endtime') || el.classList.contains('compare-time-input')));
+        || (el.classList && (el.classList.contains('edit-time') || el.classList.contains('edit-endtime')));
     }
 
     // 時間入力欄（追加・編集）は入力したそばから全角→半角にし、4桁そろえば「:」を自動挿入する
@@ -1679,45 +1689,59 @@
       saveEvents();
     }
 
-    // 人物比較ビューで、時間不詳カードの🕐を押して時間を登録する
-    function startCompareTimeEdit(index, btn) {
-      const card = btn.closest('.compare-card');
-      if (!card || card.querySelector('.compare-time-input')) return; // すでに編集中なら何もしない
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'compare-time-input';
-      input.placeholder = '時間';
-      input.dataset.enterCount = '0';
-      input.onkeydown = (e) => handleCompareTimeKeydown(e, index);
-      // 保存せずに他をクリックしたら編集を閉じる
-      input.onblur = () => { if (input.dataset.saving !== '1') renderEvents(); };
-      btn.after(input);
-      input.focus();
+    // 人物比較ビューで、カードの✏️を押してその場で時間・できごとを編集する
+    function startCompareEdit(index, btn) {
+      const card = btn.closest('.compare-card, .compare-range-fill');
+      if (!card || card.querySelector('.compare-edit')) return; // すでに編集中なら何もしない
+      const ev = events[index];
+      const endField = isRangeEvent(ev)
+        ? `<input type="text" class="edit-endtime compare-edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="終了" onkeydown="handleCompareEditKeydown(event, ${index})">`
+        : '';
+      card.innerHTML = `<div class="compare-edit">
+        <textarea class="compare-edit-text" placeholder="できごと" onkeydown="handleCompareEditKeydown(event, ${index})">${escapeHtml(ev.text || '')}</textarea>
+        <input type="text" class="edit-time compare-edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleCompareEditKeydown(event, ${index})">
+        ${endField}
+        <div class="compare-edit-actions">
+          <button type="button" class="compare-edit-save" onclick="saveCompareEdit(${index}, this)" title="保存">✓</button>
+          <button type="button" class="compare-edit-cancel" onclick="renderEvents()" title="取消">✕</button>
+        </div>
+      </div>`;
+      const textEl = card.querySelector('.compare-edit-text');
+      textEl.focus();
+      textEl.select();
     }
 
-    // 🕐の時間入力欄で Enter を連続2回押したら保存する（Escで取消）
-    function handleCompareTimeKeydown(e, index) {
+    // 比較ビューの編集欄で Enter を連続2回押したら保存する（Escで取消）
+    function handleCompareEditKeydown(e, index) {
       const el = e.target;
-      if (e.key === 'Escape') { e.preventDefault(); el.dataset.saving = '1'; renderEvents(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); renderEvents(); return; }
       if (e.key !== 'Enter') { el.dataset.enterCount = '0'; return; }
       e.preventDefault();
       if (e.repeat) return; // 長押しの自動リピートでは保存しない
       const n = (parseInt(el.dataset.enterCount || '0', 10)) + 1;
-      if (n >= 2) { el.dataset.enterCount = '0'; el.dataset.saving = '1'; saveCompareTimeEdit(index, el); return; }
+      if (n >= 2) { el.dataset.enterCount = '0'; saveCompareEdit(index, el); return; }
       el.dataset.enterCount = String(n);
     }
 
-    // 🕐で入力された時間を登録する（正しい時刻のときだけ。空・不正なら不詳のまま）
-    function saveCompareTimeEdit(index, inputEl) {
-      const val = normalizeTime(inputEl.value);
-      if (val && timeToMinutes(val) !== Infinity) {
-        events[index].time = val;
-        delete events[index].anchor; // 時刻が入ったら手動位置は不要
-        sortEvents();
-        saveEvents();
-      } else {
-        renderEvents(); // 登録せず編集を閉じる
+    // 比較ビューの編集内容を保存する（時間・終了時間・できごと。人物はカードでは変更しない）
+    function saveCompareEdit(index, el) {
+      const card = el.closest('.compare-card, .compare-range-fill');
+      const timeEl = card.querySelector('.compare-edit-time');
+      const endEl = card.querySelector('.compare-edit-endtime');
+      const textEl = card.querySelector('.compare-edit-text');
+      const newText = textEl.value.trim();
+      if (!newText) { alert('内容を入力してください'); return; }
+      events[index].time = normalizeTime(timeEl.value);
+      events[index].text = newText;
+      // 終了時刻：入力があれば期間イベントに、空なら単一時刻に戻す
+      if (endEl) {
+        const nt = normalizeTime(endEl.value);
+        events[index].endTime = (nt && timeToMinutes(nt) !== Infinity) ? nt : '';
       }
+      // 時刻が入ったら手動位置（anchor）は不要
+      if (timeToMinutes(events[index].time) !== Infinity) delete events[index].anchor;
+      sortEvents();
+      saveEvents();
     }
 
     // カードを編集モードにする
@@ -2210,14 +2234,12 @@
       const compareBody = ev => ev.concealed ? '（非表示中）' : escapeHtml(ev.text);
       const compareActions = (ev, withMove) => {
         const index = indexOfEv.get(ev);
-        // 時間欄に数字が入っていないカードだけ、⬆⬇の左に🕒（押すと時間を登録できる）を出す
-        const setBtn = (withMove && !/[0-9０-９]/.test(String(ev.time || '')))
-          ? `<button type="button" class="compare-set-time" onclick="startCompareTimeEdit(${index}, this)" title="時間を登録">🕒</button>`
-          : '';
+        // リストと同じ「編集（✏️）」ボタン（時間・できごとを編集）
+        const editBtn = `<button type="button" class="compare-edit-btn" onclick="startCompareEdit(${index}, this)" title="時間・内容を編集">✏️</button>`;
         const moveBtns = withMove
           ? `<button type="button" class="btn-move-up" onclick="moveUnknownEvent(${index}, -1)" title="1つ上へ移動">⬆︎</button><button type="button" class="btn-move-down" onclick="moveUnknownEvent(${index}, 1)" title="1つ下へ移動">⬇︎</button>`
           : '';
-        return `<div class="compare-card-actions">${setBtn}${moveBtns}
+        return `<div class="compare-card-actions">${editBtn}${moveBtns}
           <button type="button" class="compare-flag${ev.flag ? ' active' : ''}" onclick="toggleEventFlag(${index})" title="フラグ切り替え">🚩</button>
           <button type="button" class="compare-conceal" onclick="toggleEventConceal(${index})" title="内容の表示/非表示">👁️</button>
           <button type="button" class="compare-delete" onclick="deleteEvent(${index})" title="削除">✕</button>
@@ -2229,8 +2251,7 @@
       const pointCard = (ev, name) => {
         const color = safeColor(colorForChar(name));
         const tc = textColorFor(color);
-        const flag = ev.flag ? '🚩 ' : '';
-        return `<div class="${compareCardClass(ev)}" style="background:${color}; color:${tc};">${flag}${compareBody(ev)}${compareActions(ev, true)}</div>`;
+        return `<div class="${compareCardClass(ev)}" style="background:${color}; color:${tc};">${compareBody(ev)}${compareActions(ev, true)}</div>`;
       };
 
       // イベントが占める行の範囲（renderRows 上の位置）を返す
@@ -2305,16 +2326,15 @@
             const ev = cell.ev;
             const color = safeColor(colorForChar(name));
             const tc = textColorFor(color);
-            const flag = ev.flag ? '🚩 ' : '';
             const body = compareBody(ev);
             const spanAttr = cell.span > 1 ? ` rowspan="${cell.span}"` : '';
             if (isRangeEvent(ev)) {
-              html += `<td class="compare-cell compare-lane compare-cell-range"${spanAttr}><div class="compare-range-fill${ev.flag ? ' flagged' : ''}${ev.concealed ? ' concealed' : ''}" style="background:${color}; color:${tc};"><div class="compare-range-label">${flag}${body}</div>${compareActions(ev)}</div></td>`;
+              html += `<td class="compare-cell compare-lane compare-cell-range"${spanAttr}><div class="compare-range-fill${ev.flag ? ' flagged' : ''}${ev.concealed ? ' concealed' : ''}" style="background:${color}; color:${tc};"><div class="compare-range-label">${body}</div>${compareActions(ev)}</div></td>`;
             } else if (timeToMinutes(ev.time) === Infinity) {
               // 時間不詳カード（時間軸に差し込んだ時間なしカード）。⬆⬇で位置を変えられる
-              html += `<td class="compare-cell compare-lane"><div class="${compareCardClass(ev)}" style="background:${color}; color:${tc};">${flag}${body}${compareActions(ev, true)}</div></td>`;
+              html += `<td class="compare-cell compare-lane compare-lane-untimed"><div class="${compareCardClass(ev)}" style="background:${color}; color:${tc};">${body}${compareActions(ev, true)}</div></td>`;
             } else {
-              html += `<td class="compare-cell compare-lane"><div class="${compareCardClass(ev)}" style="background:${color}; color:${tc};">${flag}${body}${compareActions(ev)}</div></td>`;
+              html += `<td class="compare-cell compare-lane"><div class="${compareCardClass(ev)}" style="background:${color}; color:${tc};">${body}${compareActions(ev)}</div></td>`;
             }
           }
         });
@@ -2325,7 +2345,9 @@
         html += '<tr><td class="time-col">時間なし</td>';
         colLanes.forEach(col => {
           const items = bottomUntimed.filter(ev => eventCharNames(ev).includes(col.name));
-          html += `<td class="compare-cell" colspan="${col.laneCount}">${items.map(ev => pointCard(ev, col.name)).join('')}</td>`;
+          // 時間なしカード（⬆⬇付き＝6アイコン）がある列は広い最小幅にする
+          const untimedCls = items.length > 0 ? ' compare-lane-untimed' : '';
+          html += `<td class="compare-cell${untimedCls}" colspan="${col.laneCount}">${items.map(ev => pointCard(ev, col.name)).join('')}</td>`;
         });
         html += '</tr>';
       }
