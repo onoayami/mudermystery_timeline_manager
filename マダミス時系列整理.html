@@ -20,6 +20,15 @@
     .confirm-delete-toggle input { cursor: pointer; }
     .btn-danger { background: #7f1d1d; color: #fecaca; border: 1px solid #b91c1c; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
     .btn-danger:hover { background: #991b1b; color: #fff; }
+    /* データの書き出し・読み込みボタン */
+    .btn-data { background: #14532d; color: #bbf7d0; border: 1px solid #16a34a; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+    .btn-data:hover { background: #166534; color: #fff; }
+    /* 取り込みボタンと全データ削除ボタンの間の余白 */
+    .data-actions-gap { margin-left: 16px; }
+    /* スマホ版では取り込みと全データ削除の間で改行する */
+    .data-actions-break { display: none; width: 0; }
+    body.view-mobile .data-actions-break { display: block; flex-basis: 100%; width: 100%; height: 0; }
+    body.view-mobile .data-actions-gap { margin-left: 0; }
 
     /* 表示モード切替トグル */
     .view-toggle { display: flex; justify-content: flex-end; }
@@ -162,6 +171,11 @@
     .char-badges.expanded .char-badge.badge-hidden { display: flex; }
     .badge-more { background: #e2e8f0; color: #334155; border: 1px dashed #94a3b8; border-radius: 20px; font-size: 0.8rem; padding: 2px 8px; cursor: pointer; width: 100%; box-sizing: border-box; text-align: center; }
     .badge-more:hover { background: #cbd5e1; }
+    /* PC版のみ：複数人カードは人物バッジを横並びにし、全員表示。内容テキストと同じ幅で折り返す */
+    body.view-pc .timeline-item.multi-character .char-badges { flex: 1 1 100%; flex-direction: row; flex-wrap: wrap; align-content: flex-start; gap: 6px; }
+    body.view-pc .timeline-item.multi-character .char-badges .char-badge { flex: 0 0 auto; width: auto; max-width: 100%; }
+    body.view-pc .timeline-item.multi-character .char-badges .char-badge.badge-hidden { display: flex; }
+    body.view-pc .timeline-item.multi-character .badge-more { display: none; }
     /* 非表示中の色隠しで、バッジもまとめてグレーアウト */
     .timeline-item.color-hidden .char-badge { background: #e5e7eb !important; color: #9ca3af !important; }
 
@@ -318,7 +332,11 @@
   <!-- 表示モード切替（スマホ版 / PC版）とデータ削除 -->
   <div class="top-bar">
     <div class="data-actions">
-      <button type="button" class="btn-danger" onclick="clearAllData()" title="キャラクター・メモ・時系列など、すべての保存データを削除します">🗑 全データ削除</button>
+      <button type="button" class="btn-data" onclick="exportData()" title="すべての保存データをファイルに書き出します（バックアップ・共有用）">⬆️ 書き出し</button>
+      <button type="button" class="btn-data" onclick="document.getElementById('importFileInput').click()" title="書き出したファイルを読み込んで、現在のデータを置き換えます">⬇️ 取り込み</button>
+      <input type="file" id="importFileInput" accept="application/json,.json" style="display:none" onchange="importData(this)">
+      <div class="data-actions-break"></div>
+      <button type="button" class="btn-danger data-actions-gap" onclick="clearAllData()" title="キャラクター・メモ・時系列など、すべての保存データを削除します">🗑 全データ削除</button>
       <button type="button" class="btn-danger" onclick="clearAllCharacters()" title="登録したキャラクターをすべて削除します">👤 全キャラクター削除</button>
       <button type="button" class="btn-danger" onclick="clearAllTimelineData()" title="時系列（タイムライン）のカードだけをすべて削除します">🧹 全タイムラインデータ削除</button>
     </div>
@@ -631,6 +649,74 @@
       safeSet(KEYS.view, v);
       applyView();
       alignControlsToShortestCard();
+    }
+
+    // すべての保存データをJSONファイルに書き出す（バックアップ・別端末への移動用）
+    function exportData() {
+      try {
+        const data = { app: 'madamisu', version: 1, exportedAt: new Date().toISOString(), data: {} };
+        Object.values(KEYS).forEach(key => {
+          const val = localStorage.getItem(key);
+          if (val !== null) data.data[key] = val;
+        });
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+        a.href = url;
+        a.download = `マダミス時系列_${stamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      } catch (e) {
+        console.warn('エクスポートに失敗しました', e);
+        alert('エクスポートに失敗しました。');
+      }
+    }
+
+    // 書き出したJSONファイルを読み込み、現在のデータを置き換える
+    function importData(input) {
+      const file = input.files && input.files[0];
+      input.value = ''; // 同じファイルを続けて選べるようにリセット
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        let parsed;
+        try {
+          parsed = JSON.parse(reader.result);
+        } catch (e) {
+          alert('読み込みに失敗しました。正しいエクスポートファイルを選んでください。');
+          return;
+        }
+        const payload = parsed && parsed.data;
+        if (!payload || typeof payload !== 'object' || parsed.app !== 'madamisu') {
+          alert('このアプリのエクスポートファイルではないようです。');
+          return;
+        }
+        const validKeys = Object.values(KEYS);
+        const importable = Object.keys(payload).filter(k => validKeys.includes(k));
+        if (importable.length === 0) {
+          alert('読み込めるデータが含まれていませんでした。');
+          return;
+        }
+        if (!confirm('現在の保存データを、選んだファイルの内容で置き換えます。\nこの操作は元に戻せません。よろしいですか？')) return;
+        try {
+          validKeys.forEach(k => localStorage.removeItem(k));
+          importable.forEach(k => {
+            const v = payload[k];
+            if (typeof v === 'string') localStorage.setItem(k, v);
+          });
+        } catch (e) {
+          console.warn('インポートに失敗しました', e);
+          alert('インポートに失敗しました（ブラウザの容量制限などの可能性があります）。');
+          return;
+        }
+        location.reload();
+      };
+      reader.onerror = () => alert('ファイルの読み込みに失敗しました。');
+      reader.readAsText(file);
     }
 
     // すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除する
@@ -1537,8 +1623,12 @@
     }
 
     // 期間バンドの色。1人ならその人物色（開始・終了カードの色と繋がってコの字に見える）、それ以外は既定色
+    // 🎨（色の不可視化）中は、開始カードと同じグレーに揃えてコネクター・終了カードも一緒に色を隠す
+    // 複数人のときは開始カード（.multi-character）と同じ中立色に揃えて繋げる
     function rangeColor(ev) {
+      if (ev.colorHidden) return '#e5e7eb';
       const names = eventCharNames(ev);
+      if (names.length >= 2) return '#e2e8f0';
       return names.length ? colorForChar(names[0]) : '#94a3b8';
     }
     function renderEvents() {
@@ -1571,6 +1661,8 @@
         if (kind === 'end') {
           if (isInDeathRange(ev.endTime)) div.classList.add('in-death-range');
           div.classList.add('range-end-card');
+          // 🎨で色を隠しているときは、開始カードと同じグレーに揃える
+          if (ev.colorHidden) div.classList.add('color-hidden');
           // 終了カードも開始カードと同じ人物色で塗る
           div.style.setProperty('--conn-color', rangeColor(ev));
           if (names.length === 1 && indexMap.has(names[0])) div.classList.add(`char-idx-${indexMap.get(names[0])}`);
