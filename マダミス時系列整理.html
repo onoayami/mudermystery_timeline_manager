@@ -24,8 +24,8 @@
        表示モード切替だけを右端に保つ */
      body.view-pc .top-bar { justify-content: flex-start; flex-wrap: nowrap; }
      body.view-pc .view-toggle { margin-left: auto; flex: 0 0 auto; }
-    .session-data-toggle { background: #34495e; color: #cbd5e1; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
-    .session-data-toggle:hover { background: #405a70; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.38); }
+    .session-data-toggle { background: #34495e; color: #cbd5e1; border: 1px solid #4a627a; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+    .session-data-toggle:hover { background: #405a70; color: #fff; }
     /* データ削除ボタン（危険操作） */
     .data-actions { display: none; gap: 8px; flex-wrap: wrap; align-items: center; }
     .data-actions.open { display: flex; }
@@ -97,7 +97,9 @@
     .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff; }
     .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; }
     .btn-unlock-char { background: #fef9c3; }
-    .btn-delete-char, .btn-recolor, .btn-edit-char { width: 25px; height: 21px; padding: 0; font-size: 0.8rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-delete-char, .btn-recolor, .btn-edit-char { flex: 0 0 25px; width: 25px; height: 21px; box-sizing: border-box; padding: 0; font-size: 0.8rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+    .char-action-icon { position: relative; top: 1px; display: block; line-height: 1; }
+    .btn-cancel-char .char-action-icon { top: 2px; }
     .btn-recolor { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; }
     .btn-recolor:hover { background: #dbe4e8; }
     .btn-edit-char { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; }
@@ -1282,24 +1284,24 @@
             <div class="char-color-dot" style="background: ${safeColor(char.color)};"></div>
             ${nameHtml}
             <div class="color-picker-wrap">
-              <button class="btn-recolor" onclick="toggleCharPalette(event, ${index})" title="色を選び直す">🎨</button>
+              <button class="btn-recolor" onclick="toggleCharPalette(event, ${index})" title="色を選び直す"><span class="char-action-icon">🎨</span></button>
               <div class="color-palette-popup char-palette" id="charPalette-${index}"></div>
             </div>
-            <button class="btn-edit-char btn-save-char" onclick="saveEditCharacter(${index})" title="名前を保存">✓</button>
-            <button class="btn-edit-char btn-cancel-char" onclick="cancelEditCharacter()" title="編集をキャンセル">↩︎</button>
+            <button class="btn-edit-char btn-save-char" onclick="saveEditCharacter(${index})" title="名前を保存"><span class="char-action-icon">✓</span></button>
+            <button class="btn-edit-char btn-cancel-char" onclick="cancelEditCharacter()" title="編集をキャンセル"><span class="char-action-icon">↩︎</span></button>
           `;
           characterList.appendChild(div);
           return;
         }
         const deleteButton = char.locked
-          ? `<button class="btn-delete-char btn-unlock-char" onclick="unlockCharacter(${index})" title="ロック解除">🔐</button>`
-          : `<button class="btn-delete-char" onclick="deleteCharacter(${index})" title="削除">✕</button>`;
+          ? `<button class="btn-delete-char btn-unlock-char" onclick="unlockCharacter(${index})" title="ロック解除"><span class="char-action-icon">🔐</span></button>`
+          : `<button class="btn-delete-char" onclick="deleteCharacter(${index})" title="削除"><span class="char-action-icon">✕</span></button>`;
         const editIconButton = char.locked
           ? ''
-          : `<button class="btn-edit-char" onclick="startEditCharacter(${index})" title="名前を編集">✏️</button>`;
+          : `<button class="btn-edit-char" onclick="startEditCharacter(${index})" title="名前を編集"><span class="char-action-icon">✏️</span></button>`;
         const lockButton = char.locked
           ? ''
-          : `<button class="btn-edit-char" onclick="lockCharacter(${index})" title="ロックして編集・削除を防ぐ">🔓</button>`;
+          : `<button class="btn-edit-char" onclick="lockCharacter(${index})" title="ロックして編集・削除を防ぐ"><span class="char-action-icon">🔓</span></button>`;
         div.innerHTML = `
           <div class="char-color-dot" style="background: ${safeColor(char.color)};"></div>
           ${nameHtml}
