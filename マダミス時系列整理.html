@@ -907,6 +907,9 @@
           return;
         }
         if (!confirm('現在の保存データを、選んだファイルの内容で置き換えます。\nこの操作は元に戻せません。よろしいですか？')) return;
+        // 途中で失敗しても元に戻せるよう、既存の値を退避しておく
+        const backup = {};
+        validKeys.forEach(k => { backup[k] = localStorage.getItem(k); });
         try {
           validKeys.forEach(k => localStorage.removeItem(k));
           importable.forEach(k => {
@@ -915,7 +918,14 @@
           });
         } catch (e) {
           console.warn('インポートに失敗しました', e);
-          alert('インポートに失敗しました（ブラウザの容量制限などの可能性があります）。');
+          // 部分的に書き換わった状態を、退避しておいた元の内容へ戻す
+          try {
+            validKeys.forEach(k => localStorage.removeItem(k));
+            validKeys.forEach(k => { if (backup[k] !== null) localStorage.setItem(k, backup[k]); });
+          } catch (restoreErr) {
+            console.warn('元データの復元にも失敗しました', restoreErr);
+          }
+          alert('インポートに失敗しました（ブラウザの容量制限などの可能性があります）。元のデータのままにしました。');
           return;
         }
         location.reload();
@@ -1076,8 +1086,11 @@
       });
       newEventChars = newEventChars.map(name => name === oldName ? trimmedName : name);
       charFilter = charFilter.map(name => name === oldName ? trimmedName : name);
+      // 比較ビューの列の並び順も旧名→新名へ置き換える（並べ替えた順序が失われないように）
+      compareOrder = compareOrder.map(name => name === oldName ? trimmedName : name);
       safeSet(KEYS.events, JSON.stringify(events));
       safeSet(KEYS.charFilter, JSON.stringify(charFilter));
+      safeSet(KEYS.compareOrder, JSON.stringify(compareOrder));
       editingCharacterIndex = -1;
       saveCharacters();
       renderEvents();
@@ -1944,7 +1957,7 @@
       if (ev.colorHidden) return '#e5e7eb';
       const names = eventCharNames(ev);
       if (names.length >= 2) return '#e2e8f0';
-      return names.length ? colorForChar(names[0]) : '#94a3b8';
+      return safeColor(names.length ? colorForChar(names[0]) : '#94a3b8');
     }
     function renderEvents() {
       // 人物比較モードのときは専用の描画に切り替える
@@ -2259,8 +2272,10 @@
         if (timeToMinutes(ev.time) === Infinity) { const p = posOfUnknownEv.get(ev); return [p, p]; }
         const s = posOfTime.get(ev.time);
         let e = isRangeEvent(ev) ? posOfTime.get(ev.endTime) : s;
-        if (e == null || e < s) e = s;
-        return [s, e];
+        if (e == null) e = s;
+        // 終了が開始より前（日またぎ）の期間でも、リスト表示と同じように
+        // 開始〜終了の間の行をすべて覆うよう、上下を正規化して範囲を返す
+        return [Math.min(s, e), Math.max(s, e)];
       };
 
       // 各人物の列内で、イベントを「レーン（サブ列）」に割り当てる。
