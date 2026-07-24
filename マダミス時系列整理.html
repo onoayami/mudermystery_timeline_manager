@@ -135,7 +135,9 @@
     .color-palette-popup .color-swatch.selected { border-color: #fff; box-shadow: 0 0 0 2px #3b82f6; }
     
     /* 時系列パネル */
-    #timelinePanel { flex: 1; min-width: 0; } /* min-width: 0 は重要 */
+    /* 左パディングを広げて（15px→27px）、死亡推定時刻の赤バー専用の溝を作る。
+       右も27pxにして左右対称に。パネル内の入力欄・絞り込み・カードが全部一緒にずれるので、縦のラインは揃ったまま */
+    #timelinePanel { flex: 1; min-width: 0; padding-left: 27px; padding-right: 27px; } /* min-width: 0 は重要 */
     .timeline-header { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; margin-bottom: 12px; }
     .timeline-header h2 { margin-bottom: 0; }
     .timeline-title { display: flex; align-items: center; gap: 8px; }
@@ -152,7 +154,7 @@
     .death-range #deathToM { margin-right: 2px; }
     .death-range .tilde { color: #cbd5e1; padding: 0 4px; line-height: 1; }
     .btn-death-toggle { border: 1px solid #64748b; border-radius: 999px; padding: 5px 16px; cursor: pointer; font-weight: bold; white-space: nowrap; background: #64748b; color: #fff; min-width: 54px; }
-    .btn-death-toggle.active { background: #b91c1c; border-color: #b91c1c; }
+    .btn-death-toggle.active { background: #D1383F; border-color: #D1383F; }
     .death-warn { display: none; margin: 8px 0 4px; padding: 6px 10px; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; border-radius: 4px; font-size: 0.85rem; }
     .death-warn.show { display: block; }
     /* 使い方（ヘルプ）モーダル */
@@ -167,7 +169,9 @@
     .help-close:hover { background: #e2e8f0; }
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
-    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 16px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
+    /* 縦パディングは6px（フォントやボタンはそのままにカードだけ低くして、画面に多く収める）。
+       margin-bottom: 8px は死亡推定バーの橋渡し（top: -9px）と連動しているので変えないこと */
+    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 16px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
     /* 時間の右側にキャラ名と本文をまとめる。本文が折り返すときは時間の下ではなくキャラ名の開始位置に揃う */
     .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 6px; }
@@ -196,14 +200,15 @@
     .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
     .btn-flag-card { font-size: 0.95rem; line-height: 1; filter: grayscale(1); }
     .btn-flag-card.active { filter: none; opacity: 1; background: #fefce8; border-color: #fde047; }
-    /* フラグ（蛍光イエロー）：キャラの黄・オレンジと被らない鮮やかな色 */
-    .timeline-item.flagged { box-shadow: inset 4px 0 0 #eaff00, inset 5px 0 0 rgba(255,255,255,0.85); }
-    /* 死亡推定時刻の範囲：カードの左外側に2px離して置く角丸バー。
+    /* フラグ（蛍光イエロー）：キャラの黄・オレンジと被らない鮮やかな色。
+       白い区切り線は引かず、フラグ帯の幅は7px */
+    .timeline-item.flagged { box-shadow: inset 7px 0 0 #7DE3D8; }
+    /* 死亡推定時刻の範囲：カードの左外側に8px離して置く角丸バー。
        カードから物理的に離すことで、赤いキャラのカードでも色が混ざらず範囲が分かる。
        フラグ（左端のインセット帯）とも重ならない。 */
     .timeline-item.in-death-range::before {
-      content: ''; position: absolute; left: -7px; top: 0; bottom: 0;
-      width: 5px; background: #C00000; border-radius: 3px;
+      content: ''; position: absolute; left: -15px; top: 0; bottom: 0;
+      width: 7px; background: #D1383F; border-radius: 3px;
     }
     /* 連続するカードは間の8px余白もつなぎ、範囲を一本のバーとして見せる。
        2枚目以降の上角を外すことで、途中に丸みが出ないようにする。 */
@@ -219,16 +224,26 @@
     /* 登録内容の編集フォーム */
     .timeline-item-inner.edit-mode { gap: 6px; }
     .edit-time { flex: 0 0 64px; width: 64px; box-sizing: border-box; text-align: center; }
-    .edit-text { flex: 1 1 auto; min-width: 0; margin-right: 91px; }
+    /* 内容欄は残り幅いっぱい。右隣（6px）に✓↩ボタンが続く */
+    .edit-text { flex: 1 1 auto; min-width: 0; }
+    /* 編集中のカードだけ、内容欄と✓↩の間隔を6pxにする（通常カードの8pxはそのまま） */
+    .timeline-item:has(> .timeline-item-inner.edit-mode) { gap: 6px; }
     .btn-edit-save { background: #17A34A !important; color: #fff !important; border-color: #16a34a !important; font-weight: bold; }
     .btn-edit-cancel { background: #f1f3f5 !important; }
     .btn-edit-save, .btn-edit-cancel { border: none !important; }
-    /* 編集フォームの入力欄と✓↩ボタンを同じ高さに揃える（折り返しても崩れないよう明示） */
+    /* 編集の✓↩ボタンは、カード内の他のボタン（✏️👥🚩👁️✕）と同じ大きさに揃える。
+       高さ・フォントを固定せず .controls button と同じ padding にし、色（緑/グレー）だけ残す。 */
     .timeline-item-inner.edit-mode input { height: 36px; box-sizing: border-box; }
-    .btn-edit-save, .btn-edit-cancel { height: 32px; box-sizing: border-box; padding: 0 9px; font-size: 1.25rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+    .btn-edit-save, .btn-edit-cancel { box-sizing: border-box; padding: 4px 7px; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+    /* ボタン自体の大きさは変えず、中の✓マークだけ拡大表示する */
+    .btn-edit-save > span { display: inline-block; transform: scale(1.3); position: relative; top: 1px; }
+    /* ↩︎は淡色の背景で面積が目立ちやすいため、サイズを明示して一回り小さくする（23×29px） */
+    .btn-edit-cancel { padding: 1px 6px; width: 29px; height: 23px; }
     .btn-edit-cancel > span { position: relative; top: 2px; }
-    body.view-pc .edit-controls { align-self: center; align-items: center; justify-content: center; }
-    body.view-mobile .edit-controls { align-items: center; justify-content: center; }
+    /* .controls の align-self: flex-end（下寄せ）より優先させ、✓↩を内容欄に対して縦中央に置く */
+    body.view-pc .timeline-item > .controls.edit-controls { align-self: center; align-items: center; justify-content: center; }
+    /* スマホ版の編集ボタンはカード右下に寄せる（他のボタン行と同じ右揃え） */
+    body.view-mobile .edit-controls { align-items: center; justify-content: flex-end; }
     .timeline-item.concealed .timeline-item-inner,
     .timeline-item.concealed .btn-edit-card,
     .timeline-item.concealed .card-char-wrap,
@@ -440,8 +455,7 @@
     body.view-mobile .timeline-item.multi-character .badge-more { display: none; }
     body.view-mobile .timeline-item.multi-character .time-badge { align-self: flex-start; }
     body.view-mobile .controls { flex: 1 1 100%; justify-content: flex-end; order: 5; }
-    .timeline-item-inner.edit-mode + .edit-controls { justify-content: center; }
-    body.view-mobile .timeline-item-inner.edit-mode + .edit-controls { margin-right: 71px; transform: translateX(12px); }
+    body.view-mobile .timeline-item-inner.edit-mode + .edit-controls { justify-content: flex-end; }
      /* スマホ版：不詳カードが狭く、✏️が時間表示の真下まで来た場合だけ、⬆⬇を✕の右隣へ移す。
        ✕（基点）は他カードと同じ右端位置に固定するため、✏️〜✕はそのまま流れに残し、
        ⬆⬇だけを絶対配置で✕の右側へ（他ボタンと同じ大きさのまま）横並びで置く。 */
@@ -2257,7 +2271,7 @@
               <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容" onkeydown="handleEditTextKeydown(event, ${index})">
             </div>
             <div class="controls edit-controls">
-              <button class="btn-edit-save" onclick="saveEditEvent(${index}, this)" title="保存">✓</button>
+              <button class="btn-edit-save" onclick="saveEditEvent(${index}, this)" title="保存"><span>✓</span></button>
               <button class="btn-edit-cancel" onclick="cancelEditEvent()" title="編集を戻る"><span>↩︎</span></button>
             </div>
           `;
