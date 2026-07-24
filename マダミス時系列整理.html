@@ -7,6 +7,12 @@
   <style>
     /* 全体の見た目（image_0.pngに合わせて調整） */
     body { font-family: sans-serif; margin: 0; padding: 10px; background: #2c3e50; color: #fff; }
+    /* iPad/iPhone(Safari)では、装飾だけの余白をタップしても document に click が届かず、
+       ポップアップの「外側タップで閉じる」が効かないことがある。タッチ端末のときだけ
+       body に cursor:pointer を与えると、余白タップでも click が発火するようになる。 */
+    @media (hover: none) and (pointer: coarse) {
+      body { cursor: pointer; }
+    }
     .main-container { display: flex; flex-direction: column; gap: 15px; max-width: 1400px; margin: auto; }
     
     /* PC版（横並び）は body.view-pc で制御する */
@@ -147,6 +153,12 @@
     .char-badge-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
     .time-badge { background: #e2e8f0; font-weight: bold; padding: 5px 8px; border-radius: 20px; font-size: 0.9rem; white-space: nowrap; flex: 0 0 60px; box-sizing: border-box; text-align: center; color: #333;}
+    /* 時間バッジはクリックで編集できる。押せることが分かるように見た目を少し変える */
+    .time-badge-editable { cursor: pointer; }
+    .time-badge-editable:hover { background: #cbd5e1; color: #111; }
+    /* 時間だけ編集中のバッジ内の入力欄（バッジと同じ幅・見た目に収める） */
+    .time-badge.time-badge-editing { padding: 2px; background: #fff; }
+    .edit-time-inline { width: 100%; box-sizing: border-box; text-align: center; font-weight: bold; font-size: 0.9rem; padding: 3px 2px; border: 1px solid #3b82f6; border-radius: 16px; background: #fff; color: #333; }
     /* 複数人物カードでは、時間をカード内容の縦中央に揃える */
     .timeline-item.multi-character .time-badge { align-self: center; }
     /* 内容の残り幅が狭くなったら（編集ボタンに重なりそうになったら）時間・キャラの下の行に折り返す */
@@ -251,9 +263,12 @@
 
     /* ── 表示モード切替（リスト / 人物比較） ── */
     .timeline-mode-toggle { display: inline-flex; margin-bottom: 12px; }
-    .timeline-mode-toggle .mode-btn { background: #2c3e50; color: #cbd5e1; border: 1px solid #4a627a; padding: 5px 14px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
-    .timeline-mode-toggle .mode-btn:first-child { border-radius: 6px 0 0 6px; }
-    .timeline-mode-toggle .mode-btn:last-child { border-radius: 0 6px 6px 0; border-left: none; }
+    .timeline-mode-toggle .mode-btn { background: #2c3e50; color: #cbd5e1; border: 1px solid #4a627a; padding: 5px 14px; cursor: pointer; font-size: 0.8rem; font-weight: bold; text-align: center; }
+    /* ボタンの文字が折り返すときの切れ目を制御する（絵文字の後と、「人物」「比較」の間だけで折る）。
+       各単語は nowrap で単語の途中では折らない。 */
+    .mode-btn-nb { white-space: nowrap; }
+    .timeline-mode-toggle #modeListBtn { border-radius: 6px 0 0 6px; }
+    .timeline-mode-toggle #modeCompareBtn { border-radius: 0 6px 6px 0; border-left: none; }
     .timeline-mode-toggle .mode-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
     .timeline-mode-toggle .confirm-delete-toggle { margin-left: 10px; }
 
@@ -269,6 +284,11 @@
     .compare-move-btn:disabled { opacity: 0.2; cursor: default; }
     .compare-table .time-col { position: sticky; left: 0; z-index: 1; background: #2c3e50; color: #e2e8f0; font-weight: bold; white-space: nowrap; text-align: center; border-left: 1px solid #4a627a; }
     .compare-table thead .time-col { z-index: 3; }
+    /* 人物比較の外枠の四隅を、リストのカード（6px）と同じ丸角にする */
+    .compare-table thead tr:first-child th:first-child { border-top-left-radius: 6px; }
+    .compare-table thead tr:first-child th:last-child { border-top-right-radius: 6px; }
+    .compare-table tbody tr:last-child td:first-child { border-bottom-left-radius: 6px; }
+    .compare-table tbody tr:last-child td:last-child { border-bottom-right-radius: 6px; }
     /* 人物比較の死亡推定時刻は、暗い背景でも見やすい明るめの赤色にする */
     .compare-table .compare-time-death { color: #ef4444; }
     .compare-table .compare-time-unknown { color: #cbd5e1; font-weight: normal; font-size: 0.85em; font-style: italic; }
@@ -283,6 +303,9 @@
     .compare-edit-text { width: 100%; box-sizing: border-box; min-height: 3.4em; resize: vertical; font-size: 0.9rem; line-height: 1.4; padding: 6px 8px; border: 1px solid #94a3b8; border-radius: 6px; background: #fff; color: #1e293b; font-family: inherit; }
     /* 時間（開始・終了）は小さめの枠を上下に並べる */
     .compare-edit-time, .compare-edit-endtime { flex: 0 0 auto; align-self: flex-start; width: 92px; box-sizing: border-box; font-size: 0.8rem; padding: 2px 6px; border: 1px solid #94a3b8; border-radius: 4px; background: #fff; color: #1e293b; text-align: center; }
+    /* .edit-endtime のグローバル flex:0 0 64px（縦並びでは高さ64px固定になる）が後方にあるため、
+       比較編集の終了マスだけ縦に大きくなる。開始マスと同じ高さに揃える。 */
+    .compare-edit .compare-edit-time, .compare-edit .compare-edit-endtime { flex: 0 0 auto; }
     .compare-edit-actions { display: flex; justify-content: flex-end; gap: 4px; }
     .compare-edit-actions button { background: #fff; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 8px; line-height: 1; color: #1e293b; }
     .compare-edit-actions .compare-edit-save { background: #dcfce7; border-color: #86efac; color: #16a34a; }
@@ -302,10 +325,14 @@
     #modeCompareBtn.active ~ .compare-concealed-toggle { display: inline-flex; }
     #modeCompareBtn.active ~ .compare-order-fixed-toggle { display: inline-flex; }
     #modeCompareBtn.active ~ .compare-zoom-toggle { display: inline-flex; }
+    /* 「表示倍率」は「人物の並びを固定する」から少し離す */
+    .timeline-mode-toggle .compare-zoom-toggle { margin-left: 22px; }
     /* 人物比較の表示倍率ボタン */
     .compare-zoom-btn, .compare-zoom-reset { background: #2c3e50; color: #cbd5e1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: bold; line-height: 1; padding: 3px 8px; }
+    /* − と ＋ は字形の幅が違うので、ボタン幅を揃えて中央寄せにし、%（ラベル）を挟む左右の間隔を対称にする */
+    .compare-zoom-btn { width: 30px; padding-left: 0; padding-right: 0; box-sizing: border-box; text-align: center; }
     .compare-zoom-btn:hover, .compare-zoom-reset:hover { background: #3b4d63; color: #fff; }
-    #compareZoomLabel { min-width: 32px; text-align: center; }
+    #compareZoomLabel { width: 40px; text-align: center; }
     /* スマホ版の人物比較ビューでは、比較設定をボタンの下段へ移す */
     body.view-mobile .timeline-mode-toggle { flex-wrap: wrap; }
     /* スマホ版：「カード削除時に確認画面を表示」も下二つと同じく独立した行に落とし、
@@ -394,6 +421,17 @@
      body.view-mobile .timeline-item.unknown-moves-relocated .btn-move-down { transform: translateX(calc(100% + 4px)); }
     body.view-mobile .timeline-item-inner.edit-mode { flex-wrap: wrap; }
     body.view-mobile .edit-text { flex: 1 1 100%; }
+
+    /* ── PC版で画面が狭く自動縮小したとき（view-compact）──
+       時系列パネルの中身だけスマホ版の見た目にしつつ、
+       左のキャラクター一覧・秘密のメモはPC版のまま「左カラム」に残す。 */
+    body.view-compact.view-mobile .main-container { flex-direction: row; align-items: flex-start; }
+    body.view-compact.view-mobile .side-column { flex: 0 0 280px; order: 0; }
+    body.view-compact.view-mobile #timelinePanel { order: 2; }
+    body.view-compact.view-mobile .session-heading { flex-direction: column; align-items: stretch; gap: 4px; padding-bottom: 8px; }
+    body.view-compact.view-mobile .session-label-pc { padding-left: 0.5em; }
+    body.view-compact.view-mobile #sessionPanel { padding-top: 18px; padding-bottom: 12px; }
+    body.view-compact.view-mobile .session-value-wrap { border-bottom: none; padding-bottom: 3px; width: 100%; }
 
     /* カードの色設定（JavaScriptで動的に生成するCSS） */
     #cardColorsStyle { display: none; }
@@ -506,8 +544,8 @@
       </div>
       <div id="charFilterBar" class="char-filter-bar"></div>
       <div class="timeline-mode-toggle">
-        <button type="button" id="modeListBtn" class="mode-btn active" onclick="setTimelineMode('list')" title="通常のリスト表示">📋 リスト</button>
-        <button type="button" id="modeCompareBtn" class="mode-btn" onclick="setTimelineMode('compare')" title="時間を左端に、人物ごとに横に並べて比較">📊 人物比較</button>
+        <button type="button" id="modeListBtn" class="mode-btn active" onclick="setTimelineMode('list')" title="通常のリスト表示"><span class="mode-btn-nb">📋</span> <span class="mode-btn-nb">リスト</span></button>
+        <button type="button" id="modeCompareBtn" class="mode-btn" onclick="setTimelineMode('compare')" title="時間を左端に、人物ごとに横に並べて比較"><span class="mode-btn-nb">📊</span> <span class="mode-btn-nb">人物</span><wbr><span class="mode-btn-nb">比較</span></button>
         <label class="confirm-delete-toggle" title="OFFにすると、カードの✕削除時に確認ダイアログを出しません">
           <input type="checkbox" id="confirmDeleteToggle" onchange="toggleConfirmDelete()">
           <span>カード削除時に確認画面を表示</span>
@@ -540,39 +578,23 @@
 
       <h4>📌 基本の登録方法</h4>
       <ul>
-        <li>入力欄に「時間」「人物」「できごと」を入れて <strong>［追加］</strong> を押すと1件登録されます。</li>
+        <li>入力欄に「時間」「人物」「できごと」を入れて <strong>［追加］</strong> を押すと1件登録されます（<strong>できごとだけは必須</strong>です）。</li>
         <li><strong>人物は複数選べます</strong>。「人物 ▾」を押してチェックを入れると、同じ出来事に複数の登場人物を紐づけられます。</li>
         <li>登録した出来事は <strong>時間の早い順に自動で並びます</strong>。</li>
         <li>時間は <code>20:5</code> のように分が1桁でも <code>20:05</code> に自動補完されます。</li>
-        <li>時間欄は「夕方」「翼朝」「不明」など <strong>自由な言葉でも登録できます</strong>（時刻の形式でなくてもOK）。時刻で入れたものは早い順に、言葉で入れたものは末尾にまとまります。</li>
-        <li>キャラ名の横の <strong>色ボタン</strong> を押すとカラーパレットから色を選べます。</li>
+        <li>時間欄は「夕方」「翌朝」「不明」など <strong>自由な言葉でも登録できます</strong>（時刻の形式でなくてもOK）。時刻で入れたものは早い順に、言葉で入れたものは末尾にまとまります。</li>
+        <li>先に <strong>「👤 キャラクター一覧」</strong> でキャラを登録しておくと、人物選びが楽になります。キャラ名の横の <strong>色ボタン</strong> を押すとカラーパレットから色を選べます。</li>
       </ul>
 
-      <h4>🔘 各ボタンでできること</h4>
+      <h4>🔘 カードの各ボタン</h4>
+      <p>登録済みカードの右下には、次のボタンが並びます。</p>
       <ul>
-        <li><strong>🚩（入力欄）</strong>：押してから追加すると、その出来事に重要フラグ（左端に金色の線）が付きます。</li>
-        <li><strong>✏️ 編集</strong>：登録済みカードの時間・内容を修正できます（✓で保存／✕で取消）。</li>
+        <li><strong>✏️ 編集</strong>：時間・終了時刻・できごとの内容を修正できます（✓で保存／✕で取消）。</li>
         <li><strong>👥 登場人物</strong>：カードに後から人物を追加・削除できます（チェックのオン／オフ）。</li>
-        <li><strong>🚩 フラグ</strong>：カードごとに重要フラグのオン/オフを切り替えます。</li>
-        <li><strong>👁 非表示</strong>：カードの内容を隠します（👁と🚩以外が非表示に。もう一度押すと再表示）。ネタバレ隠しに便利です。</li>
+        <li><strong>🚩 フラグ</strong>：重要フラグ（左端の金色の線）のオン/オフを切り替えます。入力欄の 🚩 を押してから追加しても付けられます。</li>
+        <li><strong>👁️ 内容の表示/非表示</strong>：できごとの中身を隠します（もう一度押すと再表示）。ネタバレ隠しに便利です。</li>
+        <li><strong>🎨 色を隠す/戻す</strong>：そのカードの色分けだけを一時的に消します（人物名や内容はそのまま）。</li>
         <li><strong>✕ 削除</strong>：そのカードを削除します。</li>
-        <li><strong>⚰️ 死亡推定時刻（トグル）</strong>：時刻の範囲を入れて <strong>ON</strong> にすると、その時間帯に含まれる出来事の左端に赤い線が付きます（フラグと両方の場合は赤の内側に金色の線を表示）。</li>
-        <li><strong>📝 秘密のメモの 👁</strong>：メモ全体をまとめて隠せます。</li>
-      </ul>
-
-      <h4>👥 複数の登場人物と絞り込み</h4>
-      <ul>
-        <li>複数の人物が紐づいたカードは、名前バッジが <strong>縦に並んで表示</strong> されます。</li>
-        <li>1人だけのカードは、その人物の色でカード全体が色分けされます。</li>
-        <li>3人以上のときは2人まで表示し、<strong>「＋他を表示」</strong> で残りを展開できます。</li>
-        <li>上部の <strong>表示対象絞り込み</strong> で人物を選ぶと、その人物が登場するカードだけを表示します（複数選択可。「全員」で解除）。</li>
-      </ul>
-
-      <h4>📊 リスト表示と人物比較表示</h4>
-      <ul>
-        <li>時系列の上にある <strong>「📋 リスト」／「📊 人物比較」</strong> で表示を切り替えられます。</li>
-        <li><strong>📊 人物比較</strong>：<strong>左端に時間</strong>、<strong>上に人物名</strong>を並べ、その時間に各人物のカードがあればその欄に表示します（なければ空欄）。「誰がいつ何をしていたか」を横並びで見比べられます。</li>
-        <li>比較に並ぶ人物は <strong>表示対象絞り込みで選んだ人</strong>です（「全員」のときは全員分の列が並びます）。</li>
       </ul>
 
       <h4>⏱ 期間（開始〜終了）で登録</h4>
@@ -580,14 +602,65 @@
         <li>入力欄の <strong>「⏱ 期間」</strong> を押すと、時間の隣に <strong>終了時刻の欄</strong> が現れます。開始と終了を入れて追加すると、<strong>「開始〜終了」を示す1枚のカード</strong>として並びます（右端に、その人物の色の縦バーが付きます）。</li>
         <li>その期間の <strong>途中の時刻に別の出来事があるとき</strong>は、自動で開始カードと終了カードに分かれ、<strong>右側の太い縦ライン（その人物の色）で開始〜終了がつながって見え</strong>、「この間ずっと～していた」が一目でわかります。</li>
         <li>人物・内容・フラグなどは <strong>開始カードに</strong>登録されます（終了時刻も時刻として扱われます）。</li>
-        <li>編集（✒）で <strong>終了時刻を後から変更・追加・削除</strong>できます（終了欄を空にすると普通の1点の出来事に戻ります）。</li>
+        <li>編集（✏️）で <strong>終了時刻を後から変更・追加・削除</strong>できます（終了欄を空にすると普通の1点の出来事に戻ります）。</li>
+        <li><strong>終了が開始より前のとき</strong>は、日付を跨ぐ範囲（例: 23:00〜翌1:00）として扱われます。</li>
+      </ul>
+
+      <h4>⚰️ 死亡推定時刻</h4>
+      <ul>
+        <li>時系列の右上のプルダウンで <strong>開始〜終了の時刻</strong>（分は00/15/30/45から選択）を決め、<strong>ボタンを ON</strong> にします。</li>
+        <li>ONにすると、その時間帯に含まれる出来事の <strong>左端に赤い線</strong> が付きます（フラグと両方のときは、赤の内側に金色の線も表示）。</li>
+        <li>開始が終了より後のときは、<strong>日付を跨ぐ範囲</strong>（例: 23:00〜翌1:00）として扱われます。</li>
+      </ul>
+
+      <h4>👥 複数の登場人物と絞り込み</h4>
+      <ul>
+        <li>複数の人物が紐づいたカードは、名前バッジが <strong>縦に並んで表示</strong> されます。</li>
+        <li>1人だけのカードは、その人物の色でカード全体が色分けされます。</li>
+        <li>3人以上のときは2人まで表示し、<strong>「＋他を表示」</strong> で残りを展開できます。</li>
+        <li>時系列の上の <strong>絞り込みバー</strong> で人物を選ぶと、その人物が登場するカードだけを表示します（複数選択可。「全員」で解除）。<strong>「🚩フラグつき」「フラグなし」</strong> でも絞り込めます。</li>
+      </ul>
+
+      <h4>📋 リスト表示と 📊 人物比較表示</h4>
+      <ul>
+        <li>時系列の上にある <strong>「📋 リスト」／「📊 人物比較」</strong> で表示を切り替えられます。</li>
+        <li><strong>📊 人物比較</strong>：<strong>左端に時間</strong>、<strong>上に人物名</strong>を並べ、その時間に各人物のカードがあればその欄に表示します（なければ空欄）。「誰がいつ何をしていたか」を横並びで見比べられます。比較の中でも ✏️編集・🚩フラグ・👁️非表示・✕削除ができます。</li>
+        <li>比較に並ぶ人物は <strong>絞り込みで選んだ人</strong>です（「全員」のときは全員分の列が並びます）。</li>
+        <li>人物名の左右の <strong>⬅ ➡</strong> で <strong>列の並び順</strong> を入れ替えられます。</li>
+        <li><strong>「人物の並びを固定する」</strong>にチェックを入れると、並べ替えた順番がリスト表示に戻しても保存されます。</li>
+        <li><strong>「非表示設定中アイテムを不可視化」</strong>にチェックを入れると、👁️で非表示にしたカードを比較表から丸ごと隠せます。</li>
+        <li><strong>「表示倍率」</strong>の <strong>−／＋</strong> で比較表の大きさを変えられます（<strong>リセット</strong>で等倍に戻ります。この画面だけの設定です）。</li>
       </ul>
 
       <h4>⬜ 人物・時間を空欄で登録すると？</h4>
       <ul>
         <li><strong>人物を空欄（「人物」のまま）</strong>：名前・色なしで登録され、名前バッジは空欄になります（列の位置は揃ったまま）。</li>
-        <li><strong>時間を空欄</strong>：時間指定なし（不詳）として扱われ、時間ありのカードより <strong>下（末尾）</strong> に並びます。不詳カードにだけ現れる <strong>△（上へ）／▽（下へ）</strong> で、時刻ありカードの間を含む好きな位置に移動できます（表示は「不詳」のまま）。</li>
+        <li><strong>時間を空欄</strong>：時間指定なし（不詳）として扱われ、時間ありのカードより <strong>下（末尾）</strong> に並びます。不詳カードにだけ現れる <strong>⬆︎（上へ）／⬇︎（下へ）</strong> で、時刻ありカードの間を含む好きな位置に移動できます（表示は「不詳」のまま）。</li>
         <li><strong>できごとは必須</strong>：空欄のままだと追加されません（編集でも空にはできません）。</li>
+      </ul>
+
+      <h4>🎭 セッション名・📝 秘密のメモ</h4>
+      <ul>
+        <li>左上の <strong>セッション名</strong> はクリック（または ✎）で編集でき、作品タイトルなどを入れておけます。</li>
+        <li><strong>📝 秘密のメモ</strong> には自分の推理などを自由に書けます（自動保存）。見出し横の <strong>👁️</strong> でメモ全体をまとめて隠せます。</li>
+      </ul>
+
+      <h4>💾 セッションデータ（保存・持ち運び）</h4>
+      <ul>
+        <li>入力した内容は <strong>この端末のブラウザに自動保存</strong> されます。</li>
+        <li>画面上部の <strong>「▶️セッションデータ」</strong> を開くと、次の操作ができます。
+          <ul>
+            <li><strong>⬆️ 書き出し</strong>：すべてのデータをファイルに保存（バックアップ・共有用）。</li>
+            <li><strong>⬇️ 取り込み</strong>：書き出したファイルを読み込み、今のデータを置き換えます。</li>
+            <li><strong>👤 全キャラクター削除／🧹 全タイムラインデータ削除／🗑 全データ削除</strong>：それぞれ一括で消せます（元に戻せないのでご注意ください）。</li>
+          </ul>
+        </li>
+      </ul>
+
+      <h4>⚙️ 表示・その他の設定</h4>
+      <ul>
+        <li><strong>📱 スマホ版／💻 PC版</strong>：画面右上で表示レイアウトを切り替えられます（PC版でも画面が狭いときは自動でスマホ版の見た目になります）。</li>
+        <li><strong>「カード削除時に確認画面を表示」</strong>：チェックを外すと、✕での削除時に確認ダイアログを出しません。</li>
       </ul>
     </div>
   </div>
@@ -659,6 +732,7 @@
     let deathTo = localStorage.getItem(KEYS.deathTo) || '';     // 死亡推定時刻（終了）
     let deathEnabled = localStorage.getItem(KEYS.deathEnabled) === 'true'; // 死亡推定時刻のトグルがONか
     let editingIndex = -1; // 現在編集中のカードの番号（-1は編集なし）
+    let editingTimeIndex = -1; // 時間バッジをクリックして時間だけ編集中のカード番号（-1はなし）
     let charFilter = loadJSON(KEYS.charFilter, []); // 絞り込み中の人物名（空なら全表示）
     // フラグ絞り込み: 'all' / 'flag'（フラグつきのみ） / 'noflag'（フラグなしのみ）
     // 旧データ（true/false の2択）からの移行も行う
@@ -703,6 +777,7 @@
     updateColorPickerBtn();
     renderCharacters();
     updateTimelineModeBtn();
+    applyView(); // モードボタンの状態確定後に、バー幅を見てPC／スマホの実効レイアウトを確定
     sortEvents();
     renderEvents();
     updateCardColorCss(); // キャラクターごとのCSSを生成
@@ -796,7 +871,7 @@
     }
     function isTimeField(el) {
       return el.id === 'timeInput' || el.id === 'endTimeInput'
-        || (el.classList && (el.classList.contains('edit-time') || el.classList.contains('edit-endtime')));
+        || (el.classList && (el.classList.contains('edit-time') || el.classList.contains('edit-endtime') || el.classList.contains('edit-time-inline')));
     }
 
     // 時間入力欄（追加・編集）は入力したそばから全角→半角にし、4桁そろえば「:」を自動挿入する
@@ -823,9 +898,32 @@
     });
 
     // 表示モード（スマホ版 / PC版）を適用する
+    // PC版で画面幅が狭く、モード切替バーのボタン文字が縦に潰れる（折り返す）ときは、
+    // 自動でスマホ版レイアウトへ切り替える。ユーザーが選んだ設定（currentView）は保持する。
+    function pcModeToggleWraps() {
+      const btn = document.getElementById('modeCompareBtn');
+      if (!btn) return false;
+      const cs = getComputedStyle(btn);
+      const lineH = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
+      const frame = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
+        + parseFloat(cs.borderTopWidth) + parseFloat(cs.borderBottomWidth);
+      // ボタンの高さが1行分（絵文字の分だけ余裕を見て1.5行）を超えたら、折り返している
+      return btn.getBoundingClientRect().height > lineH * 1.5 + frame;
+    }
     function applyView() {
-      document.body.classList.toggle('view-pc', currentView === 'pc');
-      document.body.classList.toggle('view-mobile', currentView === 'mobile');
+      let effective = 'mobile';
+      if (currentView === 'pc') {
+        // まずPCレイアウトを当てて、モードバーが潰れていないか測る
+        document.body.classList.add('view-pc');
+        document.body.classList.remove('view-mobile');
+        effective = pcModeToggleWraps() ? 'mobile' : 'pc';
+      }
+      document.body.classList.toggle('view-pc', effective === 'pc');
+      document.body.classList.toggle('view-mobile', effective === 'mobile');
+      // PC選択のまま自動縮小したときは、レイアウト（左のキャラ一覧・メモの2カラム）は
+      // PC版のまま保ち、時系列パネルの中身だけスマホ表示にする（view-compact）
+      document.body.classList.toggle('view-compact', currentView === 'pc' && effective === 'mobile');
+      // トグルボタンは「ユーザーが選んだ設定」を示す（自動縮小中もPC選択を保持）
       document.getElementById('btnPC').classList.toggle('active', currentView === 'pc');
       document.getElementById('btnMobile').classList.toggle('active', currentView === 'mobile');
       // 表示モードでプレースホルダー文言（クリック／タップ）を切り替える
@@ -1504,6 +1602,7 @@
       timelineMode = m;
       safeSet(KEYS.timelineMode, m);
       updateTimelineModeBtn();
+      applyView(); // モードで切替バーの幅が変わるので、狭幅のスマホフォールバックを再判定
       renderEvents();
     }
     function updateTimelineModeBtn() {
@@ -1760,6 +1859,7 @@
     // カードを編集モードにする
     function startEditEvent(index) {
       editingIndex = index;
+      editingTimeIndex = -1; // フル編集を始めるときは時間だけ編集は解除する
       renderEvents();
     }
 
@@ -1767,6 +1867,44 @@
     function cancelEditEvent() {
       editingIndex = -1;
       renderEvents();
+    }
+
+    // 時間バッジのクリックで「時間だけ」を編集し始める
+    function startEditTime(index) {
+      editingIndex = -1;        // フル編集中なら解除する
+      editingTimeIndex = index;
+      renderEvents();
+      // 生成された入力欄にフォーカスして全選択する
+      const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
+      const input = card && card.querySelector('.edit-time-inline');
+      if (input) { input.focus(); input.select(); }
+    }
+
+    // 時間だけ編集をキャンセルする
+    function cancelEditTime() {
+      if (editingTimeIndex === -1) return;
+      editingTimeIndex = -1;
+      renderEvents();
+    }
+
+    // 時間だけ編集を保存する（内容・終了時刻・期間はそのまま）
+    function saveEditTime(index) {
+      if (editingTimeIndex !== index) return; // すでに確定/キャンセル済みなら何もしない
+      const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
+      const input = card && card.querySelector('.edit-time-inline');
+      if (!input) { editingTimeIndex = -1; renderEvents(); return; }
+      events[index].time = normalizeTime(input.value);
+      // 時刻が入ったら手動位置（anchor）は不要なので片付ける
+      if (timeToMinutes(events[index].time) !== Infinity) delete events[index].anchor;
+      editingTimeIndex = -1;
+      sortEvents(); // 時間を変えたので並べ替える
+      saveEvents();
+    }
+
+    // 時間だけ編集中のキー操作：Enterで保存、Escでキャンセル
+    function handleEditTimeKeydown(e, index) {
+      if (e.key === 'Enter') { e.preventDefault(); saveEditTime(index); }
+      else if (e.key === 'Escape') { e.preventDefault(); cancelEditTime(); }
     }
 
     // 編集内容を保存する（時間・終了時間・内容。人物はカードの👥で編集）
@@ -2059,12 +2197,16 @@
             </div>
           `;
         } else {
-          const timeBadge = (kind === 'range')
+          const isEditingTime = (index === editingTimeIndex);
+          const timeBadgeText = (kind === 'range')
             ? `${escapeHtml(ev.time)}<br>${escapeHtml(ev.endTime)}`
             : escapeHtml(ev.time || '不詳');
+          const timeBadgeHtml = isEditingTime
+            ? `<div class="time-badge time-badge-editing"><input type="text" class="edit-time-inline" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTimeKeydown(event, ${index})" onblur="saveEditTime(${index})"></div>`
+            : `<div class="time-badge time-badge-editable" onclick="startEditTime(${index})" title="クリックして時間を編集">${timeBadgeText}</div>`;
           div.innerHTML = `
             <div class="timeline-item-inner">
-              <div class="time-badge">${timeBadge}</div>
+              ${timeBadgeHtml}
               <div class="event-body">
                 ${charBadges}
                 <div class="event-text">${escapeHtml(ev.text)}</div>
@@ -2142,10 +2284,17 @@
 
     // 端末の回転などで幅が変わった場合も、現在の幅に合わせて配置条件を再判定する
     let unknownMoveResizeFrame = null;
+    let lastViewportWidth = window.innerWidth; // 直前に判定したときの横幅を覚えておく
     window.addEventListener('resize', () => {
       if (unknownMoveResizeFrame !== null) cancelAnimationFrame(unknownMoveResizeFrame);
       unknownMoveResizeFrame = requestAnimationFrame(() => {
         unknownMoveResizeFrame = null;
+        // PC↔スマホの判定もカードの右端揃えも横幅で決まるので、
+        // 高さだけが変わったとき（スマホのアドレスバー開閉など）は再計算を省く
+        const width = window.innerWidth;
+        if (width === lastViewportWidth) return;
+        lastViewportWidth = width;
+        applyView(); // 画面幅の変化でPC↔スマホの境界をまたいだら切り替える
         alignControlsToShortestCard();
       });
     });
