@@ -95,16 +95,15 @@
     #newCharName { min-width: 0; }
     .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #4a627a; }
     .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff; }
-    .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.8rem; }
+    .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; }
     .btn-unlock-char { background: #fef9c3; }
-    .btn-recolor { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 0; font-size: 0.95rem; line-height: 1; width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-delete-char, .btn-recolor, .btn-edit-char { width: 25px; height: 21px; padding: 0; font-size: 0.8rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-recolor { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; }
     .btn-recolor:hover { background: #dbe4e8; }
-    .btn-edit-char { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.85rem; line-height: 1; }
+    .btn-edit-char { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; }
     .btn-edit-char:hover { background: #dbe4e8; }
-    .btn-save-char, .btn-cancel-char { width: 30px; height: 28px; padding: 0; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; }
     .btn-save-char { background: #22c55e; border-color: #16a34a; color: #fff; }
     .btn-save-char:hover { background: #16a34a; }
-    .btn-cancel-char > span { position: relative; top: 2px; }
     .char-name-edit { flex: 1 1 auto; min-width: 0; background: #fff; color: #333; border: 1px solid #94a3b8; border-radius: 4px; padding: 3px 6px; }
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
@@ -1287,7 +1286,7 @@
               <div class="color-palette-popup char-palette" id="charPalette-${index}"></div>
             </div>
             <button class="btn-edit-char btn-save-char" onclick="saveEditCharacter(${index})" title="名前を保存">✓</button>
-            <button class="btn-edit-char btn-cancel-char" onclick="cancelEditCharacter()" title="編集をキャンセル"><span>↩︎</span></button>
+            <button class="btn-edit-char btn-cancel-char" onclick="cancelEditCharacter()" title="編集をキャンセル">↩︎</button>
           `;
           characterList.appendChild(div);
           return;
