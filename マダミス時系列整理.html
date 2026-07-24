@@ -50,7 +50,7 @@
     .view-toggle button { background: #34495e; color: #cbd5e1; border: 1px solid #4a627a; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
     .view-toggle button:first-child { border-radius: 6px 0 0 6px; }
     .view-toggle button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
-    .view-toggle button.active { background: #418CCC; color: #fff; border-color: #418CCC; }
+    .view-toggle button.active { background: #4697DB; color: #fff; border-color: #4697DB; }
     
     /* パネルの基本設定（image_0.pngに合わせて調整） */
     .panel { background: #34495e; padding: 15px; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.30); }
@@ -82,8 +82,8 @@
     /* 入力フォーム（image_0.pngに合わせて調整） */
     .input-group { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
     input[type="text"], select, textarea { padding: 8px; border: 1px solid #4a627a; border-radius: 4px; font-size: 0.9rem; background: #ecf0f1; color: #333; }
-    .btn-add { background: #418CCC; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-    .btn-add:hover { background: #3575ad; }
+    .btn-add { background: #4697DB; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+    .btn-add:hover { background: #397bc0; }
     .btn-flag { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-size: 1rem; line-height: 1; filter: grayscale(1); opacity: 0.55; }
     .btn-flag.active { filter: none; opacity: 1; background: #fefce8; border-color: #fde047; }
     
@@ -96,10 +96,15 @@
     .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #4a627a; }
     .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff; }
     .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.8rem; }
-    .btn-recolor { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.85rem; line-height: 1; }
+    .btn-unlock-char { background: #fef9c3; }
+    .btn-recolor { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 0; font-size: 0.95rem; line-height: 1; width: 30px; height: 28px; display: inline-flex; align-items: center; justify-content: center; }
     .btn-recolor:hover { background: #dbe4e8; }
     .btn-edit-char { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 2px 6px; font-size: 0.85rem; line-height: 1; }
     .btn-edit-char:hover { background: #dbe4e8; }
+    .btn-save-char, .btn-cancel-char { width: 30px; height: 28px; padding: 0; font-size: 0.95rem; display: inline-flex; align-items: center; justify-content: center; }
+    .btn-save-char { background: #22c55e; border-color: #16a34a; color: #fff; }
+    .btn-save-char:hover { background: #16a34a; }
+    .btn-cancel-char > span { position: relative; top: 2px; }
     .char-name-edit { flex: 1 1 auto; min-width: 0; background: #fff; color: #333; border: 1px solid #94a3b8; border-radius: 4px; padding: 3px 6px; }
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
@@ -274,7 +279,7 @@
     .mode-btn-nb { white-space: nowrap; }
     .timeline-mode-toggle #modeListBtn { border-radius: 6px 0 0 6px; }
     .timeline-mode-toggle #modeCompareBtn { border-radius: 0 6px 6px 0; border-left: none; }
-    .timeline-mode-toggle .mode-btn.active { background: #418CCC; color: #fff; border-color: #418CCC; }
+    .timeline-mode-toggle .mode-btn.active { background: #4697DB; color: #fff; border-color: #4697DB; }
     .timeline-mode-toggle .confirm-delete-toggle { margin-left: 10px; }
 
     /* ── 人物比較表示（時間を左端に、選択した人物を列に並べる） ── */
@@ -1155,6 +1160,7 @@
     }
 
     function startEditCharacter(index) {
+      if (characters[index].locked) return;
       editingCharacterIndex = index;
       renderCharacters();
       const input = document.querySelector(`#characterNameEdit-${index}`);
@@ -1162,6 +1168,20 @@
         input.focus();
         input.select();
       }
+    }
+
+    // キャラクターをロックして名前・色の編集と削除をできなくする
+    function lockCharacter(index) {
+      characters[index].locked = true;
+      saveCharacters();
+      renderCharacters();
+    }
+
+    // ロックを解除して編集・削除をできるようにする
+    function unlockCharacter(index) {
+      characters[index].locked = false;
+      saveCharacters();
+      renderCharacters();
     }
 
     function cancelEditCharacter() {
@@ -1200,6 +1220,7 @@
     }
 
     function deleteCharacter(index) {
+      if (characters[index].locked) return;
       const name = characters[index].name;
       if (!confirm(`キャラクター「${name}」を削除しますか？\nこの人物は各カードの登場人物から外れます（カード自体は残ります）。`)) return;
       // 各イベントの登場人物からこのキャラを外す
@@ -1253,22 +1274,39 @@
       characters.forEach((char, index) => {
         const div = document.createElement('div');
         div.className = 'char-item';
-        const nameHtml = editingCharacterIndex === index
+        const isEditing = editingCharacterIndex === index;
+        const nameHtml = isEditing
           ? `<input type="text" class="char-name-edit" id="characterNameEdit-${index}" value="${escapeHtml(char.name)}" aria-label="キャラクター名">`
           : `<div style="flex-grow: 1;">${escapeHtml(char.name)}</div>`;
-        const editButton = editingCharacterIndex === index
-          ? `<button class="btn-edit-char" onclick="saveEditCharacter(${index})" title="名前を保存">✓</button>
-             <button class="btn-edit-char" onclick="cancelEditCharacter()" title="編集をキャンセル">✕</button>`
+        if (isEditing) {
+          div.innerHTML = `
+            <div class="char-color-dot" style="background: ${safeColor(char.color)};"></div>
+            ${nameHtml}
+            <div class="color-picker-wrap">
+              <button class="btn-recolor" onclick="toggleCharPalette(event, ${index})" title="色を選び直す">🎨</button>
+              <div class="color-palette-popup char-palette" id="charPalette-${index}"></div>
+            </div>
+            <button class="btn-edit-char btn-save-char" onclick="saveEditCharacter(${index})" title="名前を保存">✓</button>
+            <button class="btn-edit-char btn-cancel-char" onclick="cancelEditCharacter()" title="編集をキャンセル"><span>↩︎</span></button>
+          `;
+          characterList.appendChild(div);
+          return;
+        }
+        const deleteButton = char.locked
+          ? `<button class="btn-delete-char btn-unlock-char" onclick="unlockCharacter(${index})" title="ロック解除">🔐</button>`
+          : `<button class="btn-delete-char" onclick="deleteCharacter(${index})" title="削除">✕</button>`;
+        const editIconButton = char.locked
+          ? ''
           : `<button class="btn-edit-char" onclick="startEditCharacter(${index})" title="名前を編集">✏️</button>`;
+        const lockButton = char.locked
+          ? ''
+          : `<button class="btn-edit-char" onclick="lockCharacter(${index})" title="ロックして編集・削除を防ぐ">🔓</button>`;
         div.innerHTML = `
           <div class="char-color-dot" style="background: ${safeColor(char.color)};"></div>
           ${nameHtml}
-          ${editButton}
-          <div class="color-picker-wrap">
-            <button class="btn-recolor" onclick="toggleCharPalette(event, ${index})" title="色を選び直す">🎨</button>
-            <div class="color-palette-popup char-palette" id="charPalette-${index}"></div>
-          </div>
-          <button class="btn-delete-char" onclick="deleteCharacter(${index})">✕</button>
+          ${deleteButton}
+          ${editIconButton}
+          ${lockButton}
         `;
         characterList.appendChild(div);
       });
