@@ -96,8 +96,20 @@
      body.view-pc .side-column > .panel,
      body.view-compact.view-mobile .side-column > .panel { width: 100%; min-width: 0; box-sizing: border-box; }
     /* キャラクターパネル（新規） */
-    #charPanel .input-group { flex-wrap: nowrap; justify-content: center; }
-    #newCharName { flex: 0 1 132px !important; min-width: 0; border: 1px solid #fff; text-align: left; }
+    #charPanel .input-group { flex-wrap: nowrap; }
+    #newCharName { min-width: 0; border: 1px solid #fff; text-align: left; }
+    /* PC系表示だけは、キャラ名欄を小さく中央にまとめる。通常のスマホ版は画面幅に応じて広げる。 */
+    body.view-pc #charPanel .input-group,
+    body.view-compact.view-mobile #charPanel .input-group { justify-content: center; }
+    body.view-pc #newCharName,
+    body.view-compact.view-mobile #newCharName { flex: 0 1 132px !important; }
+    body.view-mobile:not(.view-compact) #charPanel .input-group { justify-content: center; }
+    body.view-mobile:not(.view-compact) #newCharName {
+      box-sizing: border-box;
+      flex: 0 0 calc(100% - 122.664px) !important;
+      width: auto;
+      margin-right: 0;
+    }
     .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #4a627a; }
     .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff; }
     .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; }
