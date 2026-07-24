@@ -89,10 +89,15 @@
     
     /* 左列（キャラクター一覧＋秘密のメモを縦積み） */
     .side-column { display: flex; flex-direction: column; gap: 15px; }
-    body.view-pc .side-column { flex: 0 0 280px; }
+     /* PC左列は「マーダーミステリー／『クリックしてタイトルを入力』」に全角2文字分の余白を足した312pxで固定。
+       キャラクター名の編集入力など、子要素の最小幅でパネル全体が広がらないようにする。 */
+     body.view-pc .side-column,
+     body.view-compact.view-mobile .side-column { flex: 0 0 312px; width: 312px; min-width: 0; max-width: 312px; }
+     body.view-pc .side-column > .panel,
+     body.view-compact.view-mobile .side-column > .panel { width: 100%; min-width: 0; box-sizing: border-box; }
     /* キャラクターパネル（新規） */
-    #charPanel .input-group { flex-wrap: nowrap; }
-    #newCharName { min-width: 0; }
+    #charPanel .input-group { flex-wrap: nowrap; justify-content: center; }
+    #newCharName { flex: 0 1 132px !important; min-width: 0; border: 1px solid #fff; text-align: left; }
     .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #4a627a; }
     .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff; }
     .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; }
@@ -110,7 +115,7 @@
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
     .color-picker-wrap { position: relative; display: inline-flex; }
-    .color-picker-btn { width: 40px; height: 36px; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 0; background: #3b82f6; }
+    .color-picker-btn { width: 40px; height: 36px; border: none; border-radius: 4px; cursor: pointer; padding: 0; background: #3b82f6; }
     .color-palette-popup { display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; background: #2c3e50; border: 1px solid #4a627a; border-radius: 6px; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.35); grid-template-columns: repeat(7, 1fr); gap: 6px; width: max-content; }
     .color-palette-popup.open { display: grid; }
     .color-palette-popup .color-swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-sizing: border-box; transition: transform 0.1s; }
@@ -437,7 +442,7 @@
        時系列パネルの中身だけスマホ版の見た目にしつつ、
        左のキャラクター一覧・秘密のメモはPC版のまま「左カラム」に残す。 */
     body.view-compact.view-mobile .main-container { flex-direction: row; align-items: flex-start; }
-    body.view-compact.view-mobile .side-column { flex: 0 0 280px; order: 0; }
+    body.view-compact.view-mobile .side-column { order: 0; }
     body.view-compact.view-mobile #timelinePanel { order: 2; }
     body.view-compact.view-mobile .session-heading { flex-direction: column; align-items: stretch; gap: 4px; padding-bottom: 8px; }
     body.view-compact.view-mobile .session-label-pc { padding-left: 0.5em; }
