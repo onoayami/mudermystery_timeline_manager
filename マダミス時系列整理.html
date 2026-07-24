@@ -24,8 +24,8 @@
        表示モード切替だけを右端に保つ */
      body.view-pc .top-bar { justify-content: flex-start; flex-wrap: nowrap; }
      body.view-pc .view-toggle { margin-left: auto; flex: 0 0 auto; }
-    .session-data-toggle { background: #34495e; color: #cbd5e1; border: 1px solid #4a627a; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
-    .session-data-toggle:hover { background: #405a70; color: #fff; }
+    .session-data-toggle { background: #34495e; color: #cbd5e1; border: none; border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; font-weight: bold; box-shadow: 0 3px 8px rgba(0,0,0,0.3); }
+    .session-data-toggle:hover { background: #405a70; color: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.38); }
     /* データ削除ボタン（危険操作） */
     .data-actions { display: none; gap: 8px; flex-wrap: wrap; align-items: center; }
     .data-actions.open { display: flex; }
@@ -50,10 +50,10 @@
     .view-toggle button { background: #34495e; color: #cbd5e1; border: 1px solid #4a627a; padding: 6px 16px; cursor: pointer; font-size: 0.85rem; font-weight: bold; }
     .view-toggle button:first-child { border-radius: 6px 0 0 6px; }
     .view-toggle button:last-child { border-radius: 0 6px 6px 0; border-left: none; }
-    .view-toggle button.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+    .view-toggle button.active { background: #418CCC; color: #fff; border-color: #418CCC; }
     
     /* パネルの基本設定（image_0.pngに合わせて調整） */
-    .panel { background: #34495e; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+    .panel { background: #34495e; padding: 15px; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.30); }
     h2 { margin-top: 0; font-size: 1.1rem; padding-bottom: 5px; display: inline-block; }
     .session-heading { display: flex; align-items: center; gap: 6px; width: 100%; box-sizing: border-box; flex-wrap: wrap; margin-bottom: 0; }
     /* 「🎭 セッション名：」は使わず、両モードで「マーダーミステリー『…』」表記にする */
@@ -82,8 +82,8 @@
     /* 入力フォーム（image_0.pngに合わせて調整） */
     .input-group { display: flex; gap: 8px; margin-bottom: 15px; flex-wrap: wrap; }
     input[type="text"], select, textarea { padding: 8px; border: 1px solid #4a627a; border-radius: 4px; font-size: 0.9rem; background: #ecf0f1; color: #333; }
-    .btn-add { background: #3b82f6; color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; }
-    .btn-add:hover { background: #2563eb; }
+    .btn-add { background: #418CCC; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; }
+    .btn-add:hover { background: #3575ad; }
     .btn-flag { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-size: 1rem; line-height: 1; filter: grayscale(1); opacity: 0.55; }
     .btn-flag.active { filter: none; opacity: 1; background: #fefce8; border-color: #fde047; }
     
@@ -195,10 +195,15 @@
     .timeline-item-inner.edit-mode { gap: 6px; }
     .edit-time { flex: 0 0 64px; text-align: center; }
     .edit-text { flex: 1 1 auto; min-width: 0; }
-    .btn-edit-save { background: #dcfce7 !important; color: #16a34a !important; border-color: #86efac !important; font-weight: bold; }
-    /* 編集フォームの✓✕：少し大きめにし、PCでは入力欄と同じ高さに伸ばして中央に揃える */
-    .btn-edit-save, .btn-edit-cancel { padding: 6px 11px; font-size: 1.05rem; }
-    body.view-pc .edit-controls { align-self: stretch; }
+    .btn-edit-save { background: #15803d !important; color: #fff !important; border-color: #166534 !important; font-weight: bold; }
+    .btn-edit-cancel { background: #f1f3f5 !important; }
+    .btn-edit-save, .btn-edit-cancel { border: none !important; }
+    /* 編集フォームの入力欄と✓↩ボタンを同じ高さに揃える（折り返しても崩れないよう明示） */
+    .timeline-item-inner.edit-mode input { height: 36px; box-sizing: border-box; }
+    .btn-edit-save, .btn-edit-cancel { height: 34px; box-sizing: border-box; padding: 0 10px; font-size: 1.25rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
+    .btn-edit-cancel > span { position: relative; top: 2px; }
+    body.view-pc .edit-controls { align-self: stretch; align-items: stretch; }
+    body.view-mobile .edit-controls { align-items: stretch; }
     .timeline-item.concealed .timeline-item-inner,
     .timeline-item.concealed .btn-edit-card,
     .timeline-item.concealed .card-char-wrap,
@@ -269,7 +274,7 @@
     .mode-btn-nb { white-space: nowrap; }
     .timeline-mode-toggle #modeListBtn { border-radius: 6px 0 0 6px; }
     .timeline-mode-toggle #modeCompareBtn { border-radius: 0 6px 6px 0; border-left: none; }
-    .timeline-mode-toggle .mode-btn.active { background: #3b82f6; color: #fff; border-color: #3b82f6; }
+    .timeline-mode-toggle .mode-btn.active { background: #418CCC; color: #fff; border-color: #418CCC; }
     .timeline-mode-toggle .confirm-delete-toggle { margin-left: 10px; }
 
     /* ── 人物比較表示（時間を左端に、選択した人物を列に並べる） ── */
@@ -2193,7 +2198,7 @@
             </div>
             <div class="controls edit-controls">
               <button class="btn-edit-save" onclick="saveEditEvent(${index}, this)" title="保存">✓</button>
-              <button class="btn-edit-cancel" onclick="cancelEditEvent()" title="キャンセル">✕</button>
+              <button class="btn-edit-cancel" onclick="cancelEditEvent()" title="編集を戻る"><span>↩︎</span></button>
             </div>
           `;
         } else {
@@ -2235,7 +2240,7 @@
 
     // 幅が最短のカードを基準に、操作アイコン群の右端を揃える
     function alignControlsToShortestCard() {
-      const controls = [...timelineContainer.querySelectorAll('.timeline-item:not(.range-end-card) .controls')];
+      const controls = [...timelineContainer.querySelectorAll('.timeline-item:not(.range-end-card) .controls:not(.edit-controls)')];
       if (controls.length === 0) return;
       const pcView = document.body.classList.contains('view-pc');
       const innerByControls = new Map(controls.map(c => [c, c.closest('.timeline-item')?.querySelector('.timeline-item-inner:not(.edit-mode)')]));
