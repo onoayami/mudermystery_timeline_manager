@@ -69,8 +69,9 @@
     .session-name-display-pc::before { content: '『'; }
     .session-name-display-pc::after { content: '』'; }
     #sessionNameInput { flex: 1 1 auto; min-width: 0; box-sizing: border-box; font-weight: bold; font-size: 1rem; }
-    .session-name-edit { background: rgba(255, 255, 255, 0.12); color: #cbd5e1; border: none; padding: 0; cursor: pointer; font-size: 0.8rem; line-height: 1; flex: 0 0 auto; align-self: flex-end; position: relative; top: -3px; left: -6px; }
+    .session-name-edit { background: transparent; color: #cbd5e1; border: none; padding: 0; cursor: pointer; font-size: 0.8rem; line-height: 1; flex: 0 0 auto; align-self: flex-end; position: relative; top: -3px; left: -6px; }
     .session-name-edit:hover { color: #fff; }
+    .session-name-edit.editing { background: transparent; left: 2px; font-size: 1.25rem; }
     /* スマホ版：共通のh2にある下パディングを外し、タイトルの上下余白を均等にする */
     body.view-mobile .session-heading { padding-bottom: 0; }
     /* PC版：ラベル→改行→値＋小さな鉛筆 の2段に */
@@ -869,6 +870,7 @@
       sessionNameInput.select();
       document.getElementById('sessionNameEditBtn').textContent = '✓';
       document.getElementById('sessionNameEditBtn').title = 'セッション名を保存';
+      document.getElementById('sessionNameEditBtn').classList.add('editing');
     }
     function toggleSessionNameEdit() {
       const editing = sessionNameInput.style.display !== 'none';
@@ -887,6 +889,7 @@
       sessionNameDisplayPc.style.display = '';
       document.getElementById('sessionNameEditBtn').textContent = '✎';
       document.getElementById('sessionNameEditBtn').title = 'セッション名を編集';
+      document.getElementById('sessionNameEditBtn').classList.remove('editing');
       renderSessionName();
     }
 
