@@ -69,7 +69,7 @@
     .session-name-display-pc::before { content: '『'; }
     .session-name-display-pc::after { content: '』'; }
     #sessionNameInput { flex: 1 1 auto; min-width: 0; box-sizing: border-box; font-weight: bold; font-size: 1rem; }
-    .session-name-edit { background: transparent; color: #cbd5e1; border: none; padding: 0; cursor: pointer; font-size: 0.8rem; line-height: 1; flex: 0 0 auto; align-self: flex-end; position: relative; top: -3px; left: -6px; }
+    .session-name-edit { background: rgba(255, 255, 255, 0.1); color: #cbd5e1; border: none; padding: 0; cursor: pointer; font-size: 0.8rem; line-height: 1; flex: 0 0 auto; align-self: flex-end; position: relative; top: -3px; left: -6px; }
     .session-name-edit:hover { color: #fff; }
     /* スマホ版：共通のh2にある下パディングを外し、タイトルの上下余白を均等にする */
     body.view-mobile .session-heading { padding-bottom: 0; }
@@ -89,12 +89,14 @@
     
     /* 左列（キャラクター一覧＋秘密のメモを縦積み） */
     .side-column { display: flex; flex-direction: column; gap: 15px; }
-    body.view-pc .side-column { flex: 0 0 280px; }
+    body.view-pc .side-column { flex: 0 0 300px; }
     /* キャラクターパネル（新規） */
     #charPanel .input-group { flex-wrap: nowrap; justify-content: center; }
     #newCharName { flex: 0 1 130px !important; min-width: 0; border: none; text-align: center; }
+    /* スマホ版のみ：キャラ名入力欄を少し広げ、文字を左揃えにする */
+    body.view-mobile #newCharName { flex: 0 1 220px !important; text-align: left; }
     .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #4a627a; }
-    .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff; }
+    .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid currentColor; }
     .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; }
     .btn-unlock-char { background: #fef9c3; }
     .btn-delete-char, .btn-recolor, .btn-edit-char { flex: 0 0 25px; width: 25px; height: 21px; box-sizing: border-box; padding: 0; font-size: 0.8rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
@@ -197,8 +199,11 @@
     /* 目アイコンで内容を非表示（目とフラグ以外を隠す） */
     .btn-conceal { font-size: 0.95rem; line-height: 1; }
     .btn-edit-card { font-size: 0.9rem; line-height: 1; }
-    /* 不詳カードの上下移動ボタン */
+    /* 不詳カードの上下移動ボタン（ボタン自体は他のボタンと並べ、矢印の文字だけ下に下げる） */
     .btn-move-up, .btn-move-down { font-size: 0.8rem; line-height: 1; font-weight: bold; }
+    .controls button.btn-move-up, .controls button.btn-move-down,
+    .compare-card-actions button.btn-move-up, .compare-card-actions button.btn-move-down { color: #3B3B3B; }
+    .btn-move-up .move-arrow-icon, .btn-move-down .move-arrow-icon { display: inline-block; position: relative; top: 1px; }
     /* 登録内容の編集フォーム */
     .timeline-item-inner.edit-mode { gap: 6px; }
     .edit-time { flex: 0 0 64px; width: 64px; box-sizing: border-box; text-align: center; }
@@ -291,7 +296,7 @@
     .compare-table thead th { position: sticky; top: 0; z-index: 2; background: #2c3e50; color: #fff; white-space: nowrap; text-align: center; border-top: 1px solid #4a627a; }
     .compare-col-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
     .compare-col-name { flex: 1; text-align: center; }
-    .compare-move-btn { background: transparent; color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; opacity: 0.7; }
+    .compare-move-btn { background: rgba(255, 255, 255, 0.1); color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; opacity: 0.7; }
     .compare-move-btn:hover:not(:disabled) { opacity: 1; }
     .compare-move-btn:disabled { opacity: 0.2; cursor: default; }
     .compare-table .time-col { position: sticky; left: 0; z-index: 1; background: #2c3e50; color: #e2e8f0; font-weight: bold; white-space: nowrap; text-align: center; border-left: 1px solid #4a627a; }
@@ -448,7 +453,7 @@
        時系列パネルの中身だけスマホ版の見た目にしつつ、
        左のキャラクター一覧・秘密のメモはPC版のまま「左カラム」に残す。 */
     body.view-compact.view-mobile .main-container { flex-direction: row; align-items: flex-start; }
-    body.view-compact.view-mobile .side-column { flex: 0 0 280px; order: 0; }
+    body.view-compact.view-mobile .side-column { flex: 0 0 300px; order: 0; }
     body.view-compact.view-mobile #timelinePanel { order: 2; }
     body.view-compact.view-mobile .session-heading { flex-direction: column; align-items: stretch; gap: 4px; padding-bottom: 8px; }
     body.view-compact.view-mobile .session-label-pc { padding-left: 0.5em; }
@@ -1292,7 +1297,7 @@
           : `<div style="flex-grow: 1;">${escapeHtml(char.name)}</div>`;
         if (isEditing) {
           div.innerHTML = `
-            <div class="char-color-dot" style="background: ${safeColor(char.color)};"></div>
+            <div class="char-color-dot" style="background: ${safeColor(char.color)}; color: ${safeColor(char.color)};"></div>
             ${nameHtml}
             <div class="color-picker-wrap">
               <button class="btn-recolor" onclick="toggleCharPalette(event, ${index})" title="色を選び直す"><span class="char-action-icon">🎨</span></button>
@@ -1314,7 +1319,7 @@
           ? ''
           : `<button class="btn-edit-char" onclick="lockCharacter(${index})" title="ロックして編集・削除を防ぐ"><span class="char-action-icon">🔓</span></button>`;
         div.innerHTML = `
-          <div class="char-color-dot" style="background: ${safeColor(char.color)};"></div>
+          <div class="char-color-dot" style="background: ${safeColor(char.color)}; color: ${safeColor(char.color)};"></div>
           ${nameHtml}
           ${deleteButton}
           ${editIconButton}
@@ -1832,17 +1837,28 @@
       saveEvents();
     }
 
-    // 不詳（時刻なし）カードを、タイムライン上で上（-1）/下（+1）に1つ分動かす
+    // 不詳（時刻なし）カード、または同じ時刻の重複カードを、タイムライン上で上（-1）/下（+1）に1つ分動かす
     function moveUnknownEvent(index, dir) {
       const ev = events[index];
-      if (timeToMinutes(ev.time) !== Infinity) return; // 不詳カードのみ対象
       // 絞り込みに左右されないよう、全カードの並びで隣を見る
       const rows = buildSortedRows(false);
       const p = rows.findIndex(r => r.index === index);
       if (p < 0) return;
       const dest = p + dir;
       if (dest < 0 || dest >= rows.length) return; // 端なら何もしない
-      // 移動先で上下に来る行の実効時刻を求め、その中間を位置（anchor）にする
+
+      if (timeToMinutes(ev.time) !== Infinity) {
+        // 時刻ありカード：隣が同じ時刻のときだけ、配列内の並び順を入れ替える
+        if (rows[dest].kind === 'end' || rows[dest].ev.time !== ev.time) return;
+        const otherIndex = rows[dest].index;
+        const tmp = events[index];
+        events[index] = events[otherIndex];
+        events[otherIndex] = tmp;
+        saveEvents();
+        return;
+      }
+
+      // 不詳カード：移動先で上下に来る行の実効時刻を求め、その中間を位置（anchor）にする
       let aboveT, belowT;
       if (dir < 0) { // 上へ：rows[dest] のさらに上に入る
         belowT = rows[dest].sortT;
@@ -2164,6 +2180,12 @@
       // 表示する行を組み立て（絞り込み反映）、時間の早い順に並べる
       const rows = buildSortedRows(true);
       const { barsByRow, boxMargin, contentPad } = computeConnectorLayout(rows);
+      // 同じ時刻のカードが複数あるかを調べる（それらにも⬆︎⬇︎ボタンを出すため）
+      const timeCounts = new Map();
+      rows.forEach(r => {
+        if (r.kind === 'end' || !r.ev.time) return;
+        timeCounts.set(r.ev.time, (timeCounts.get(r.ev.time) || 0) + 1);
+      });
 
       rows.forEach((row, pos) => {
         const { ev, index, kind } = row;
@@ -2231,11 +2253,12 @@
           charBadges = `<div class="char-badges">${badgeHtml}${more}</div>`;
         }
 
-        // 不詳（時刻なし）カードだけ、タイムライン上を上下に動かせる△▽を出す
+        // 不詳（時刻なし）カード、または同じ時刻のカードが複数あるとき、タイムライン上を上下に動かせる△▽を出す
         const isUnknownTime = timeToMinutes(ev.time) === Infinity;
-        const moveBtns = isUnknownTime
-          ? `<button class="btn-move-up" onclick="moveUnknownEvent(${index}, -1)" title="1つ上へ移動">⬆︎</button>
-              <button class="btn-move-down" onclick="moveUnknownEvent(${index}, 1)" title="1つ下へ移動">⬇︎</button>`
+        const hasSameTimeSibling = !isUnknownTime && kind !== 'end' && ev.time && timeCounts.get(ev.time) > 1;
+        const moveBtns = (isUnknownTime || hasSameTimeSibling)
+          ? `<button class="btn-move-up" onclick="moveUnknownEvent(${index}, -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button>
+              <button class="btn-move-down" onclick="moveUnknownEvent(${index}, 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>`
           : '';
 
         if (index === editingIndex) {
@@ -2457,7 +2480,7 @@
         // リストと同じ「編集（✏️）」ボタン（時間・できごとを編集）
         const editBtn = `<button type="button" class="compare-edit-btn" onclick="startCompareEdit(${index}, this)" title="時間・内容を編集">✏️</button>`;
         const moveBtns = withMove
-          ? `<button type="button" class="btn-move-up" onclick="moveUnknownEvent(${index}, -1)" title="1つ上へ移動">⬆︎</button><button type="button" class="btn-move-down" onclick="moveUnknownEvent(${index}, 1)" title="1つ下へ移動">⬇︎</button>`
+          ? `<button type="button" class="btn-move-up" onclick="moveUnknownEvent(${index}, -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button><button type="button" class="btn-move-down" onclick="moveUnknownEvent(${index}, 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>`
           : '';
         return `<div class="compare-card-actions">${editBtn}${moveBtns}
           <button type="button" class="compare-flag${ev.flag ? ' active' : ''}" onclick="toggleEventFlag(${index})" title="フラグ切り替え">🚩</button>
