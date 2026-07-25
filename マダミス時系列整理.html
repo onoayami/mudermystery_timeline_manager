@@ -89,27 +89,10 @@
     
     /* 左列（キャラクター一覧＋秘密のメモを縦積み） */
     .side-column { display: flex; flex-direction: column; gap: 15px; }
-     /* PC左列は「マーダーミステリー／『クリックしてタイトルを入力』」に全角2文字分の余白を足した312pxで固定。
-       キャラクター名の編集入力など、子要素の最小幅でパネル全体が広がらないようにする。 */
-     body.view-pc .side-column,
-     body.view-compact.view-mobile .side-column { flex: 0 0 312px; width: 312px; min-width: 0; max-width: 312px; }
-     body.view-pc .side-column > .panel,
-     body.view-compact.view-mobile .side-column > .panel { width: 100%; min-width: 0; box-sizing: border-box; }
+    body.view-pc .side-column { flex: 0 0 280px; }
     /* キャラクターパネル（新規） */
-    #charPanel .input-group { flex-wrap: nowrap; }
-    #newCharName { min-width: 0; border: 1px solid #fff; text-align: left; }
-    /* PC系表示だけは、キャラ名欄を小さく中央にまとめる。通常のスマホ版は画面幅に応じて広げる。 */
-    body.view-pc #charPanel .input-group,
-    body.view-compact.view-mobile #charPanel .input-group { justify-content: center; }
-    body.view-pc #newCharName,
-    body.view-compact.view-mobile #newCharName { flex: 0 1 132px !important; }
-    body.view-mobile:not(.view-compact) #charPanel .input-group { justify-content: center; }
-    body.view-mobile:not(.view-compact) #newCharName {
-      box-sizing: border-box;
-      flex: 0 0 calc(100% - 122.664px) !important;
-      width: auto;
-      margin-right: 0;
-    }
+    #charPanel .input-group { flex-wrap: nowrap; justify-content: center; }
+    #newCharName { flex: 0 1 130px !important; min-width: 0; border: none; text-align: center; }
     .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #4a627a; }
     .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #fff; }
     .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; }
@@ -117,12 +100,12 @@
     .btn-delete-char, .btn-recolor, .btn-edit-char { flex: 0 0 25px; width: 25px; height: 21px; box-sizing: border-box; padding: 0; font-size: 0.8rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
     .char-action-icon { position: relative; top: 1px; display: block; line-height: 1; }
     .btn-cancel-char .char-action-icon { top: 2px; }
-    .btn-recolor { background: #ecf0f1; border: 1px solid #ecf0f1; border-radius: 4px; cursor: pointer; }
-    .btn-recolor:hover { background: #dbe4e8; border-color: #dbe4e8; }
-    .btn-edit-char { background: #ecf0f1; border: 1px solid #ecf0f1; border-radius: 4px; cursor: pointer; }
-    .btn-edit-char:hover { background: #dbe4e8; border-color: #dbe4e8; }
-    .btn-save-char { background: #22c55e; border-color: #22c55e; color: #fff; }
-    .btn-save-char:hover { background: #16a34a; border-color: #16a34a; }
+    .btn-recolor { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; }
+    .btn-recolor:hover { background: #dbe4e8; }
+    .btn-edit-char { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; }
+    .btn-edit-char:hover { background: #dbe4e8; }
+    .btn-save-char { background: #22c55e; border-color: #16a34a; color: #fff; }
+    .btn-save-char:hover { background: #16a34a; }
     .char-name-edit { flex: 1 1 auto; min-width: 0; background: #fff; color: #333; border: 1px solid #94a3b8; border-radius: 4px; padding: 3px 6px; }
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
@@ -135,9 +118,7 @@
     .color-palette-popup .color-swatch.selected { border-color: #fff; box-shadow: 0 0 0 2px #3b82f6; }
     
     /* 時系列パネル */
-    /* 左パディングを広げて（15px→27px）、死亡推定時刻の赤バー専用の溝を作る。
-       右も27pxにして左右対称に。パネル内の入力欄・絞り込み・カードが全部一緒にずれるので、縦のラインは揃ったまま */
-    #timelinePanel { flex: 1; min-width: 0; padding-left: 27px; padding-right: 27px; } /* min-width: 0 は重要 */
+    #timelinePanel { flex: 1; min-width: 0; } /* min-width: 0 は重要 */
     .timeline-header { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; margin-bottom: 12px; }
     .timeline-header h2 { margin-bottom: 0; }
     .timeline-title { display: flex; align-items: center; gap: 8px; }
@@ -149,12 +130,10 @@
     .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 4px 1px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
     .death-range select:focus { outline: none; }
     .death-range select option { background: #34495e; color: #e2e8f0; }
-    .death-range .colon { position: relative; top: -1px; color: #cbd5e1; padding: 0 1px; }
-    .death-range #deathFromH { margin-left: 1px; }
-    .death-range #deathToM { margin-right: 2px; }
+    .death-range .colon { color: #cbd5e1; padding: 0 1px; }
     .death-range .tilde { color: #cbd5e1; padding: 0 4px; line-height: 1; }
     .btn-death-toggle { border: 1px solid #64748b; border-radius: 999px; padding: 5px 16px; cursor: pointer; font-weight: bold; white-space: nowrap; background: #64748b; color: #fff; min-width: 54px; }
-    .btn-death-toggle.active { background: #D1383F; border-color: #D1383F; }
+    .btn-death-toggle.active { background: #b91c1c; border-color: #b91c1c; }
     .death-warn { display: none; margin: 8px 0 4px; padding: 6px 10px; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; border-radius: 4px; font-size: 0.85rem; }
     .death-warn.show { display: block; }
     /* 使い方（ヘルプ）モーダル */
@@ -169,9 +148,7 @@
     .help-close:hover { background: #e2e8f0; }
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
-    /* 縦パディングは6px（フォントやボタンはそのままにカードだけ低くして、画面に多く収める）。
-       margin-bottom: 8px は死亡推定バーの橋渡し（top: -9px）と連動しているので変えないこと */
-    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 16px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
+    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 16px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
     /* 時間の右側にキャラ名と本文をまとめる。本文が折り返すときは時間の下ではなくキャラ名の開始位置に揃う */
     .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 6px; }
@@ -200,15 +177,14 @@
     .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
     .btn-flag-card { font-size: 0.95rem; line-height: 1; filter: grayscale(1); }
     .btn-flag-card.active { filter: none; opacity: 1; background: #fefce8; border-color: #fde047; }
-    /* フラグ（蛍光イエロー）：キャラの黄・オレンジと被らない鮮やかな色。
-       白い区切り線は引かず、フラグ帯の幅は7px */
-    .timeline-item.flagged { box-shadow: inset 7px 0 0 #7DE3D8; }
-    /* 死亡推定時刻の範囲：カードの左外側に8px離して置く角丸バー。
+    /* フラグ（蛍光イエロー）：キャラの黄・オレンジと被らない鮮やかな色 */
+    .timeline-item.flagged { box-shadow: inset 4px 0 0 #eaff00, inset 5px 0 0 rgba(255,255,255,0.85); }
+    /* 死亡推定時刻の範囲：カードの左外側に2px離して置く角丸バー。
        カードから物理的に離すことで、赤いキャラのカードでも色が混ざらず範囲が分かる。
        フラグ（左端のインセット帯）とも重ならない。 */
     .timeline-item.in-death-range::before {
-      content: ''; position: absolute; left: -15px; top: 0; bottom: 0;
-      width: 7px; background: #D1383F; border-radius: 3px;
+      content: ''; position: absolute; left: -7px; top: 0; bottom: 0;
+      width: 5px; background: #C00000; border-radius: 3px;
     }
     /* 連続するカードは間の8px余白もつなぎ、範囲を一本のバーとして見せる。
        2枚目以降の上角を外すことで、途中に丸みが出ないようにする。 */
@@ -223,27 +199,20 @@
     .btn-move-up, .btn-move-down { font-size: 0.8rem; line-height: 1; font-weight: bold; }
     /* 登録内容の編集フォーム */
     .timeline-item-inner.edit-mode { gap: 6px; }
-    .edit-time { flex: 0 0 64px; width: 64px; box-sizing: border-box; text-align: center; }
-    /* 内容欄は残り幅いっぱい。右隣（6px）に✓↩ボタンが続く */
+    .edit-time { flex: 0 0 64px; text-align: center; }
     .edit-text { flex: 1 1 auto; min-width: 0; }
-    /* 編集中のカードだけ、内容欄と✓↩の間隔を6pxにする（通常カードの8pxはそのまま） */
-    .timeline-item:has(> .timeline-item-inner.edit-mode) { gap: 6px; }
-    .btn-edit-save { background: #17A34A !important; color: #fff !important; border-color: #16a34a !important; font-weight: bold; }
+    .btn-edit-save { background: #15803d !important; color: #fff !important; border-color: #166534 !important; font-weight: bold; }
     .btn-edit-cancel { background: #f1f3f5 !important; }
     .btn-edit-save, .btn-edit-cancel { border: none !important; }
-    /* 編集の✓↩ボタンは、カード内の他のボタン（✏️👥🚩👁️✕）と同じ大きさに揃える。
-       高さ・フォントを固定せず .controls button と同じ padding にし、色（緑/グレー）だけ残す。 */
+    /* 編集フォームの入力欄と✓↩ボタンを同じ高さに揃える（折り返しても崩れないよう明示） */
     .timeline-item-inner.edit-mode input { height: 36px; box-sizing: border-box; }
-    .btn-edit-save, .btn-edit-cancel { box-sizing: border-box; padding: 4px 7px; font-size: 1rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-    /* ボタン自体の大きさは変えず、中の✓マークだけ拡大表示する */
-    .btn-edit-save > span { display: inline-block; transform: scale(1.3); position: relative; top: 1px; }
-    /* ↩︎は淡色の背景で面積が目立ちやすいため、サイズを明示して一回り小さくする（23×29px） */
-    .btn-edit-cancel { padding: 1px 6px; width: 29px; height: 23px; }
+    /* リストビュー：内容入力欄の高さ（36px）に合わせた正方形にする */
+    .btn-edit-save, .btn-edit-cancel { width: 36px; height: 36px; box-sizing: border-box; padding: 0; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
     .btn-edit-cancel > span { position: relative; top: 2px; }
-    /* .controls の align-self: flex-end（下寄せ）より優先させ、✓↩を内容欄に対して縦中央に置く */
-    body.view-pc .timeline-item > .controls.edit-controls { align-self: center; align-items: center; justify-content: center; }
-    /* スマホ版の編集ボタンはカード右下に寄せる（他のボタン行と同じ右揃え） */
-    body.view-mobile .edit-controls { align-items: center; justify-content: flex-end; }
+    /* チェックマーク（✓）は少し大きく、1px下げて配置する（両ビュー共通） */
+    .btn-edit-save .edit-check, .compare-edit-save .edit-check { display: inline-block; font-size: 1.25em; line-height: 1; position: relative; top: 1px; }
+    body.view-pc .edit-controls { align-self: stretch; align-items: center; }
+    body.view-mobile .edit-controls { align-items: center; }
     .timeline-item.concealed .timeline-item-inner,
     .timeline-item.concealed .btn-edit-card,
     .timeline-item.concealed .card-char-wrap,
@@ -352,7 +321,8 @@
        比較編集の終了マスだけ縦に大きくなる。開始マスと同じ高さに揃える。 */
     .compare-edit .compare-edit-time, .compare-edit .compare-edit-endtime { flex: 0 0 auto; }
     .compare-edit-actions { display: flex; justify-content: flex-end; gap: 4px; }
-    .compare-edit-actions button { background: #fff; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 8px; line-height: 1; color: #1e293b; }
+    /* ✕ボタンを隣の✓ボタンと同じ幅に揃える */
+    .compare-edit-actions button { background: #fff; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; color: #1e293b; box-sizing: border-box; min-width: 2.35em; display: inline-flex; align-items: center; justify-content: center; }
     .compare-edit-actions .compare-edit-save { background: #dcfce7; border-color: #86efac; color: #16a34a; }
     .compare-edit-actions button:hover { filter: brightness(0.95); }
     .compare-card-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
@@ -419,8 +389,8 @@
        時間不明カード（⬆⬇付き＝6つのアイコン）を含む列はさらに広い最小幅にする。 */
     .compare-table td.compare-lane { min-width: 152px; }
     .compare-table td.compare-lane-untimed { min-width: 232px; }
-    .range-sep-edit { display: inline-flex; align-items: center; color: #4a627a; position: relative; top: 7px; }
-    .edit-endtime { flex: 0 0 64px; width: 64px; box-sizing: border-box; text-align: center; }
+    .range-sep-edit { display: inline-flex; align-items: center; color: #94a3b8; }
+    .edit-endtime { flex: 0 0 64px; text-align: center; }
 
     /* ── スマホ版の時系列カード調整 ── */
     body.view-mobile .main-container { flex-direction: column; }
@@ -455,7 +425,6 @@
     body.view-mobile .timeline-item.multi-character .badge-more { display: none; }
     body.view-mobile .timeline-item.multi-character .time-badge { align-self: flex-start; }
     body.view-mobile .controls { flex: 1 1 100%; justify-content: flex-end; order: 5; }
-    body.view-mobile .timeline-item-inner.edit-mode + .edit-controls { justify-content: flex-end; }
      /* スマホ版：不詳カードが狭く、✏️が時間表示の真下まで来た場合だけ、⬆⬇を✕の右隣へ移す。
        ✕（基点）は他カードと同じ右端位置に固定するため、✏️〜✕はそのまま流れに残し、
        ⬆⬇だけを絶対配置で✕の右側へ（他ボタンと同じ大きさのまま）横並びで置く。 */
@@ -472,7 +441,7 @@
        時系列パネルの中身だけスマホ版の見た目にしつつ、
        左のキャラクター一覧・秘密のメモはPC版のまま「左カラム」に残す。 */
     body.view-compact.view-mobile .main-container { flex-direction: row; align-items: flex-start; }
-    body.view-compact.view-mobile .side-column { order: 0; }
+    body.view-compact.view-mobile .side-column { flex: 0 0 280px; order: 0; }
     body.view-compact.view-mobile #timelinePanel { order: 2; }
     body.view-compact.view-mobile .session-heading { flex-direction: column; align-items: stretch; gap: 4px; padding-bottom: 8px; }
     body.view-compact.view-mobile .session-label-pc { padding-left: 0.5em; }
@@ -1885,15 +1854,14 @@
       const card = btn.closest('.compare-card, .compare-range-fill');
       if (!card || card.querySelector('.compare-edit')) return; // すでに編集中なら何もしない
       const ev = events[index];
-      const endField = isRangeEvent(ev)
-        ? `<input type="text" class="edit-endtime compare-edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="終了" onkeydown="handleCompareEditKeydown(event, ${index})">`
-        : '';
+      // 期間指定の有無に関わらず、終了時間の入力欄を常に表示する（空なら単一時刻のまま）
+      const endField = `<input type="text" class="edit-endtime compare-edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="終了" onkeydown="handleCompareEditKeydown(event, ${index})">`;
       card.innerHTML = `<div class="compare-edit">
         <textarea class="compare-edit-text" placeholder="できごと" onkeydown="handleCompareEditKeydown(event, ${index})">${escapeHtml(ev.text || '')}</textarea>
         <input type="text" class="edit-time compare-edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleCompareEditKeydown(event, ${index})">
         ${endField}
         <div class="compare-edit-actions">
-          <button type="button" class="compare-edit-save" onclick="saveCompareEdit(${index}, this)" title="保存">✓</button>
+          <button type="button" class="compare-edit-save" onclick="saveCompareEdit(${index}, this)" title="保存"><span class="edit-check">✓</span></button>
           <button type="button" class="compare-edit-cancel" onclick="renderEvents()" title="取消">✕</button>
         </div>
       </div>`;
@@ -2267,11 +2235,11 @@
             <div class="timeline-item-inner edit-mode">
               <input type="text" class="edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTextKeydown(event, ${index})">
               <span class="range-sep-edit">〜</span>
-              <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleEditTextKeydown(event, ${index})">
+              <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="終了(任意)" onkeydown="handleEditTextKeydown(event, ${index})">
               <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容" onkeydown="handleEditTextKeydown(event, ${index})">
             </div>
             <div class="controls edit-controls">
-              <button class="btn-edit-save" onclick="saveEditEvent(${index}, this)" title="保存"><span>✓</span></button>
+              <button class="btn-edit-save" onclick="saveEditEvent(${index}, this)" title="保存"><span class="edit-check">✓</span></button>
               <button class="btn-edit-cancel" onclick="cancelEditEvent()" title="編集を戻る"><span>↩︎</span></button>
             </div>
           `;
