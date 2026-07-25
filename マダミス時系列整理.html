@@ -89,7 +89,7 @@
     
     /* 左列（キャラクター一覧＋秘密のメモを縦積み） */
     .side-column { display: flex; flex-direction: column; gap: 15px; }
-    body.view-pc .side-column { flex: 0 0 300px; }
+    body.view-pc .side-column { flex: 0 0 300px; min-width: 0; }
     /* キャラクターパネル（新規） */
     #charPanel .input-group { flex-wrap: nowrap; justify-content: center; }
     #newCharName { flex: 0 1 130px !important; min-width: 0; border: none; text-align: center; }
@@ -120,7 +120,7 @@
     .color-palette-popup .color-swatch.selected { border-color: #fff; box-shadow: 0 0 0 2px #3b82f6; }
     
     /* 時系列パネル */
-    #timelinePanel { flex: 1; min-width: 0; } /* min-width: 0 は重要 */
+    #timelinePanel { flex: 1; min-width: 0; padding-left: 25px; padding-right: 25px; } /* min-width: 0 は重要。左右は他パネルより広めの余白 */
     .timeline-header { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; margin-bottom: 12px; }
     .timeline-header h2 { margin-bottom: 0; }
     .timeline-title { display: flex; align-items: center; gap: 8px; }
@@ -128,11 +128,11 @@
     .btn-help { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 1.1rem; height: 1.1rem; padding: 0; background: #ecf0f1; border: 1px solid #4a627a; border-radius: 50%; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.75rem; line-height: 1; }
     .btn-help:hover { background: #dbe4e8; }
     .death-time-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; flex-wrap: wrap; }
-    .death-range { display: inline-flex; align-items: center; background: #64748b; border: 1px solid #64748b; border-radius: 4px; padding: 0 4px; }
+    .death-range { display: inline-flex; align-items: center; background: #64748b; border: 1px solid #64748b; border-radius: 4px; padding: 0 5px; }
     .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 4px 1px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
     .death-range select:focus { outline: none; }
     .death-range select option { background: #34495e; color: #e2e8f0; }
-    .death-range .colon { color: #cbd5e1; padding: 0 1px; }
+    .death-range .colon { color: #cbd5e1; padding: 0 1px; position: relative; top: -1px; }
     .death-range .tilde { color: #cbd5e1; padding: 0 4px; line-height: 1; }
     .btn-death-toggle { border: 1px solid #64748b; border-radius: 999px; padding: 5px 16px; cursor: pointer; font-weight: bold; white-space: nowrap; background: #64748b; color: #fff; min-width: 54px; }
     .btn-death-toggle.active { background: #b91c1c; border-color: #b91c1c; }
@@ -187,8 +187,8 @@
        カードから物理的に離すことで、赤いキャラのカードでも色が混ざらず範囲が分かる。
        フラグ（左端のインセット帯）とも重ならない。 */
     .timeline-item.in-death-range::before {
-      content: ''; position: absolute; left: -7px; top: 0; bottom: 0;
-      width: 5px; background: #C00000; border-radius: 3px;
+      content: ''; position: absolute; left: -12px; top: 0; bottom: 0;
+      width: 5px; background: #BF1D37; border-radius: 3px;
     }
     /* 連続するカードは間の8px余白もつなぎ、範囲を一本のバーとして見せる。
        2枚目以降の上角を外すことで、途中に丸みが出ないようにする。 */
@@ -453,7 +453,7 @@
        時系列パネルの中身だけスマホ版の見た目にしつつ、
        左のキャラクター一覧・秘密のメモはPC版のまま「左カラム」に残す。 */
     body.view-compact.view-mobile .main-container { flex-direction: row; align-items: flex-start; }
-    body.view-compact.view-mobile .side-column { flex: 0 0 300px; order: 0; }
+    body.view-compact.view-mobile .side-column { flex: 0 0 300px; min-width: 0; order: 0; }
     body.view-compact.view-mobile #timelinePanel { order: 2; }
     body.view-compact.view-mobile .session-heading { flex-direction: column; align-items: stretch; gap: 4px; padding-bottom: 8px; }
     body.view-compact.view-mobile .session-label-pc { padding-left: 0.5em; }
@@ -1785,14 +1785,29 @@
       events.push(ev);
 
       document.getElementById('timeInput').value = '';
-      document.getElementById('endTimeInput').value = '';
       document.getElementById('eventInput').value = '';
-      // 選択中の人物はそのまま（同じ人物の行動を連続で入力しやすいように）
       newEventFlag = false; // フラグは毎回リセット
       document.getElementById('flagToggleBtn').classList.remove('active');
+      // 「期間」と「人物選択」も毎回必ず初期状態に戻す
+      resetAddEventForm();
 
       sortEvents(); // 時間順に並べ替えてから保存
       saveEvents();
+    }
+
+    // 追加フォームの「期間」と「人物選択」を初期状態に戻す
+    // （追加のたびに必ず呼ばれる。状態変数と見た目の両方をここでまとめてリセットする）
+    function resetAddEventForm() {
+      // 期間モードをオフに戻す
+      newEventRange = false;
+      document.getElementById('addEventGroup').classList.remove('range-mode');
+      document.getElementById('rangeToggleBtn').classList.remove('active');
+      document.getElementById('endTimeInput').value = '';
+      // 人物選択をすべて解除する
+      newEventChars = [];
+      renderCharSelectBtn();
+      renderCharSelect();
+      closeAllCharPopups();
     }
 
     // 新規追加用のフラグを切り替える
