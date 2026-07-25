@@ -702,6 +702,7 @@
       <h4>💾 セッションデータ（保存・持ち運び）</h4>
       <ul>
         <li>入力した内容は <strong>この端末のブラウザに自動保存</strong> されます。</li>
+        <li>⚠️ このHTMLファイルの<strong>置き場所（フォルダ）やファイル名を変えると、ブラウザによっては保存データが見えなくなる</strong>ことがあります。移動・改名の前に「⬆️ 書き出し」でバックアップしてください。</li>
         <li>画面上部の <strong>「▶︎ セッションデータ」</strong> を開くと、次の操作ができます。
           <ul>
             <li><strong>⬆️ 書き出し</strong>：すべてのデータをファイルに保存（バックアップ・共有用）。</li>
@@ -814,27 +815,32 @@
     const characterList = document.getElementById('characterList');
     const cardColorsStyle = document.getElementById('cardColorsStyle');
 
-    // 初期化：メモと、キャラクター・色のスタイルを適用
-    memoInput.value = localStorage.getItem(KEYS.memo) || '';
-    renderSessionName();
-    applyView();
-    updateSessionDataToggle();
-    applyMemoConceal();
-    document.getElementById('confirmDeleteToggle').checked = confirmDelete;
-    document.getElementById('showConcealedCompareToggle').checked = hideConcealedInCompare;
-    document.getElementById('compareOrderFixedToggle').checked = compareOrderFixed;
-    applyCompareZoom();
-    populateDeathSelects();
-    updateDeathToggleBtn();
-    updateDeathWarn();
-    renderColorPalettePopup();
-    updateColorPickerBtn();
-    renderCharacters();
-    updateTimelineModeBtn();
-    applyView(); // モードボタンの状態確定後に、バー幅を見てPC／スマホの実効レイアウトを確定
-    sortEvents();
-    renderEvents();
-    updateCardColorCss(); // キャラクターごとのCSSを生成
+    // 起動時の初期化一式。全関数定義の後（ファイル末尾）で init() を1回だけ呼ぶ。
+    // 呼び出し順には依存関係がある（例: updateTimelineModeBtn でモードボタンの文言が確定した後でないと
+    // 2回目の applyView の折返し判定が正しく測れない）ため、順序を入れ替えないこと。
+    function init() {
+      // メモと、キャラクター・色のスタイルを適用
+      memoInput.value = localStorage.getItem(KEYS.memo) || '';
+      renderSessionName();
+      applyView();
+      updateSessionDataToggle();
+      applyMemoConceal();
+      document.getElementById('confirmDeleteToggle').checked = confirmDelete;
+      document.getElementById('showConcealedCompareToggle').checked = hideConcealedInCompare;
+      document.getElementById('compareOrderFixedToggle').checked = compareOrderFixed;
+      applyCompareZoom();
+      populateDeathSelects();
+      updateDeathToggleBtn();
+      updateDeathWarn();
+      renderColorPalettePopup();
+      updateColorPickerBtn();
+      renderCharacters();
+      updateTimelineModeBtn();
+      applyView(); // モードボタンの状態確定後に、バー幅を見てPC／スマホの実効レイアウトを確定
+      sortEvents();
+      renderEvents();
+      updateCardColorCss(); // キャラクターごとのCSSを生成
+    }
 
     // --- メモ帳の自動保存（キー入力ごとの書き込みをデバウンス） ---
     let memoSaveTimer = null;
@@ -842,6 +848,14 @@
       clearTimeout(memoSaveTimer);
       memoSaveTimer = setTimeout(() => safeSet(KEYS.memo, memoInput.value), 300);
     });
+    // タブを閉じる・リロード・アプリ切替の直前に、デバウンス待ちのメモを確実に保存する
+    // （300ms以内に閉じられた場合の取りこぼし防止。pagehideはモバイルSafariでも確実に発火する）
+    function flushMemoSave() {
+      clearTimeout(memoSaveTimer);
+      safeSet(KEYS.memo, memoInput.value);
+    }
+    window.addEventListener('pagehide', flushMemoSave);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushMemoSave(); });
 
     // セッション名はEnter 2回または保存ボタンで確定保存
     let sessionNameEnterPending = false;
@@ -957,8 +971,10 @@
     // PC版で画面幅が狭く、モード切替バーのボタン文字が縦に潰れる（折り返す）ときは、
     // 自動でスマホ版レイアウトへ切り替える。ユーザーが選んだ設定（currentView）は保持する。
     function pcModeToggleWraps() {
+      // 注意: この判定は #modeCompareBtn が常時表示されている前提。
+      // 非表示（幅0）だと高さ0＝「折り返していない」と誤判定するため、その場合は判定しない
       const btn = document.getElementById('modeCompareBtn');
-      if (!btn) return false;
+      if (!btn || btn.getBoundingClientRect().width === 0) return false;
       const cs = getComputedStyle(btn);
       const lineH = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.2;
       const frame = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)
@@ -1151,7 +1167,11 @@
       });
       // 人物の複数選択ポップアップ（追加フォーム・カード）も外側クリックで閉じる
       document.querySelectorAll('.char-select-popup.open, .char-assign-popup.open').forEach(p => {
-        if (!p.parentElement.contains(e.target)) { p.classList.remove('open'); p.closest('.timeline-item')?.classList.remove('char-popup-open'); }
+        if (!p.parentElement.contains(e.target)) {
+          p.classList.remove('open');
+          const item = p.closest('.timeline-item');
+          if (item) item.classList.remove('char-popup-open');
+        }
       });
     });
 
@@ -1571,7 +1591,8 @@
       renderCardCharPopup(index);
       popup.classList.add('open');
       // ポップアップが他カードのボタンに覆われないよう、カードを前面へ
-      popup.closest('.timeline-item')?.classList.add('char-popup-open');
+      const popupItem = popup.closest('.timeline-item');
+      if (popupItem) popupItem.classList.add('char-popup-open');
     }
     function renderCardCharPopup(index) {
       const popup = document.getElementById(`charAssign-${index}`);
@@ -1606,7 +1627,12 @@
       renderEvents();
       // 再描画でポップアップが作り直されるので、続けて操作できるよう開き直す
       const popup = document.getElementById(`charAssign-${index}`);
-      if (popup) { renderCardCharPopup(index); popup.classList.add('open'); popup.closest('.timeline-item')?.classList.add('char-popup-open'); }
+      if (popup) {
+        renderCardCharPopup(index);
+        popup.classList.add('open');
+        const popupItem = popup.closest('.timeline-item');
+        if (popupItem) popupItem.classList.add('char-popup-open');
+      }
     }
 
     // キャラクターごとの色設定をCSSとして動的に生成する
@@ -1639,8 +1665,12 @@
 
     function normalizeTime(t) {
       if (!t) return t;
-      // 全角→半角に変換し、区切り文字のゆらぎ（: ： ; ；）をすべて「:」へ統一する
-      let s = toHalfWidth(t).trim().replace(/[:;\uFF1A\uFF1B]/g, ':').replace(/:+/g, ':');
+      const half = toHalfWidth(t).trim();
+      // 数字・空白・区切り記号以外の文字が混ざる入力（例:「深夜2:30頃」「夕方」）は
+      // 自由記述として一切加工せずそのまま返す（入力した文字を消さない）
+      if (!/^[\d\s:;]+$/.test(half)) return half;
+      // 区切り文字のゆらぎ（: ；）をすべて「:」へ統一する
+      let s = half.replace(/[;]/g, ':').replace(/:+/g, ':');
       // 「:」が含まれる場合は 時:分 として整形する
       if (s.includes(':')) {
         const parts = s.split(':');
@@ -1648,21 +1678,25 @@
         const m = parts[1].replace(/\D/g, '');
         if (h === '' && m === '') return '';
         if (m === '') return h;               // 分がまだ入力されていない
-        return `${h || '0'}:${m.slice(0, 2).padStart(2, '0')}`;
+        // 時は先頭ゼロを取って統一（09:05 → 9:05）。表記ゆらぎで同時刻が別扱いになるのを防ぐ
+        return `${parseInt(h || '0', 10)}:${m.slice(0, 2).padStart(2, '0')}`;
       }
-      // 数字だけのときは自動で「:」を入れる（4桁→HH:MM／3桁→H:MM）
+      // 数字だけのときは自動で「:」を入れる（4桁→H:MM（先頭ゼロは除去）／3桁→H:MM）
       const digits = s.replace(/\D/g, '');
-      if (digits.length === 4) return `${digits.slice(0, 2)}:${digits.slice(2)}`;
+      if (digits.length === 4) return `${parseInt(digits.slice(0, 2), 10)}:${digits.slice(2)}`;
       if (digits.length === 3) return `${digits.slice(0, 1)}:${digits.slice(1)}`;
       return s;
     }
 
     // 時間文字列を分単位に変換（ソート用、不正・未入力は末尾へ）
+    // 「時:分」として丸ごと読める文字列だけを時刻とみなす（前後に他の文字が混ざる自由記述は末尾扱い）
     function timeToMinutes(t) {
       if (!t) return Infinity;
-      const m = String(t).match(/(\d{1,2}):(\d{2})/);
+      const m = String(t).trim().match(/^(\d{1,2}):(\d{2})$/);
       if (!m) return Infinity;
-      return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+      const h = parseInt(m[1], 10), mi = parseInt(m[2], 10);
+      if (mi > 59) return Infinity; // 分が60以上（例: 9:99）は時刻として実在しないので自由記述扱い
+      return h * 60 + mi;
     }
 
     // 不詳（時刻なし）カードの基本位置。実時刻（0〜1439分）より十分大きな値にして末尾側に置く
@@ -1906,10 +1940,12 @@
     }
 
     // 登録済みカードのフラグを切り替える
+    // 比較ビューには .timeline-item[data-index] が無いため部分更新（refreshCard）は使えない。
+    // 比較ビュー・期間イベントは全再描画、それ以外はカード1枚だけ更新する（3関数共通の方針）
     function toggleEventFlag(index) {
       events[index].flag = !events[index].flag;
       persistEvents();
-      if (isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
+      if (timelineMode === 'compare' || isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
     }
 
     // カードの内容の表示/非表示を切り替える
@@ -1917,14 +1953,14 @@
       events[index].concealed = !events[index].concealed;
       if (!events[index].concealed) events[index].colorHidden = false; // 表示に戻したら色隠しも解除
       persistEvents();
-      if (isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
+      if (timelineMode === 'compare' || isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
     }
 
     // 🎨：非表示中のカードの色を隠す/戻すを切り替える
     function toggleEventColor(index) {
       events[index].colorHidden = !events[index].colorHidden;
       persistEvents();
-      if (isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
+      if (timelineMode === 'compare' || isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
     }
 
     function deleteEvent(index) {
@@ -1993,35 +2029,17 @@
 
     // 比較ビューの編集欄で Enter を連続2回押したら保存する（Escで取消）
     function handleCompareEditKeydown(e, index) {
-      const el = e.target;
       if (e.key === 'Escape') { e.preventDefault(); renderEvents(); return; }
-      if (e.key !== 'Enter') { el.dataset.enterCount = '0'; return; }
-      e.preventDefault();
-      if (e.repeat) return; // 長押しの自動リピートでは保存しない
-      const n = (parseInt(el.dataset.enterCount || '0', 10)) + 1;
-      if (n >= 2) { el.dataset.enterCount = '0'; saveCompareEdit(index, el); return; }
-      el.dataset.enterCount = String(n);
+      handleDoubleEnterSave(e, (el) => saveCompareEdit(index, el));
     }
 
     // 比較ビューの編集内容を保存する（時間・終了時間・できごと。人物はカードでは変更しない）
     function saveCompareEdit(index, el) {
       const card = el.closest('.compare-card, .compare-range-fill');
-      const timeEl = card.querySelector('.compare-edit-time');
-      const endEl = card.querySelector('.compare-edit-endtime');
-      const textEl = card.querySelector('.compare-edit-text');
-      const newText = textEl.value.trim();
-      if (!newText) { alert('内容を入力してください'); return; }
-      events[index].time = normalizeTime(timeEl.value);
-      events[index].text = newText;
-      // 終了時刻：入力があれば期間イベントに、空なら単一時刻に戻す
-      if (endEl) {
-        const nt = normalizeTime(endEl.value);
-        events[index].endTime = (nt && timeToMinutes(nt) !== Infinity) ? nt : '';
-      }
-      // 時刻が入ったら手動位置（anchor）は不要
-      if (timeToMinutes(events[index].time) !== Infinity) delete events[index].anchor;
-      sortEvents();
-      saveEvents();
+      applyEventEdit(index,
+        card.querySelector('.compare-edit-time'),
+        card.querySelector('.compare-edit-endtime'),
+        card.querySelector('.compare-edit-text'));
     }
 
     // カードを編集モードにする
@@ -2057,7 +2075,9 @@
 
     // 時間だけ編集を保存する（内容・終了時刻・期間はそのまま）
     function saveEditTime(index) {
-      if (editingTimeIndex !== index) return; // すでに確定/キャンセル済みなら何もしない
+      // Enter保存→renderEvents()で入力欄がDOMから外れる→blurが再発火して本関数が二重に呼ばれるため、
+      // 「すでに確定/キャンセル済みなら何もしない」ガードで二重保存を防いでいる（消さないこと）
+      if (editingTimeIndex !== index) return;
       const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
       const input = card && card.querySelector('.edit-time-inline');
       if (!input) { editingTimeIndex = -1; renderEvents(); return; }
@@ -2075,37 +2095,54 @@
       else if (e.key === 'Escape') { e.preventDefault(); cancelEditTime(); }
     }
 
-    // 編集内容を保存する（時間・終了時間・内容。人物はカードの👥で編集）
-    function saveEditEvent(index, btn) {
-      const card = btn.closest('.timeline-item');
-      const timeEl = card.querySelector('.edit-time');
-      const endEl = card.querySelector('.edit-endtime');
-      const textEl = card.querySelector('.edit-text');
+    // リスト編集・比較ビュー編集で共通の保存処理。
+    // 内容必須チェック→時間の正規化→期間化/解除→anchor整理→ソート→保存 をここ1箇所に集約する
+    // （仕様変更は必ずこの関数を直すこと。片方のビューだけ仕様が割れる事故を防ぐ）
+    // beforeSave: バリデーション通過後・保存（再描画）前に呼ぶ後処理（例: 編集モードの解除）
+    function applyEventEdit(index, timeEl, endEl, textEl, beforeSave) {
       const newText = textEl.value.trim();
       if (!newText) { alert('内容を入力してください'); return; }
       events[index].time = normalizeTime(timeEl.value);
       events[index].text = newText;
       // 終了時刻：入力があれば期間イベントに、空なら単一時刻に戻す
+      // （期間でないカードには endTime のデータ自体を持たせない。空文字を残すと書き出しJSONが汚れるため削除する）
       if (endEl) {
         const nt = normalizeTime(endEl.value);
-        events[index].endTime = (nt && timeToMinutes(nt) !== Infinity) ? nt : '';
+        if (nt && timeToMinutes(nt) !== Infinity) events[index].endTime = nt; else delete events[index].endTime;
       }
       // 時刻が入ったら手動位置（anchor）は不要なので片付ける
       if (timeToMinutes(events[index].time) !== Infinity) delete events[index].anchor;
-      editingIndex = -1;
+      if (beforeSave) beforeSave();
       sortEvents(); // 時間を変えた場合に備えて並べ替え
       saveEvents();
     }
 
-    // 「できごと」欄で Enter を連続2回押したら保存する
-    function handleEditTextKeydown(e, index) {
-      if (e.key !== 'Enter') { e.target.dataset.enterCount = '0'; return; }
+    // 編集欄で Enter を「素早く2回」（700ms以内・長押しリピート除外）押したら保存する共通処理
+    // （セッション名編集と同じ猶予時間。リスト編集・比較ビュー編集の両方から使う）
+    function handleDoubleEnterSave(e, save) {
+      const el = e.target;
+      if (e.key !== 'Enter') { el.dataset.enterCount = '0'; return; }
       e.preventDefault();
       if (e.repeat) return; // 長押しの自動リピートでは保存しない
-      const el = e.target;
       const n = (parseInt(el.dataset.enterCount || '0', 10)) + 1;
-      if (n >= 2) { el.dataset.enterCount = '0'; saveEditEvent(index, el); return; }
+      if (n >= 2) { el.dataset.enterCount = '0'; save(el); return; }
       el.dataset.enterCount = String(n);
+      setTimeout(() => { el.dataset.enterCount = '0'; }, 700);
+    }
+
+    // 編集内容を保存する（時間・終了時間・内容。人物はカードの👥で編集）
+    function saveEditEvent(index, btn) {
+      const card = btn.closest('.timeline-item');
+      applyEventEdit(index,
+        card.querySelector('.edit-time'),
+        card.querySelector('.edit-endtime'),
+        card.querySelector('.edit-text'),
+        () => { editingIndex = -1; }); // 保存成功時だけ編集モードを解除（内容が空のときは編集を続ける）
+    }
+
+    // 「できごと」欄で Enter を連続2回押したら保存する
+    function handleEditTextKeydown(e, index) {
+      handleDoubleEnterSave(e, (el) => saveEditEvent(index, el));
     }
 
     // HTML特殊文字のエスケープ（属性値に差し込んでも安全なようクォートも変換する）
@@ -2417,7 +2454,10 @@
       const controls = [...timelineContainer.querySelectorAll('.timeline-item:not(.range-end-card) .controls:not(.edit-controls)')];
       if (controls.length === 0) return;
       const pcView = document.body.classList.contains('view-pc');
-      const innerByControls = new Map(controls.map(c => [c, c.closest('.timeline-item')?.querySelector('.timeline-item-inner:not(.edit-mode)')]));
+      const innerByControls = new Map(controls.map(c => {
+        const item = c.closest('.timeline-item');
+        return [c, item ? item.querySelector('.timeline-item-inner:not(.edit-mode)') : null];
+      }));
       // レイアウトスラッシング回避のため「読み取り一括 → 書き込み一括」に分離する
       controls.forEach(c => {
         c.style.transform = '';
@@ -2698,6 +2738,9 @@
       timelineContainer.innerHTML = html;
       applyCompareZoom(); // 保存された表示倍率を反映
     }
+
+    // 起動（全関数の定義が終わったこの位置で初期化を実行する）
+    init();
 
   </script>
 
