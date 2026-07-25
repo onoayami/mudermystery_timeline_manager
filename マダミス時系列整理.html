@@ -199,18 +199,14 @@
     .btn-move-up, .btn-move-down { font-size: 0.8rem; line-height: 1; font-weight: bold; }
     /* 登録内容の編集フォーム */
     .timeline-item-inner.edit-mode { gap: 6px; }
-    .edit-time { flex: 0 0 64px; text-align: center; }
+    .edit-time { flex: 0 0 64px; width: 64px; box-sizing: border-box; text-align: center; }
     .edit-text { flex: 1 1 auto; min-width: 0; }
-    .btn-edit-save { background: #15803d !important; color: #fff !important; border-color: #166534 !important; font-weight: bold; }
-    .btn-edit-cancel { background: #f1f3f5 !important; }
-    .btn-edit-save, .btn-edit-cancel { border: none !important; }
-    /* 編集フォームの入力欄と✓↩ボタンを同じ高さに揃える（折り返しても崩れないよう明示） */
+    /* 編集フォームの入力欄と✓✕ボタンを同じ高さに揃える（折り返しても崩れないよう明示） */
     .timeline-item-inner.edit-mode input { height: 36px; box-sizing: border-box; }
-    /* リストビュー：内容入力欄の高さ（36px）に合わせた正方形にする */
-    .btn-edit-save, .btn-edit-cancel { width: 36px; height: 36px; box-sizing: border-box; padding: 0; font-size: 1.1rem; display: inline-flex; align-items: center; justify-content: center; line-height: 1; }
-    .btn-edit-cancel > span { position: relative; top: 2px; }
+    /* リストビュー：人物比較と同じ小さな✓✕ボタンを、内容入力欄の縦幅（36px）に合わせた正方形で表示する */
+    .edit-controls.compare-edit-actions button { width: 36px; height: 36px; min-width: 36px; padding: 0; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; }
     /* チェックマーク（✓）は少し大きく、1px下げて配置する（両ビュー共通） */
-    .btn-edit-save .edit-check, .compare-edit-save .edit-check { display: inline-block; font-size: 1.25em; line-height: 1; position: relative; top: 1px; }
+    .compare-edit-save .edit-check { display: inline-block; font-size: 1.25em; line-height: 1; position: relative; top: 1px; }
     body.view-pc .edit-controls { align-self: stretch; align-items: center; }
     body.view-mobile .edit-controls { align-items: center; }
     .timeline-item.concealed .timeline-item-inner,
@@ -389,8 +385,11 @@
        時間不明カード（⬆⬇付き＝6つのアイコン）を含む列はさらに広い最小幅にする。 */
     .compare-table td.compare-lane { min-width: 152px; }
     .compare-table td.compare-lane-untimed { min-width: 232px; }
-    .range-sep-edit { display: inline-flex; align-items: center; color: #94a3b8; }
-    .edit-endtime { flex: 0 0 64px; text-align: center; }
+    /* 「〓」は入力枠の色に揃え、10px下に配置する */
+    .range-sep-edit { display: inline-flex; align-items: center; color: #7b96b3; position: relative; top: 8px; }
+    .edit-endtime { flex: 0 0 32px; text-align: center; }
+    /* リストビューの終了ボックスだけ幅を倍に（人物比較の 92px はそのまま） */
+    .timeline-item-inner.edit-mode .edit-endtime { width: 64px; box-sizing: border-box; }
 
     /* ── スマホ版の時系列カード調整 ── */
     body.view-mobile .main-container { flex-direction: column; }
@@ -2238,9 +2237,9 @@
               <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="終了(任意)" onkeydown="handleEditTextKeydown(event, ${index})">
               <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容" onkeydown="handleEditTextKeydown(event, ${index})">
             </div>
-            <div class="controls edit-controls">
-              <button class="btn-edit-save" onclick="saveEditEvent(${index}, this)" title="保存"><span class="edit-check">✓</span></button>
-              <button class="btn-edit-cancel" onclick="cancelEditEvent()" title="編集を戻る"><span>↩︎</span></button>
+            <div class="controls edit-controls compare-edit-actions">
+              <button type="button" class="compare-edit-save" onclick="saveEditEvent(${index}, this)" title="保存"><span class="edit-check">✓</span></button>
+              <button type="button" class="compare-edit-cancel" onclick="cancelEditEvent()" title="取消">✕</button>
             </div>
           `;
         } else {
