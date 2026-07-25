@@ -69,7 +69,7 @@
     .session-name-display-pc::before { content: '『'; }
     .session-name-display-pc::after { content: '』'; }
     #sessionNameInput { flex: 1 1 auto; min-width: 0; box-sizing: border-box; font-weight: bold; font-size: 1rem; }
-    .session-name-edit { background: rgba(255, 255, 255, 0.1); color: #cbd5e1; border: none; padding: 0; cursor: pointer; font-size: 0.8rem; line-height: 1; flex: 0 0 auto; align-self: flex-end; position: relative; top: -3px; left: -6px; }
+    .session-name-edit { background: rgba(255, 255, 255, 0.12); color: #cbd5e1; border: none; padding: 0; cursor: pointer; font-size: 0.8rem; line-height: 1; flex: 0 0 auto; align-self: flex-end; position: relative; top: -3px; left: -6px; }
     .session-name-edit:hover { color: #fff; }
     /* スマホ版：共通のh2にある下パディングを外し、タイトルの上下余白を均等にする */
     body.view-mobile .session-heading { padding-bottom: 0; }
@@ -135,7 +135,7 @@
     .death-range .colon { color: #cbd5e1; padding: 0 1px; position: relative; top: -1px; }
     .death-range .tilde { color: #cbd5e1; padding: 0 4px; line-height: 1; }
     .btn-death-toggle { border: 1px solid #64748b; border-radius: 999px; padding: 5px 16px; cursor: pointer; font-weight: bold; white-space: nowrap; background: #64748b; color: #fff; min-width: 54px; }
-    .btn-death-toggle.active { background: #b91c1c; border-color: #b91c1c; }
+    .btn-death-toggle.active { background: #BF1D37; border-color: #BF1D37; }
     .death-warn { display: none; margin: 8px 0 4px; padding: 6px 10px; background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; border-radius: 4px; font-size: 0.85rem; }
     .death-warn.show { display: block; }
     /* 使い方（ヘルプ）モーダル */
@@ -176,13 +176,13 @@
     
     /* 移動・削除・フラグボタン */
     .controls { display: flex; gap: 4px; }
-    .controls button { background: rgba(255, 255, 255, 0.08); border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #555; }
+    .controls button { background: rgba(255, 255, 255, 0.12); border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #555; }
     .controls button:hover { background: #e2e8f0; }
     .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
     .btn-flag-card { font-size: 0.95rem; line-height: 1; filter: grayscale(1); }
-    .btn-flag-card.active { filter: none; opacity: 1; background: #fefce8; border-color: #fde047; }
+    .btn-flag-card.active { filter: none; opacity: 1; background: #F9FFBF; border-color: #fde047; }
     /* フラグ（蛍光イエロー）：キャラの黄・オレンジと被らない鮮やかな色 */
-    .timeline-item.flagged { box-shadow: inset 4px 0 0 #eaff00, inset 5px 0 0 rgba(255,255,255,0.85); }
+    .timeline-item.flagged { box-shadow: inset 5px 0 0 #eaff00; }
     /* 死亡推定時刻の範囲：カードの左外側に2px離して置く角丸バー。
        カードから物理的に離すことで、赤いキャラのカードでも色が混ざらず範囲が分かる。
        フラグ（左端のインセット帯）とも重ならない。 */
@@ -296,7 +296,7 @@
     .compare-table thead th { position: sticky; top: 0; z-index: 2; background: #2c3e50; color: #fff; white-space: nowrap; text-align: center; border-top: 1px solid #4a627a; }
     .compare-col-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
     .compare-col-name { flex: 1; text-align: center; }
-    .compare-move-btn { background: rgba(255, 255, 255, 0.1); color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; opacity: 0.7; }
+    .compare-move-btn { background: rgba(255, 255, 255, 0.12); color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; opacity: 0.7; }
     .compare-move-btn:hover:not(:disabled) { opacity: 1; }
     .compare-move-btn:disabled { opacity: 0.2; cursor: default; }
     .compare-table .time-col { position: sticky; left: 0; z-index: 1; background: #2c3e50; color: #e2e8f0; font-weight: bold; white-space: nowrap; text-align: center; border-left: 1px solid #4a627a; }
@@ -312,7 +312,7 @@
     .compare-cell { min-width: 150px; }
     .compare-card { border-radius: 6px; padding: 5px 8px; margin-bottom: 4px; font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
     .compare-card:last-child { margin-bottom: 0; }
-    .compare-card.flagged { box-shadow: inset 3px 0 0 #eaff00, inset 4px 0 0 rgba(255,255,255,0.85); }
+    .compare-card.flagged { box-shadow: inset 4px 0 0 #eaff00; }
     .compare-card, .compare-range-fill { box-sizing: border-box; }
     /* 人物比較ビューのカード内インライン編集（✏️） */
     .compare-edit { display: flex; flex-direction: column; gap: 5px; }
@@ -332,7 +332,7 @@
     .compare-edit-actions .compare-edit-save { background: #dcfce7; border-color: #86efac; color: #16a34a; }
     .compare-edit-actions button:hover { filter: brightness(0.95); }
     .compare-card-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
-    .compare-card-actions button { background: rgba(255, 255, 255, 0.08); border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; }
+    .compare-card-actions button { background: rgba(255, 255, 255, 0.12); border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; }
     .compare-card-actions button:hover { background: #e2e8f0; }
     /* 人物比較の🚩もリストと同じON/OFF表示にする */
     .compare-card-actions .compare-flag { font-size: 0.95rem; filter: grayscale(1); }
@@ -354,6 +354,10 @@
     .compare-zoom-btn { width: 30px; padding-left: 0; padding-right: 0; box-sizing: border-box; text-align: center; }
     .compare-zoom-btn:hover, .compare-zoom-reset:hover { background: #3b4d63; color: #fff; }
     #compareZoomLabel { width: 40px; text-align: center; }
+    /* 「リセット」は太字にしない */
+    .compare-zoom-reset { font-weight: normal; }
+    /* 「＋」と「リセット」の文字だけを１px下にずらす */
+    .zoom-glyph-shift { display: inline-block; position: relative; top: 1px; }
     /* スマホ版の人物比較ビューでは、比較設定をボタンの下段へ移す */
     body.view-mobile .timeline-mode-toggle { flex-wrap: wrap; }
     /* スマホ版：「カード削除時に確認画面を表示」も下二つと同じく独立した行に落とし、
@@ -389,7 +393,7 @@
     /* 塗りはセル内側に余白を空けた角丸ブロックで表現し、点カードと同じ見た目にする */
     .compare-table td.compare-cell-range { vertical-align: top; position: relative; padding: 0; }
     .compare-range-fill { position: absolute; inset: 4px; border-radius: 6px; padding: 5px 8px; box-sizing: border-box; overflow: auto; }
-    .compare-range-fill.flagged { box-shadow: inset 3px 0 0 #eaff00, inset 4px 0 0 rgba(255,255,255,0.85); }
+    .compare-range-fill.flagged { box-shadow: inset 4px 0 0 #eaff00; }
     .compare-range-label { font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
     /* どんなに内容が少なくても、操作アイコン（✏️🚩👁️✕の4つ）＋余白が必ず入る横幅を確保する。
        時間不明カード（⬆⬇付き＝6つのアイコン）を含む列はさらに広い最小幅にする。 */
@@ -589,8 +593,8 @@
           <span>表示倍率</span>
           <button type="button" class="compare-zoom-btn" onclick="changeCompareZoom(-1)" title="縮小">−</button>
           <span id="compareZoomLabel">100%</span>
-          <button type="button" class="compare-zoom-btn" onclick="changeCompareZoom(1)" title="拡大">＋</button>
-          <button type="button" class="compare-zoom-reset" onclick="resetCompareZoom()" title="等倍に戻す">リセット</button>
+          <button type="button" class="compare-zoom-btn" onclick="changeCompareZoom(1)" title="拡大"><span class="zoom-glyph-shift">＋</span></button>
+          <button type="button" class="compare-zoom-reset" onclick="resetCompareZoom()" title="等倍に戻す"><span class="zoom-glyph-shift">リセット</span></button>
         </div>
       </div>
       <div id="timelineContainer"></div>
