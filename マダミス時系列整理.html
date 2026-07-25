@@ -6,7 +6,22 @@
   <title>マダミス専用メモアプリ（色分け拡張版）</title>
   <style>
     /* 全体の見た目（image_0.pngに合わせて調整） */
-    body { font-family: sans-serif; margin: 0; padding: 10px; background: #2c3e50; color: #fff; }
+    /* ===== クロスプラットフォーム堅牢化 =====
+       ・iOS/Androidの自動文字拡大を無効化（回転時などにレイアウトが変わるのを防ぐ）
+       ・本文フォントは各OSのシステムフォント＋日本語フォント＋カラー絵文字フォントを明示指定
+         （Windows: Segoe UI / Yu Gothic / Segoe UI Emoji、mac/iOS: Hiragino / Apple Color Emoji、
+          Android: Roboto / Noto Sans JP / Noto Color Emoji）。絵文字フォントを末尾に入れることで
+          「絵文字が豆腐（□）になる」「OS標準と違う崩れた字形になる」のを防ぐ */
+    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Noto Sans JP", Meiryo, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"; margin: 0; padding: 10px; background: #2c3e50; color: #fff; }
+    /* button/input/select/textarea はOS既定のUIフォントを使うため、上記スタックを継承させて
+       ボタン内の文字・絵文字の字形とサイズを全OSで揃える */
+    button, input, select, textarea { font-family: inherit; }
+    /* チェックボックスはOSごとに大きさ・余白が違うため、サイズと余白を固定して行の高さブレを防ぐ */
+    input[type="checkbox"] { width: 15px; height: 15px; margin: 0; flex: 0 0 auto; vertical-align: middle; accent-color: #4697DB; }
+    /* モノクロ記号（⬆︎⬇︎⬅︎➡︎▶︎↩︎など・異体字セレクタFE0E付き）を使うボタンは、
+       モノクロ字形を確実に持つ記号フォントを優先させる（Androidでの豆腐化・Windowsでの絵文字化を防ぐ） */
+    .move-arrow-icon, .compare-move-btn, .char-action-icon, .session-data-toggle { font-family: "Hiragino Sans", "Segoe UI Symbol", "Noto Sans Symbols", "Noto Sans Symbols 2", -apple-system, "Segoe UI", Roboto, "Noto Sans JP", Meiryo, sans-serif; }
     /* iPad/iPhone(Safari)では、装飾だけの余白をタップしても document に click が届かず、
        ポップアップの「外側タップで閉じる」が効かないことがある。タッチ端末のときだけ
        body に cursor:pointer を与えると、余白タップでも click が発火するようになる。 */
@@ -497,7 +512,7 @@
 
   <!-- 表示モード切替（スマホ版 / PC版）とデータ削除 -->
   <div class="top-bar">
-    <button type="button" id="sessionDataToggle" class="session-data-toggle" onclick="toggleSessionData()" aria-expanded="false">▶️セッションデータ</button>
+    <button type="button" id="sessionDataToggle" class="session-data-toggle" onclick="toggleSessionData()" aria-expanded="false">▶︎ セッションデータ</button>
     <div id="sessionDataActions" class="data-actions">
       <button type="button" class="btn-data" onclick="exportData()" title="すべての保存データをファイルに書き出します（バックアップ・共有用）">⬆️ 書き出し</button>
       <button type="button" class="btn-data" onclick="document.getElementById('importFileInput').click()" title="書き出したファイルを読み込んで、現在のデータを置き換えます">⬇️ 取り込み</button>
@@ -505,7 +520,7 @@
       <div class="data-actions-break"></div>
       <button type="button" class="btn-danger data-actions-gap" onclick="clearAllCharacters()" title="登録したキャラクターをすべて削除します">👤 全キャラクター削除</button>
       <button type="button" class="btn-danger" onclick="clearAllTimelineData()" title="時系列（タイムライン）のカードだけをすべて削除します">🧹 全タイムラインデータ削除</button>
-      <button type="button" class="btn-danger" onclick="clearAllData()" title="キャラクター・メモ・時系列など、すべての保存データを削除します">🗑 全データ削除</button>
+      <button type="button" class="btn-danger" onclick="clearAllData()" title="キャラクター・メモ・時系列など、すべての保存データを削除します">🗑️ 全データ削除</button>
     </div>
     <div class="view-toggle">
       <button type="button" id="btnMobile" onclick="setView('mobile')">📱 スマホ版</button>
@@ -665,7 +680,7 @@
         <li>時系列の上にある <strong>「📋 リスト」／「📊 人物比較」</strong> で表示を切り替えられます。</li>
         <li><strong>📊 人物比較</strong>：<strong>左端に時間</strong>、<strong>上に人物名</strong>を並べ、その時間に各人物のカードがあればその欄に表示します（なければ空欄）。「誰がいつ何をしていたか」を横並びで見比べられます。比較の中でも ✏️編集・🚩フラグ・👁️非表示・✕削除ができます。</li>
         <li>比較に並ぶ人物は <strong>絞り込みで選んだ人</strong>です（「全員」のときは全員分の列が並びます）。</li>
-        <li>人物名の左右の <strong>⬅ ➡</strong> で <strong>列の並び順</strong> を入れ替えられます。</li>
+        <li>人物名の左右の <strong>⬅︎ ➡︎</strong> で <strong>列の並び順</strong> を入れ替えられます。</li>
         <li><strong>「人物の並びを固定する」</strong>にチェックを入れると、並べ替えた順番がリスト表示に戻しても保存されます。</li>
         <li><strong>「非表示設定中アイテムを不可視化」</strong>にチェックを入れると、👁️で非表示にしたカードを比較表から丸ごと隠せます。</li>
         <li><strong>「表示倍率」</strong>の <strong>−／＋</strong> で比較表の大きさを変えられます（<strong>リセット</strong>で等倍に戻ります。この画面だけの設定です）。</li>
@@ -687,11 +702,11 @@
       <h4>💾 セッションデータ（保存・持ち運び）</h4>
       <ul>
         <li>入力した内容は <strong>この端末のブラウザに自動保存</strong> されます。</li>
-        <li>画面上部の <strong>「▶️セッションデータ」</strong> を開くと、次の操作ができます。
+        <li>画面上部の <strong>「▶︎ セッションデータ」</strong> を開くと、次の操作ができます。
           <ul>
             <li><strong>⬆️ 書き出し</strong>：すべてのデータをファイルに保存（バックアップ・共有用）。</li>
             <li><strong>⬇️ 取り込み</strong>：書き出したファイルを読み込み、今のデータを置き換えます。</li>
-            <li><strong>👤 全キャラクター削除／🧹 全タイムラインデータ削除／🗑 全データ削除</strong>：それぞれ一括で消せます（元に戻せないのでご注意ください）。</li>
+            <li><strong>👤 全キャラクター削除／🧹 全タイムラインデータ削除／🗑️ 全データ削除</strong>：それぞれ一括で消せます（元に戻せないのでご注意ください）。</li>
           </ul>
         </li>
       </ul>
@@ -1605,6 +1620,8 @@
       });
       // 複数人カード（#C3CDDB）も同じ考え方で青灰色の枠線にする
       css += `.timeline-item.multi-character { --card-btn-border: ${mutedBorderColor('#C3CDDB')}; }\n`;
+      // 人物なし（できごとだけ）のカードも、複数人カードと同じ枠線色に揃える
+      css += `.timeline-item.no-character { --card-btn-border: ${mutedBorderColor('#C3CDDB')}; }\n`;
       // 🎨で色を隠しているカードは従来のグレーに戻す
       css += `.timeline-item.color-hidden { --card-btn-border: #a1a1a1; }\n`;
       cardColorsStyle.textContent = css;
@@ -2305,6 +2322,8 @@
         }
 
         if (names.length >= 2) div.classList.add('multi-character');
+        // 人物なし（できごとだけ）のカードは、複数人カードと同じ枠線色に揃える
+        else if (names.length === 0) div.classList.add('no-character');
         // フラグが立っているカードに印をつける
         if (ev.flag) div.classList.add('flagged');
         // 死亡推定時刻の範囲内ならフラグと同じ表示にする
@@ -2631,7 +2650,7 @@
         const color = safeColor(c.color);
         const leftDis = (ci === 0 || compareOrderFixed) ? ' disabled' : '';
         const rightDis = (ci === cols.length - 1 || compareOrderFixed) ? ' disabled' : '';
-        html += `<th colspan="${colLanes[ci].laneCount}" style="background:${color}; color:${textColorFor(color)};"><div class="compare-col-head"><button type="button" class="compare-move-btn compare-move-prev"${leftDis} onclick="moveCompareColumn(${ci}, -1)" title="左へ移動">⬅</button><span class="compare-col-name">${escapeHtml(c.name)}</span><button type="button" class="compare-move-btn compare-move-next"${rightDis} onclick="moveCompareColumn(${ci}, 1)" title="右へ移動">➡</button></div></th>`;
+        html += `<th colspan="${colLanes[ci].laneCount}" style="background:${color}; color:${textColorFor(color)};"><div class="compare-col-head"><button type="button" class="compare-move-btn compare-move-prev"${leftDis} onclick="moveCompareColumn(${ci}, -1)" title="左へ移動">⬅︎</button><span class="compare-col-name">${escapeHtml(c.name)}</span><button type="button" class="compare-move-btn compare-move-next"${rightDis} onclick="moveCompareColumn(${ci}, 1)" title="右へ移動">➡︎</button></div></th>`;
       });
       html += '</tr></thead><tbody>';
 
