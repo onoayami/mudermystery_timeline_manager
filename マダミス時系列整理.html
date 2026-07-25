@@ -152,13 +152,15 @@
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
     /* 時間の右側にキャラ名と本文をまとめる。本文が折り返すときは時間の下ではなくキャラ名の開始位置に揃う */
     .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 6px; }
-    .timeline-item.multi-character { background: #e2e8f0; }
+    .timeline-item.multi-character { background: #C3CDDB; }
     
     .char-badge { font-weight: bold; padding: 4px 10px; border-radius: 20px; font-size: 0.9rem; white-space: nowrap; flex: 0 0 152px; box-sizing: border-box; color: white; display: flex; align-items: center; justify-content: flex-start; gap: 5px; overflow: hidden;}
     .char-badge-empty { background: transparent !important; }
     .char-badge-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
     .time-badge { background: #e2e8f0; font-weight: bold; padding: 5px 8px; border-radius: 20px; font-size: 0.9rem; white-space: nowrap; flex: 0 0 60px; box-sizing: border-box; text-align: center; color: #333;}
+    /* 期間を1枚のカードで表示する（コの字に分割されない）場合、開始・終了の2行を通常カードと同じ余白感で表示する */
+    .timeline-item.range-single .time-badge.time-badge-editable { line-height: 1.62; }
     /* 時間バッジはクリックで編集できる。押せることが分かるように見た目を少し変える */
     .time-badge-editable { cursor: pointer; }
     .time-badge-editable:hover { background: #cbd5e1; color: #111; }
@@ -172,7 +174,7 @@
     
     /* 移動・削除・フラグボタン */
     .controls { display: flex; gap: 4px; }
-    .controls button { background: transparent; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #555; }
+    .controls button { background: rgba(255, 255, 255, 0.08); border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #555; }
     .controls button:hover { background: #e2e8f0; }
     .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
     .btn-flag-card { font-size: 0.95rem; line-height: 1; filter: grayscale(1); }
@@ -203,8 +205,8 @@
     .edit-text { flex: 1 1 auto; min-width: 0; }
     /* 編集フォームの入力欄と✓✕ボタンを同じ高さに揃える（折り返しても崩れないよう明示） */
     .timeline-item-inner.edit-mode input { height: 36px; box-sizing: border-box; }
-    /* リストビュー：人物比較と同じ小さな✓✕ボタンを、内容入力欄の縦幅（36px）に合わせた正方形で表示する */
-    .edit-controls.compare-edit-actions button { width: 36px; height: 36px; min-width: 36px; padding: 0; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; font-size: 1.1rem; }
+    /* リストビュー：人物比較と同じ小さな✓✕ボタンを一回り小さい正方形で表示する */
+    .edit-controls.compare-edit-actions button { width: 30px; height: 30px; min-width: 30px; padding: 0; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; }
     /* チェックマーク（✓）は少し大きく、1px下げて配置する（両ビュー共通） */
     .compare-edit-save .edit-check { display: inline-block; font-size: 1.25em; line-height: 1; position: relative; top: 1px; }
     body.view-pc .edit-controls { align-self: stretch; align-items: center; }
@@ -316,13 +318,16 @@
     /* .edit-endtime のグローバル flex:0 0 64px（縦並びでは高さ64px固定になる）が後方にあるため、
        比較編集の終了マスだけ縦に大きくなる。開始マスと同じ高さに揃える。 */
     .compare-edit .compare-edit-time, .compare-edit .compare-edit-endtime { flex: 0 0 auto; }
+    /* 終了時刻の入力欄の横に保存✓・取消✕を並べる（✓✕を右端に寄せ、下端を入力枠の下線に揃える） */
+    .compare-edit-endrow { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; }
+    .compare-edit-endrow .compare-edit-actions { justify-content: flex-end; }
     .compare-edit-actions { display: flex; justify-content: flex-end; gap: 4px; }
     /* ✕ボタンを隣の✓ボタンと同じ幅に揃える */
     .compare-edit-actions button { background: #fff; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; color: #1e293b; box-sizing: border-box; min-width: 2.35em; display: inline-flex; align-items: center; justify-content: center; }
     .compare-edit-actions .compare-edit-save { background: #dcfce7; border-color: #86efac; color: #16a34a; }
     .compare-edit-actions button:hover { filter: brightness(0.95); }
     .compare-card-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
-    .compare-card-actions button { background: transparent; border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; }
+    .compare-card-actions button { background: rgba(255, 255, 255, 0.08); border: 1px solid #a1a1a1; border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; }
     .compare-card-actions button:hover { background: #e2e8f0; }
     /* 人物比較の🚩もリストと同じON/OFF表示にする */
     .compare-card-actions .compare-flag { font-size: 0.95rem; filter: grayscale(1); }
@@ -383,10 +388,11 @@
     .compare-range-label { font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
     /* どんなに内容が少なくても、操作アイコン（✏️🚩👁️✕の4つ）＋余白が必ず入る横幅を確保する。
        時間不明カード（⬆⬇付き＝6つのアイコン）を含む列はさらに広い最小幅にする。 */
-    .compare-table td.compare-lane { min-width: 152px; }
+    /* カード列の最小幅：（余白8）＋終了時間ボックス(92)＋gap4＋✓(31.33)＋gap4＋✕(31.33)＋（余白8）＝178.66px */
+    .compare-table td.compare-lane { min-width: 178.66px; }
     .compare-table td.compare-lane-untimed { min-width: 232px; }
     /* 「〓」は入力枠の色に揃え、10px下に配置する */
-    .range-sep-edit { display: inline-flex; align-items: center; color: #7b96b3; position: relative; top: 8px; }
+    .range-sep-edit { display: inline-flex; align-items: center; color: #FFFFFF; position: relative; top: 8px; }
     .edit-endtime { flex: 0 0 32px; text-align: center; }
     /* リストビューの終了ボックスだけ幅を倍に（人物比較の 92px はそのまま） */
     .timeline-item-inner.edit-mode .edit-endtime { width: 64px; box-sizing: border-box; }
@@ -398,6 +404,8 @@
     body.view-pc .time-badge { align-self: center; }
     body.view-pc .event-body { align-items: flex-start; }
     body.view-pc .timeline-item > .controls { align-self: flex-end; }
+    /* 編集モードの✔️✕は下揃えではなく中央揃えにする（上のflex-endを上書き） */
+    body.view-pc .timeline-item > .edit-controls { align-self: center; }
     body.view-pc .event-text { flex: 1 1 100%; margin-left: 10px; }
     body.view-pc .timeline-item { row-gap: 11px; }
     body.view-mobile .timeline-item { flex-wrap: wrap; align-items: center; row-gap: 8px; }
@@ -1854,14 +1862,16 @@
       if (!card || card.querySelector('.compare-edit')) return; // すでに編集中なら何もしない
       const ev = events[index];
       // 期間指定の有無に関わらず、終了時間の入力欄を常に表示する（空なら単一時刻のまま）
-      const endField = `<input type="text" class="edit-endtime compare-edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="終了" onkeydown="handleCompareEditKeydown(event, ${index})">`;
+      const endField = `<input type="text" class="edit-endtime compare-edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleCompareEditKeydown(event, ${index})">`;
       card.innerHTML = `<div class="compare-edit">
         <textarea class="compare-edit-text" placeholder="できごと" onkeydown="handleCompareEditKeydown(event, ${index})">${escapeHtml(ev.text || '')}</textarea>
         <input type="text" class="edit-time compare-edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleCompareEditKeydown(event, ${index})">
-        ${endField}
-        <div class="compare-edit-actions">
-          <button type="button" class="compare-edit-save" onclick="saveCompareEdit(${index}, this)" title="保存"><span class="edit-check">✓</span></button>
-          <button type="button" class="compare-edit-cancel" onclick="renderEvents()" title="取消">✕</button>
+        <div class="compare-edit-endrow">
+          ${endField}
+          <div class="compare-edit-actions">
+            <button type="button" class="compare-edit-save" onclick="saveCompareEdit(${index}, this)" title="保存"><span class="edit-check">✓</span></button>
+            <button type="button" class="compare-edit-cancel" onclick="renderEvents()" title="取消">✕</button>
+          </div>
         </div>
       </div>`;
       const textEl = card.querySelector('.compare-edit-text');
@@ -2140,7 +2150,7 @@
     function rangeColor(ev) {
       if (ev.colorHidden) return '#e5e7eb';
       const names = eventCharNames(ev);
-      if (names.length >= 2) return '#e2e8f0';
+      if (names.length >= 2) return '#C3CDDB';
       return safeColor(names.length ? colorForChar(names[0]) : '#94a3b8');
     }
     function renderEvents() {
@@ -2234,7 +2244,7 @@
             <div class="timeline-item-inner edit-mode">
               <input type="text" class="edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTextKeydown(event, ${index})">
               <span class="range-sep-edit">〜</span>
-              <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="終了(任意)" onkeydown="handleEditTextKeydown(event, ${index})">
+              <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleEditTextKeydown(event, ${index})">
               <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容" onkeydown="handleEditTextKeydown(event, ${index})">
             </div>
             <div class="controls edit-controls compare-edit-actions">
@@ -2247,9 +2257,11 @@
           const timeBadgeText = (kind === 'range')
             ? `${escapeHtml(ev.time)}<br>${escapeHtml(ev.endTime)}`
             : escapeHtml(ev.time || '不詳');
+          // 単一カードの期間（開始・終了の両方を持つ）は、時間バッジのクリックで✏️と同じフル編集を開く
+          const timeBadgeClickHandler = (kind === 'range') ? `startEditEvent(${index})` : `startEditTime(${index})`;
           const timeBadgeHtml = isEditingTime
             ? `<div class="time-badge time-badge-editing"><input type="text" class="edit-time-inline" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTimeKeydown(event, ${index})" onblur="saveEditTime(${index})"></div>`
-            : `<div class="time-badge time-badge-editable" onclick="startEditTime(${index})" title="クリックして時間を編集">${timeBadgeText}</div>`;
+            : `<div class="time-badge time-badge-editable" onclick="${timeBadgeClickHandler}" title="クリックして時間を編集">${timeBadgeText}</div>`;
           div.innerHTML = `
             <div class="timeline-item-inner">
               ${timeBadgeHtml}
