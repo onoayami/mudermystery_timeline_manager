@@ -47,7 +47,13 @@
     if (typeof ensureEventIds === 'function') ensureEventIds(); // Phase 1以降はID付与も通す
     charFilter = []; flagFilter = 'all';
     newEventChars = []; newEventFlag = false; newEventRange = false;
-    editingIndex = -1; editingTimeIndex = -1; editingCharacterIndex = -1;
+    // 編集状態のリセット（レビュー指摘1対応の前後どちらの版でも動くよう、存在する変数だけ初期化）
+    if (typeof editingIndex !== 'undefined') { editingIndex = -1; }
+    if (typeof editingTimeIndex !== 'undefined') { editingTimeIndex = -1; }
+    if (typeof editingCharacterIndex !== 'undefined') { editingCharacterIndex = -1; }
+    if (typeof editingId !== 'undefined') { editingId = null; }
+    if (typeof editingTimeId !== 'undefined') { editingTimeId = null; }
+    if (typeof editingCharacterName !== 'undefined') { editingCharacterName = null; }
     compareOrder = []; compareOrderFixed = false; hideConcealedInCompare = false;
     confirmDelete = true; timelineMode = 'list';
     deathEnabled = false; deathFrom = ''; deathTo = '';
@@ -190,7 +196,8 @@
       ok(ev, '内容が保存されていない');
       ok(ev.time === '10:45', '時間が保存されていない: ' + ev.time);
       ok(cardByText('庭を散歩した'), '画面に反映されていない');
-      ok(editingIndex === -1, '編集モードが解除されていない');
+      const editCleared = (typeof editingId !== 'undefined') ? (editingId === null) : (editingIndex === -1);
+      ok(editCleared, '編集モードが解除されていない');
     });
 
     resetFixture();
@@ -233,6 +240,120 @@
       const idx = cards().findIndex(el => { const x = el.querySelector('.event-text'); return x && x.textContent === 'テスト追加'; });
       ok(idx === 2, '並び順が想定外(10:15と21:30の間でない): ' + idx);
       ok(JSON.stringify(JSON.parse(localStorage.getItem(KEYS.events))) === JSON.stringify(events), '保存データとメモリ内データが一致しない');
+    });
+
+    resetFixture();
+    t('T14 比較ビューでの✏️編集（内容と時間の保存）', () => {
+      document.getElementById('modeCompareBtn').click();
+      const table = document.querySelector('#timelineContainer .compare-table');
+      ok(table, '比較テーブルが表示されない');
+      const asa = $$('.compare-card', table).find(el => el.textContent.indexOf('朝食をとった') >= 0);
+      ok(asa, '比較ビューに朝食カードがない');
+      asa.querySelector('.compare-edit-btn').click();
+      const form = document.querySelector('#timelineContainer .compare-edit');
+      ok(form, '比較ビューの編集フォームが開かない');
+      form.querySelector('.compare-edit-text').value = '朝食を食べた';
+      form.querySelector('.compare-edit-time').value = '9:30';
+      form.querySelector('.compare-edit-save').click();
+      const ev = events.find(e => e.text === '朝食を食べた');
+      ok(ev, '内容が保存されていない');
+      ok(ev.time === '9:30', '時間が保存されていない: ' + ev.time);
+      ok($$('#timelineContainer .compare-card').some(el => el.textContent.indexOf('朝食を食べた') >= 0), '比較ビューに反映されていない');
+      document.getElementById('modeListBtn').click();
+    });
+
+    resetFixture();
+    t('T15 👥ポップアップで人物の追加/削除', () => {
+      cardByText('朝食をとった').querySelector('.btn-add-char-card').click();
+      const popup = cardByText('朝食をとった').querySelector('[id^="charAssign-"]');
+      ok(popup && popup.classList.contains('open'), 'ポップアップが開かない');
+      const rows = $$('.char-check-row', popup);
+      ok(rows.length === 3, '人物の行数が想定外: ' + rows.length);
+      rows.find(r => r.textContent.indexOf('カレン') >= 0).querySelector('input').click();
+      let ev = events.find(e => e.text === '朝食をとった');
+      ok(eventCharNames(ev).join(',') === 'アリス,カレン', '人物追加が保存されない: ' + eventCharNames(ev).join(','));
+      const popup2 = cardByText('朝食をとった').querySelector('[id^="charAssign-"]');
+      ok(popup2 && popup2.classList.contains('open'), '操作後にポップアップが開き直されない');
+      $$('.char-check-row', popup2).find(r => r.textContent.indexOf('カレン') >= 0).querySelector('input').click();
+      ev = events.find(e => e.text === '朝食をとった');
+      ok(eventCharNames(ev).join(',') === 'アリス', '人物削除が保存されない: ' + eventCharNames(ev).join(','));
+    });
+
+    resetFixture();
+    t('T16 編集中に別カードを削除しても編集対象がズレない（レビュー指摤16）', () => {
+      cardByText('庭を散歩').querySelector('.btn-edit-card').click();
+      let form = document.querySelector('#timelineContainer .edit-mode');
+      ok(form, '編集フォームが開かない');
+      ok(form.querySelector('.edit-text').value === '庭を散歩', '編集対象が「庭を散歩」でない');
+      confirmQueue = [true];
+      cardByText('朝食をとった').querySelector('.btn-delete').click();
+      ok(events.length === 3, '別カードが削除されていない: ' + events.length);
+      form = document.querySelector('#timelineContainer .edit-mode');
+      ok(form, '別カードの削除で編集フォームが消えた');
+      ok(form.querySelector('.edit-text').value === '庭を散歩',
+        '編集フォームが別のカードに移った: ' + form.querySelector('.edit-text').value);
+      form.querySelector('.edit-text').value = '庭を散歩した';
+      form.closest('.timeline-item').querySelector('.compare-edit-save').click();
+      ok(events.some(e => e.text === '庭を散歩した'), '編集内容が保存されていない');
+      ok(events.some(e => e.text === '書斎で会合'), '無関係なカード（書斎で会合）が上書きされた');
+    });
+
+    resetFixture();
+    t('T17 キャラ名編集中に別キャラを削除してもズレない（レビュー指摤16キャラ版）', () => {
+      const karen = $$('#characterList .char-item').find(r => r.textContent.indexOf('カレン') >= 0);
+      karen.querySelector('.btn-edit-char').click();
+      let input = document.querySelector('#characterList .char-name-edit');
+      ok(input && input.value === 'カレン', 'カレンの編集欄が開かない');
+      confirmQueue = [true];
+      const alice = $$('#characterList .char-item').find(r => r.textContent.indexOf('アリス') >= 0);
+      alice.querySelector('.btn-delete-char').click();
+      ok(characters.length === 2, 'アリスが削除されていない: ' + characters.length);
+      input = document.querySelector('#characterList .char-name-edit');
+      ok(input, '別キャラの削除で編集欄が消えた');
+      ok(input.value === 'カレン', '編集欄が別のキャラに移った: ' + input.value);
+      input.value = 'カレン改';
+      document.querySelector('#characterList .btn-save-char').click();
+      ok(characters.some(c => c.name === 'カレン改'), '改名が保存されていない');
+      ok(!characters.some(c => c.name === 'カレン'), '旧名が残っている');
+      ok(events.some(e => (e.characters || []).indexOf('カレン改') >= 0), 'カードの登場人物名が追従していない');
+      ok(characters.some(c => c.name === 'ボブ'), 'ボブが巻き添えで変わった');
+    });
+
+    resetFixture();
+    t('T18 死亡推定時刻：時だけ選ぶと分が自動で00になる', () => {
+      const fh = document.getElementById('deathFromH');
+      const fm = document.getElementById('deathFromM');
+      fh.value = '21'; fm.value = '';
+      onDeathTimeChange();
+      ok(fm.value === '00', '分が自動補完されない: "' + fm.value + '"');
+      ok((localStorage.getItem(KEYS.deathFrom) || '') === '21:00', '保存値が不正: ' + localStorage.getItem(KEYS.deathFrom));
+      fh.value = ''; fm.value = '';
+      onDeathTimeChange(); // 後片付け（未設定に戻す）
+    });
+
+    resetFixture();
+    t('T19 追加欄：Enter素早く2回で追加できる', () => {
+      const press = (el) => el.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+      const ei = document.getElementById('eventInput');
+      document.getElementById('timeInput').value = '14:00';
+      ei.value = 'Enter追加テスト';
+      press(ei); press(ei);
+      const added = events.find(e => e.text === 'Enter追加テスト');
+      ok(!!added, 'できごと欄のEnter2回でイベントが追加されない');
+      ok(added && added.time === '14:00', '時間が保存されない: ' + (added && added.time));
+      const ci = document.getElementById('newCharName');
+      ci.value = 'エンター増員';
+      press(ci); press(ci);
+      ok(characters.some(c => c.name === 'エンター増員'), 'キャラ名欄のEnter2回でキャラが追加されない');
+    });
+
+    resetFixture();
+    t('T20 セッション名：閉じる直前に編集途中を自動保存', () => {
+      startSessionNameEdit();
+      document.getElementById('sessionNameInput').value = '仮眠前の途中入力';
+      window.dispatchEvent(new Event('pagehide'));
+      ok((localStorage.getItem(KEYS.sessionName) || '') === '仮眠前の途中入力', '編集途中のセッション名が保存されない: ' + localStorage.getItem(KEYS.sessionName));
+      finishSessionNameEdit(); // 後片付け（編集状態を解除）
     });
 
     t('T12 ID健全性（Phase 1以降のみ）', () => {

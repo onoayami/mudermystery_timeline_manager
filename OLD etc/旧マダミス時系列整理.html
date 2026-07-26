@@ -122,8 +122,8 @@
     .btn-recolor:hover { background: #dbe4e8; }
     .btn-edit-char { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; }
     .btn-edit-char:hover { background: #dbe4e8; }
-    .btn-save-char { background: #dcfce7; border-color: #86efac; color: #16a34a; }
-    .btn-save-char:hover { background: #dcfce7; filter: brightness(0.95); }
+    .btn-save-char { background: #22c55e; border-color: #16a34a; color: #fff; }
+    .btn-save-char:hover { background: #16a34a; }
     .char-name-edit { flex: 1 1 auto; min-width: 0; background: #fff; color: #333; border: 1px solid #94a3b8; border-radius: 4px; padding: 3px 6px; }
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
@@ -232,8 +232,8 @@
     .timeline-item-inner.edit-mode input { height: 36px; box-sizing: border-box; }
     /* リストビュー：人物比較と同じ小さな✓✕ボタンを一回り小さい正方形で表示する */
     .edit-controls.compare-edit-actions button { width: 30px; height: 30px; min-width: 30px; padding: 0; box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; font-size: 0.95rem; }
-    /* チェックマーク（✓）は少し大きく配置する（両ビュー共通） */
-    .compare-edit-save .edit-check { display: inline-block; font-size: 1.25em; line-height: 1; position: relative; top: 0; }
+    /* チェックマーク（✓）は少し大きく、1px下げて配置する（両ビュー共通） */
+    .compare-edit-save .edit-check { display: inline-block; font-size: 1.25em; line-height: 1; position: relative; top: 1px; }
     body.view-pc .edit-controls { align-self: stretch; align-items: center; }
     body.view-mobile .edit-controls { align-items: center; }
     .timeline-item.concealed .timeline-item-inner,
@@ -633,7 +633,6 @@
       <h4>📌 基本の登録方法</h4>
       <ul>
         <li>入力欄に「時間」「人物」「できごと」を入れて <strong>［追加］</strong> を押すと1件登録されます（<strong>できごとだけは必須</strong>です）。</li>
-        <li>キャラ名・できごとの入力欄では、<strong>Enterキーを素早く2回</strong>押しても追加できます。</li>
         <li><strong>人物は複数選べます</strong>。「人物 ▾」を押してチェックを入れると、同じ出来事に複数の登場人物を紐づけられます。</li>
         <li>登録した出来事は <strong>時間の早い順に自動で並びます</strong>。</li>
         <li>時間は <code>20:5</code> のように分が1桁でも <code>20:05</code> に自動補完されます。</li>
@@ -711,8 +710,6 @@
             <li><strong>👤 全キャラクター削除／🧹 全タイムラインデータ削除／🗑️ 全データ削除</strong>：それぞれ一括で消せます（元に戻せないのでご注意ください）。</li>
           </ul>
         </li>
-        <li>このファイルは<strong>ブラウザで直接開くことを推奨します</strong>（埋め込み状態では一部機能が利用できません）。</li>
-        <li>家族や友人と共用の端末で使ったときは、使用後に <strong>「🗑️ 全データ削除」</strong> を行うことを推奨します（メモや推理の内容を端末に残さないため）。</li>
       </ul>
 
       <h4>⚙️ 表示・その他の設定</h4>
@@ -767,12 +764,6 @@
         return false;
       }
     }
-    // 読み取りも保護する（レビュー指摘2対応）。localStorage は「アクセスした瞬間に SecurityError を投げる」環境
-    // （Cookieブロック設定のブラウザ・サンドボックス埋め込みなど）があるため、直に localStorage.getItem() を呼ぶと
-    // 起動時にスクリプト全体が止まりうる。読めないときは null を返し、「保存が効かないだけでアプリは動く」状態に倒す。
-    function safeGet(key) {
-      try { return localStorage.getItem(key); } catch (e) { return null; }
-    }
 
     // データの読み込み
     let events = loadJSON(KEYS.events, []);
@@ -780,71 +771,42 @@
     let newEventFlag = false; // 新規追加時にフラグを立てるか
     let newEventRange = false; // 新規追加時に「期間（開始〜終了）」で登録するか
     let newEventChars = []; // 新規追加時に選択している人物名（複数可）
-    // 編集中キャラクターは位置ではなく「名前」で覚える（キャラ名は重複登録できないため一意。レビュー指摘1対応）
-    let editingCharacterName = null; // nullは編集なし
+    let editingCharacterIndex = -1;
     // 後方互換：旧データ（character 単数）を characters 配列に移行する
     events.forEach(ev => {
       if (!Array.isArray(ev.characters)) ev.characters = ev.character ? [ev.character] : [];
     });
-    // --- ID基盤（ID化 Phase 1）: イベントを配列の位置（index）ではなくIDで特定できるようにする ---
-    // IDの生成（重複しないランダムな文字列。古いブラウザでも動くよう予備の方式も用意）
-    function genId() {
-      try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
-      return 'ev-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
-    }
-    // HTML属性に埋め込んでも安全な文字だけにする（英数字・ハイフン・アンダースコア以外を除去）
-    function sanitizeId(id) { return String(id).replace(/[^a-zA-Z0-9_-]/g, ''); }
-    // 全イベントにIDが付いていることを保証する（欠落・不正な形式・重複は採番し直す）
-    // 読み込み直後に呼ぶ（インポートは置き換え後に location.reload() されるため、ここを必ず通る）
-    // 形式チェック: onclick属性には sanitizeId() 済みのIDを埋め込むため、英数字・-・_ 以外を含むIDが
-    // 配列に残ると照合が常に失敗し、そのカードの全ボタンが無反応になる（レビュー指摘4対応）
-    function ensureEventIds() {
-      const seen = new Set();
-      const SAFE_ID = /^[a-zA-Z0-9_-]+$/;
-      events.forEach(ev => {
-        if (!ev) return;
-        if (typeof ev.id !== 'string' || !SAFE_ID.test(ev.id) || seen.has(ev.id)) ev.id = genId();
-        seen.add(ev.id);
-      });
-    }
-    // IDから events 配列内の現在位置を引く（見つからなければ -1）
-    // （クリック毎の線形探索 O(n)。現規模では十分。数千件を超えるならID→位置Mapのキャッシュ化を検討。レビュー指摘12）
-    function evIndexById(id) { return events.findIndex(ev => ev && ev.id === id); }
-    ensureEventIds();
     // カラーパレットの候補色と、現在選択している色
     const PALETTE_COLORS = [
       '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#14b8a6',
       '#06b6d4', '#3b82f6', '#6366f1', '#8b5cf6', '#a855f7', '#ec4899', '#78716c'
     ];
     let selectedCharColor = '#3b82f6';
-    let memoConcealed = safeGet(KEYS.memoConcealed) === 'true'; // 秘密のメモを非表示中か
-    let deathFrom = safeGet(KEYS.deathFrom) || ''; // 死亡推定時刻（開始）
-    let deathTo = safeGet(KEYS.deathTo) || '';     // 死亡推定時刻（終了）
-    let deathEnabled = safeGet(KEYS.deathEnabled) === 'true'; // 死亡推定時刻のトグルがONか
-    // 編集状態は「配列の何番目か」ではなく「どのカードか（ID）」で覚える（レビュー指摘1対応）。
-    // 編集中に別カードの削除・⬆⬇移動で並びが変わっても、編集フォームが別のカードへ移らず、
-    // 保存時に無関係なカードを上書きする事故が起きない。
-    let editingId = null; // 現在フル編集中のカードのID（nullは編集なし）
-    let editingTimeId = null; // 時間バッジをクリックして時間だけ編集中のカードのID（nullはなし）
+    let memoConcealed = localStorage.getItem(KEYS.memoConcealed) === 'true'; // 秘密のメモを非表示中か
+    let deathFrom = localStorage.getItem(KEYS.deathFrom) || ''; // 死亡推定時刻（開始）
+    let deathTo = localStorage.getItem(KEYS.deathTo) || '';     // 死亡推定時刻（終了）
+    let deathEnabled = localStorage.getItem(KEYS.deathEnabled) === 'true'; // 死亡推定時刻のトグルがONか
+    let editingIndex = -1; // 現在編集中のカードの番号（-1は編集なし）
+    let editingTimeIndex = -1; // 時間バッジをクリックして時間だけ編集中のカード番号（-1はなし）
     let charFilter = loadJSON(KEYS.charFilter, []); // 絞り込み中の人物名（空なら全表示）
     // フラグ絞り込み: 'all' / 'flag'（フラグつきのみ） / 'noflag'（フラグなしのみ）
     // 旧データ（true/false の2択）からの移行も行う
     let flagFilter = (() => {
-      const raw = safeGet(KEYS.flagFilter);
+      const raw = localStorage.getItem(KEYS.flagFilter);
       if (raw === 'flag' || raw === 'noflag' || raw === 'all') return raw;
       return raw === 'true' ? 'flag' : 'all';
     })();
-    let timelineMode = safeGet(KEYS.timelineMode) || 'list'; // 時系列の表示モード（list / compare）
-    let hideConcealedInCompare = safeGet(KEYS.showConcealedCompare) === 'true';
+    let timelineMode = localStorage.getItem(KEYS.timelineMode) || 'list'; // 時系列の表示モード（list / compare）
+    let hideConcealedInCompare = localStorage.getItem(KEYS.showConcealedCompare) === 'true';
     let compareOrder = loadJSON(KEYS.compareOrder, []); // 人物比較ビュー専用の列の並び順（キャラ一覧の順序とは独立）
-    let compareOrderFixed = safeGet(KEYS.compareOrderFixed) === 'true'; // 比較ビューの人物順をリスト表示後も維持するか
+    let compareOrderFixed = localStorage.getItem(KEYS.compareOrderFixed) === 'true'; // 比較ビューの人物順をリスト表示後も維持するか
     // 人物比較ビューだけの表示倍率（0.1〜2.0）。他の画面には影響しない
     const COMPARE_ZOOM_MIN = 0.1, COMPARE_ZOOM_MAX = 2, COMPARE_ZOOM_STEP = 0.1;
-    let compareZoom = clampCompareZoom(parseFloat(safeGet(KEYS.compareZoom)));
-    let confirmDelete = safeGet(KEYS.confirmDelete) !== 'false';
-    let sessionDataExpanded = safeGet(KEYS.sessionDataExpanded) === 'true';
+    let compareZoom = clampCompareZoom(parseFloat(localStorage.getItem(KEYS.compareZoom)));
+    let confirmDelete = localStorage.getItem(KEYS.confirmDelete) !== 'false';
+    let sessionDataExpanded = localStorage.getItem(KEYS.sessionDataExpanded) === 'true';
     // 表示モード（スマホ版 / PC版）。未設定なら画面幅で自動判定
-    let currentView = safeGet(KEYS.view) || (window.innerWidth < 900 ? 'mobile' : 'pc');
+    let currentView = localStorage.getItem(KEYS.view) || (window.innerWidth < 900 ? 'mobile' : 'pc');
     const memoInput = document.getElementById('memoInput');
     const sessionNameInput = document.getElementById('sessionNameInput');
     const sessionNameDisplay = document.getElementById('sessionNameDisplay');
@@ -858,7 +820,7 @@
     // 2回目の applyView の折返し判定が正しく測れない）ため、順序を入れ替えないこと。
     function init() {
       // メモと、キャラクター・色のスタイルを適用
-      memoInput.value = safeGet(KEYS.memo) || '';
+      memoInput.value = localStorage.getItem(KEYS.memo) || '';
       renderSessionName();
       applyView();
       updateSessionDataToggle();
@@ -891,11 +853,6 @@
     function flushMemoSave() {
       clearTimeout(memoSaveTimer);
       safeSet(KEYS.memo, memoInput.value);
-      // 編集途中のセッション名も閉じる直前に保存する（レビュー指摘7・案B）。
-      // 普段の確定操作（✓ボタン / Enter2回）は変えず、閉じたときの入力消失だけを防ぐ
-      if (sessionNameInput.style.display !== 'none') {
-        safeSet(KEYS.sessionName, sessionNameInput.value.trim());
-      }
     }
     window.addEventListener('pagehide', flushMemoSave);
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushMemoSave(); });
@@ -919,18 +876,9 @@
       }
     });
 
-    // キャラ名・できごとの入力欄でも Enter を素早く2回押すと「追加」できる（レビュー指摘14・案B）
-    // セッション名・編集欄と同じ操作体系。Enter1回にしないのは日本語変換の確定Enterによる誤追加を防ぐため
-    document.getElementById('newCharName').addEventListener('keydown', (e) => {
-      handleDoubleEnterSave(e, () => addCharacter());
-    });
-    document.getElementById('eventInput').addEventListener('keydown', (e) => {
-      handleDoubleEnterSave(e, () => addEvent());
-    });
-
     // 保存済みのセッション名を見出しに反映する（未入力ならプレースホルダー風に表示）
     function renderSessionName() {
-      const v = (safeGet(KEYS.sessionName) || '').trim();
+      const v = (localStorage.getItem(KEYS.sessionName) || '').trim();
       const placeholder = currentView === 'pc' ? 'クリックしてタイトルを入力' : 'タップしてタイトルを入力';
       sessionNameDisplay.textContent = v || placeholder;
       sessionNameDisplayPc.textContent = v || placeholder;
@@ -1087,7 +1035,7 @@
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        const sessionTitle = (safeGet(KEYS.sessionName) || '').trim() || 'マダミス';
+        const sessionTitle = (localStorage.getItem(KEYS.sessionName) || '').trim() || 'マダミス';
         const safeSessionTitle = sessionTitle.replace(/[\\/:*?"<>|]/g, '_');
         const now = new Date();
         const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
@@ -1122,12 +1070,6 @@
           alert('このアプリのエクスポートファイルではないようです。');
           return;
         }
-        // 将来データ形式を変えた（version 2 以降の）ファイルを、古い本体が黙って取り込んで壊れるのを防ぐ
-        // （現在の書き出しは version: 1 のみなので、既存ファイルの取り込み動作は一切変わらない。レビュー指摘13対応）
-        if (typeof parsed.version === 'number' && parsed.version > 1) {
-          alert('このファイルは新しいバージョンのアプリで書き出されています。最新のHTMLで開いてください。');
-          return;
-        }
         const validKeys = Object.values(KEYS);
         const importable = Object.keys(payload).filter(k => validKeys.includes(k));
         if (importable.length === 0) {
@@ -1137,8 +1079,7 @@
         if (!confirm('現在の保存データを、選んだファイルの内容で置き換えます。\nこの操作は元に戻せません。よろしいですか？')) return;
         // 途中で失敗しても元に戻せるよう、既存の値を退避しておく
         const backup = {};
-        // 退避の読み取りも保護（読めない環境では、この後の書き込み側 try が失敗を拾って中断する）
-        validKeys.forEach(k => { backup[k] = safeGet(k); });
+        validKeys.forEach(k => { backup[k] = localStorage.getItem(k); });
         try {
           validKeys.forEach(k => localStorage.removeItem(k));
           importable.forEach(k => {
@@ -1286,7 +1227,7 @@
 
     function startEditCharacter(index) {
       if (characters[index].locked) return;
-      editingCharacterName = characters[index].name;
+      editingCharacterIndex = index;
       renderCharacters();
       const input = document.querySelector(`#characterNameEdit-${index}`);
       if (input) {
@@ -1310,7 +1251,7 @@
     }
 
     function cancelEditCharacter() {
-      editingCharacterName = null;
+      editingCharacterIndex = -1;
       renderCharacters();
     }
 
@@ -1339,7 +1280,7 @@
       safeSet(KEYS.events, JSON.stringify(events));
       safeSet(KEYS.charFilter, JSON.stringify(charFilter));
       safeSet(KEYS.compareOrder, JSON.stringify(compareOrder));
-      editingCharacterName = null;
+      editingCharacterIndex = -1;
       saveCharacters();
       renderEvents();
     }
@@ -1399,7 +1340,7 @@
       characters.forEach((char, index) => {
         const div = document.createElement('div');
         div.className = 'char-item';
-        const isEditing = editingCharacterName !== null && char.name === editingCharacterName;
+        const isEditing = editingCharacterIndex === index;
         const nameHtml = isEditing
           ? `<input type="text" class="char-name-edit" id="characterNameEdit-${index}" value="${escapeHtml(char.name)}" aria-label="キャラクター名">`
           : `<div style="flex-grow: 1;">${escapeHtml(char.name)}</div>`;
@@ -1681,7 +1622,7 @@
       if (pos >= 0) list.splice(pos, 1); else list.push(name);
       events[index].characters = list;
       events[index].character = list[0] || '';        // 後方互換
-      events[index].color = list[0] ? colorForChar(list[0]) : '#fafafa'; // 書き込み専用（読まないこと。レビュー指摘9）
+      events[index].color = list[0] ? colorForChar(list[0]) : '#fafafa';
       safeSet(KEYS.events, JSON.stringify(events));
       renderEvents();
       // 再描画でポップアップが作り直されるので、続けて操作できるよう開き直す
@@ -1801,17 +1742,11 @@
     }
 
     // プルダウン変更時：HH:MM を組み立てて保存する
-    // 「時」だけ選ばれて「分」が未選択（--）のときは分を自動で「00」にする
-    // （レビュー指摘8・案A。「設定したつもりの未設定」を防ぐ。分は後から15/30/45に選び直せる）
     function onDeathTimeChange() {
-      const fromMSel = document.getElementById('deathFromM');
-      const toMSel = document.getElementById('deathToM');
-      if (document.getElementById('deathFromH').value && !fromMSel.value) fromMSel.value = '00';
-      if (document.getElementById('deathToH').value && !toMSel.value) toMSel.value = '00';
       const fh = document.getElementById('deathFromH').value;
-      const fm = fromMSel.value;
+      const fm = document.getElementById('deathFromM').value;
       const th = document.getElementById('deathToH').value;
-      const tm = toMSel.value;
+      const tm = document.getElementById('deathToM').value;
       deathFrom = (fh && fm) ? `${fh}:${fm}` : '';
       deathTo = (th && tm) ? `${th}:${tm}` : '';
       safeSet(KEYS.deathFrom, deathFrom);
@@ -1856,24 +1791,9 @@
       return Math.min(COMPARE_ZOOM_MAX, Math.max(COMPARE_ZOOM_MIN, Math.round(z * 10) / 10));
     }
     // 現在の倍率を比較テーブルとラベルに反映する（比較ビュー以外では何もしない）
-    // 古いFirefox（126未満）はCSSのzoomに未対応のため、対応可否を自動判定し、
-    // 未対応なら transform: scale で代替する（レビュー指摘5・案A）。
-    // scaleはレイアウト上の幅を変えないため横幅はwidthで補正する（縦方向に余白が残りうるのは旧Firefoxのみの既知の制限）。
-    const CSS_ZOOM_SUPPORTED = (typeof CSS !== 'undefined' && !!CSS.supports && CSS.supports('zoom', '1.5'));
     function applyCompareZoom() {
       const wrap = timelineContainer.querySelector('.compare-wrap');
-      if (wrap) {
-        if (CSS_ZOOM_SUPPORTED) {
-          wrap.style.zoom = compareZoom;
-        } else if (compareZoom === 1) {
-          wrap.style.transform = '';
-          wrap.style.width = '';
-        } else {
-          wrap.style.transform = 'scale(' + compareZoom + ')';
-          wrap.style.transformOrigin = 'top left';
-          wrap.style.width = (100 / compareZoom) + '%';
-        }
-      }
+      if (wrap) wrap.style.zoom = compareZoom;
       const label = document.getElementById('compareZoomLabel');
       if (label) label.textContent = Math.round(compareZoom * 100) + '%';
     }
@@ -1928,7 +1848,7 @@
       const f = timeToMinutes(deathFrom);
       const to = timeToMinutes(deathTo);
       if (t === Infinity || f === Infinity || to === Infinity) return false;
-      // 開始≦終了：通常の範囲。開始＞終了：日付を跨ぐ範囲（例: 23:00〜翌1:00）
+      // 開始≦終了：通常の範囲。開始＞終了：日付を跨ぐ範囲（例: 23:00〜翲1:00）
       return (f <= to) ? (t >= f && t <= to) : (t >= f || t <= to);
     }
 
@@ -1938,8 +1858,6 @@
     }
 
     // 全件を作り直さずに保存だけ行う（軽量更新用）
-    // （保存は毎回全件をJSON化する。現規模では十分軽いが、件数が数千を超えるなら
-    //   メモ保存と同じ300msデバウンス化を検討。レビュー指摘11）
     function persistEvents() {
       safeSet(KEYS.events, JSON.stringify(events));
     }
@@ -1961,19 +1879,17 @@
 
     function addEvent() {
       const time = normalizeTime(document.getElementById('timeInput').value);
-      // できごとは必須（機能要件）。空白だけの入力も「空」として何もしない（編集側の trim 基準と統一。レビュー指摘3対応）
-      const text = document.getElementById('eventInput').value.trim();
+      const text = document.getElementById('eventInput').value;
       if (!text) return;
 
       const chars = [...newEventChars];
       // イベントデータに登場人物（複数可）を持たせる
       const ev = {
-        id: genId(),                                   // ID化: 新規イベントにもIDを付ける
         time,
         text,
         characters: chars,
         character: chars[0] || '',                     // 後方互換（先頭の1人）
-        color: chars[0] ? colorForChar(chars[0]) : '#fafafa', // 書き込み専用（旧版互換のため保存するだけ。描画は colorForChar() で現在色を引くので、この値を読まないこと。レビュー指摘9）
+        color: chars[0] ? colorForChar(chars[0]) : '#fafafa',
         flag: newEventFlag                             // 重要フラグ
       };
       // 期間モードのときは終了時刻も保存する（正しい時刻のときだけ）
@@ -2053,104 +1969,6 @@
       saveEvents();
     }
 
-    // --- ID化 Phase 2: トグル・削除系のID版ラッパー ---
-    // 画面のボタンからは「何番目か（index）」ではなく「どのイベントか（ID）」で呼ぶ。
-    // IDが見つからない場合＝画面の表示が古い可能性があるので、静かに再描画だけして何もしない（安全側）
-    function toggleEventFlagById(id) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      toggleEventFlag(index);
-    }
-    function toggleEventConcealById(id) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      toggleEventConceal(index);
-    }
-    function toggleEventColorById(id) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      toggleEventColor(index);
-    }
-    function deleteEventById(id) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      deleteEvent(index);
-    }
-
-    // --- ID化 Phase 3: 編集・移動系のID版ラッパー ---
-    // 移動・編集開始系：対象が見つからなければ静かに再描画のみ（安全側）
-    function moveUnknownEventById(id, dir) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      moveUnknownEvent(index, dir);
-    }
-    function startEditEventById(id) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      startEditEvent(index);
-    }
-    function startEditTimeById(id) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      startEditTime(index);
-    }
-    function startCompareEditById(id, btn) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      startCompareEdit(index, btn);
-    }
-    function toggleCardCharPopupById(e, id) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
-      toggleCardCharPopup(e, index);
-    }
-    // 保存系：編集内容が失われるので、ひと言知らせてから最新表示に戻す
-    function saveEditEventById(id, btnEl) {
-      const index = evIndexById(id);
-      if (index < 0) {
-        editingId = null;
-        alert('対象が見つかりませんでした。表示を最新にします。');
-        renderEvents();
-        return;
-      }
-      saveEditEvent(index, btnEl);
-    }
-    function saveCompareEditById(id, el) {
-      const index = evIndexById(id);
-      if (index < 0) {
-        alert('対象が見つかりませんでした。表示を最新にします。');
-        renderEvents();
-        return;
-      }
-      saveCompareEdit(index, el);
-    }
-    function saveEditTimeById(id) {
-      const index = evIndexById(id);
-      if (index < 0) {
-        editingTimeId = null;
-        alert('対象が見つかりませんでした。表示を最新にします。');
-        renderEvents();
-        return;
-      }
-      saveEditTime(index);
-    }
-    // キー操作系：IDを現在位置に引き直して既存ハンドラにそのまま渡す
-    function handleEditTimeKeydownById(e, id) {
-      const index = evIndexById(id);
-      if (index < 0) { editingTimeId = null; renderEvents(); return; }
-      handleEditTimeKeydown(e, index);
-    }
-    function handleEditTextKeydownById(e, id) {
-      const index = evIndexById(id);
-      if (index < 0) { e.preventDefault(); editingId = null; renderEvents(); return; }
-      handleEditTextKeydown(e, index);
-    }
-    function handleCompareEditKeydownById(e, id) {
-      const index = evIndexById(id);
-      if (index < 0) { e.preventDefault(); renderEvents(); return; }
-      handleCompareEditKeydown(e, index);
-    }
-
     // 不詳（時刻なし）カード、または同じ時刻の重複カードを、タイムライン上で上（-1）/下（+1）に1つ分動かす
     function moveUnknownEvent(index, dir) {
       const ev = events[index];
@@ -2192,14 +2010,14 @@
       if (!card || card.querySelector('.compare-edit')) return; // すでに編集中なら何もしない
       const ev = events[index];
       // 期間指定の有無に関わらず、終了時間の入力欄を常に表示する（空なら単一時刻のまま）
-      const endField = `<input type="text" class="edit-endtime compare-edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleCompareEditKeydownById(event, '${sanitizeId(ev.id)}')">`;
+      const endField = `<input type="text" class="edit-endtime compare-edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleCompareEditKeydown(event, ${index})">`;
       card.innerHTML = `<div class="compare-edit">
-        <textarea class="compare-edit-text" placeholder="できごと" onkeydown="handleCompareEditKeydownById(event, '${sanitizeId(ev.id)}')">${escapeHtml(ev.text || '')}</textarea>
-        <input type="text" class="edit-time compare-edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleCompareEditKeydownById(event, '${sanitizeId(ev.id)}')">
+        <textarea class="compare-edit-text" placeholder="できごと" onkeydown="handleCompareEditKeydown(event, ${index})">${escapeHtml(ev.text || '')}</textarea>
+        <input type="text" class="edit-time compare-edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleCompareEditKeydown(event, ${index})">
         <div class="compare-edit-endrow">
           ${endField}
           <div class="compare-edit-actions">
-            <button type="button" class="compare-edit-save" onclick="saveCompareEditById('${sanitizeId(ev.id)}', this)" title="保存"><span class="edit-check">✓</span></button>
+            <button type="button" class="compare-edit-save" onclick="saveCompareEdit(${index}, this)" title="保存"><span class="edit-check">✓</span></button>
             <button type="button" class="compare-edit-cancel" onclick="renderEvents()" title="取消">✕</button>
           </div>
         </div>
@@ -2226,21 +2044,21 @@
 
     // カードを編集モードにする
     function startEditEvent(index) {
-      editingId = events[index] ? events[index].id : null; // 「何番目か」ではなく「どのカードか」を覚える
-      editingTimeId = null; // フル編集を始めるときは時間だけ編集は解除する
+      editingIndex = index;
+      editingTimeIndex = -1; // フル編集を始めるときは時間だけ編集は解除する
       renderEvents();
     }
 
     // 編集をキャンセルする
     function cancelEditEvent() {
-      editingId = null;
+      editingIndex = -1;
       renderEvents();
     }
 
     // 時間バッジのクリックで「時間だけ」を編集し始める
     function startEditTime(index) {
-      editingId = null;        // フル編集中なら解除する
-      editingTimeId = events[index] ? events[index].id : null;
+      editingIndex = -1;        // フル編集中なら解除する
+      editingTimeIndex = index;
       renderEvents();
       // 生成された入力欄にフォーカスして全選択する
       const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
@@ -2250,23 +2068,23 @@
 
     // 時間だけ編集をキャンセルする
     function cancelEditTime() {
-      if (editingTimeId === null) return;
-      editingTimeId = null;
+      if (editingTimeIndex === -1) return;
+      editingTimeIndex = -1;
       renderEvents();
     }
 
     // 時間だけ編集を保存する（内容・終了時刻・期間はそのまま）
     function saveEditTime(index) {
       // Enter保存→renderEvents()で入力欄がDOMから外れる→blurが再発火して本関数が二重に呼ばれるため、
-      // 「すでに確定/キャンセル済み・対象が違うなら何もしない」ガードで二重保存を防いでいる（消さないこと）
-      if (!events[index] || events[index].id !== editingTimeId) return;
+      // 「すでに確定/キャンセル済みなら何もしない」ガードで二重保存を防いでいる（消さないこと）
+      if (editingTimeIndex !== index) return;
       const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
       const input = card && card.querySelector('.edit-time-inline');
-      if (!input) { editingTimeId = null; renderEvents(); return; }
+      if (!input) { editingTimeIndex = -1; renderEvents(); return; }
       events[index].time = normalizeTime(input.value);
       // 時刻が入ったら手動位置（anchor）は不要なので片付ける
       if (timeToMinutes(events[index].time) !== Infinity) delete events[index].anchor;
-      editingTimeId = null;
+      editingTimeIndex = -1;
       sortEvents(); // 時間を変えたので並べ替える
       saveEvents();
     }
@@ -2319,7 +2137,7 @@
         card.querySelector('.edit-time'),
         card.querySelector('.edit-endtime'),
         card.querySelector('.edit-text'),
-        () => { editingId = null; }); // 保存成功時だけ編集モードを解除（内容が空のときは編集を続ける）
+        () => { editingIndex = -1; }); // 保存成功時だけ編集モードを解除（内容が空のときは編集を続ける）
     }
 
     // 「できごと」欄で Enter を連続2回押したら保存する
@@ -2375,8 +2193,6 @@
           const s = timeToMinutes(ev.time), e = timeToMinutes(ev.endTime);
           const lo = Math.min(s, e), hi = Math.max(s, e);
           // 期間の途中に別のイベントがある場合だけ、開始行・終了行に分割する
-          // （総当たりで O(n²) だが、マダミス想定規模〜数百件では十分速い。
-          //   数千件を超える用途では markers をソートして二分探索に置き換えること。レビュー指摘10）
           const hasBetween = markers.some(m => m.index !== index && m.t > lo && m.t < hi);
           if (hasBetween) {
             rows.push({ index, ev, kind: 'start', sortT: s });
@@ -2576,33 +2392,33 @@
         const isUnknownTime = timeToMinutes(ev.time) === Infinity;
         const hasSameTimeSibling = !isUnknownTime && kind !== 'end' && ev.time && timeCounts.get(ev.time) > 1;
         const moveBtns = (isUnknownTime || hasSameTimeSibling)
-          ? `<button class="btn-move-up" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button>
-              <button class="btn-move-down" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>`
+          ? `<button class="btn-move-up" onclick="moveUnknownEvent(${index}, -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button>
+              <button class="btn-move-down" onclick="moveUnknownEvent(${index}, 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>`
           : '';
 
-        if (editingId !== null && ev.id === editingId) {
+        if (index === editingIndex) {
           // 編集モード：時間・終了時間・内容を編集できるフォームを表示（人物はカードの👥で編集）
           div.innerHTML = `
             <div class="timeline-item-inner edit-mode">
-              <input type="text" class="edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTextKeydownById(event, '${sanitizeId(ev.id)}')">
+              <input type="text" class="edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTextKeydown(event, ${index})">
               <span class="range-sep-edit">〜</span>
-              <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleEditTextKeydownById(event, '${sanitizeId(ev.id)}')">
-              <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容" onkeydown="handleEditTextKeydownById(event, '${sanitizeId(ev.id)}')">
+              <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleEditTextKeydown(event, ${index})">
+              <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容" onkeydown="handleEditTextKeydown(event, ${index})">
             </div>
             <div class="controls edit-controls compare-edit-actions">
-              <button type="button" class="compare-edit-save" onclick="saveEditEventById('${sanitizeId(ev.id)}', this)" title="保存"><span class="edit-check">✓</span></button>
+              <button type="button" class="compare-edit-save" onclick="saveEditEvent(${index}, this)" title="保存"><span class="edit-check">✓</span></button>
               <button type="button" class="compare-edit-cancel" onclick="cancelEditEvent()" title="取消">✕</button>
             </div>
           `;
         } else {
-          const isEditingTime = (editingTimeId !== null && ev.id === editingTimeId);
+          const isEditingTime = (index === editingTimeIndex);
           const timeBadgeText = (kind === 'range')
             ? `${escapeHtml(ev.time)}<br>${escapeHtml(ev.endTime)}`
             : escapeHtml(ev.time || '不詳');
           // 単一カードの期間（開始・終了の両方を持つ）は、時間バッジのクリックで✏️と同じフル編集を開く
-          const timeBadgeClickHandler = (kind === 'range') ? `startEditEventById('${sanitizeId(ev.id)}')` : `startEditTimeById('${sanitizeId(ev.id)}')`;
+          const timeBadgeClickHandler = (kind === 'range') ? `startEditEvent(${index})` : `startEditTime(${index})`;
           const timeBadgeHtml = isEditingTime
-            ? `<div class="time-badge time-badge-editing"><input type="text" class="edit-time-inline" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTimeKeydownById(event, '${sanitizeId(ev.id)}')" onblur="saveEditTimeById('${sanitizeId(ev.id)}')"></div>`
+            ? `<div class="time-badge time-badge-editing"><input type="text" class="edit-time-inline" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTimeKeydown(event, ${index})" onblur="saveEditTime(${index})"></div>`
             : `<div class="time-badge time-badge-editable" onclick="${timeBadgeClickHandler}" title="クリックして時間を編集">${timeBadgeText}</div>`;
           div.innerHTML = `
             <div class="timeline-item-inner">
@@ -2615,15 +2431,15 @@
             <div class="concealed-label">（内容を非表示中）</div>
             <div class="controls">
               ${moveBtns}
-              <button class="btn-edit-card" onclick="startEditEventById('${sanitizeId(ev.id)}')" title="時間・内容を編集">✏️</button>
+              <button class="btn-edit-card" onclick="startEditEvent(${index})" title="時間・内容を編集">✏️</button>
               <div class="card-char-wrap">
-                <button class="btn-add-char-card" onclick="toggleCardCharPopupById(event, '${sanitizeId(ev.id)}')" title="登場人物を追加/削除">👥</button>
+                <button class="btn-add-char-card" onclick="toggleCardCharPopup(event, ${index})" title="登場人物を追加/削除">👥</button>
                 <div class="char-assign-popup" id="charAssign-${index}"></div>
               </div>
-              <button class="btn-flag-card ${ev.flag ? 'active' : ''}" onclick="toggleEventFlagById('${sanitizeId(ev.id)}')" title="フラグ切り替え"><span class="flag-glyph">🚩</span></button>
-              <button class="btn-conceal" onclick="toggleEventConcealById('${sanitizeId(ev.id)}')" title="内容の表示/非表示">👁️</button>
-              <button class="btn-color-toggle ${ev.colorHidden ? 'active' : ''}" onclick="toggleEventColorById('${sanitizeId(ev.id)}')" title="色を隠す/戻す">🎨</button>
-              <button class="btn-delete" onclick="deleteEventById('${sanitizeId(ev.id)}')">✕</button>
+              <button class="btn-flag-card ${ev.flag ? 'active' : ''}" onclick="toggleEventFlag(${index})" title="フラグ切り替え"><span class="flag-glyph">🚩</span></button>
+              <button class="btn-conceal" onclick="toggleEventConceal(${index})" title="内容の表示/非表示">👁️</button>
+              <button class="btn-color-toggle ${ev.colorHidden ? 'active' : ''}" onclick="toggleEventColor(${index})" title="色を隠す/戻す">🎨</button>
+              <button class="btn-delete" onclick="deleteEvent(${index})">✕</button>
             </div>
           `;
         }
@@ -2800,14 +2616,14 @@
       const compareActions = (ev, withMove) => {
         const index = indexOfEv.get(ev);
         // リストと同じ「編集（✏️）」ボタン（時間・できごとを編集）
-        const editBtn = `<button type="button" class="compare-edit-btn" onclick="startCompareEditById('${sanitizeId(ev.id)}', this)" title="時間・内容を編集">✏️</button>`;
+        const editBtn = `<button type="button" class="compare-edit-btn" onclick="startCompareEdit(${index}, this)" title="時間・内容を編集">✏️</button>`;
         const moveBtns = withMove
-          ? `<button type="button" class="btn-move-up" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button><button type="button" class="btn-move-down" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>`
+          ? `<button type="button" class="btn-move-up" onclick="moveUnknownEvent(${index}, -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button><button type="button" class="btn-move-down" onclick="moveUnknownEvent(${index}, 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>`
           : '';
         return `<div class="compare-card-actions">${editBtn}${moveBtns}
-          <button type="button" class="compare-flag${ev.flag ? ' active' : ''}" onclick="toggleEventFlagById('${sanitizeId(ev.id)}')" title="フラグ切り替え"><span class="flag-glyph">🚩</span></button>
-          <button type="button" class="compare-conceal" onclick="toggleEventConcealById('${sanitizeId(ev.id)}')" title="内容の表示/非表示">👁️</button>
-          <button type="button" class="compare-delete" onclick="deleteEventById('${sanitizeId(ev.id)}')" title="削除">✕</button>
+          <button type="button" class="compare-flag${ev.flag ? ' active' : ''}" onclick="toggleEventFlag(${index})" title="フラグ切り替え"><span class="flag-glyph">🚩</span></button>
+          <button type="button" class="compare-conceal" onclick="toggleEventConceal(${index})" title="内容の表示/非表示">👁️</button>
+          <button type="button" class="compare-delete" onclick="deleteEvent(${index})" title="削除">✕</button>
         </div>`;
       };
       const compareCardClass = ev => `compare-card${ev.flag ? ' flagged' : ''}${ev.concealed ? ' concealed' : ''}`;
