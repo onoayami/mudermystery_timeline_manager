@@ -123,7 +123,7 @@
     .btn-edit-char { background: #ecf0f1; border: 1px solid #4a627a; border-radius: 4px; cursor: pointer; }
     .btn-edit-char:hover { background: #dbe4e8; }
     .btn-save-char { background: #dcfce7; border-color: #86efac; color: #16a34a; }
-    .btn-save-char:hover { background: #dcfce7; filter: brightness(0.95); }
+    .btn-save-char:hover { background: #bbf7d0; }
     .char-name-edit { flex: 1 1 auto; min-width: 0; background: #fff; color: #333; border: 1px solid #94a3b8; border-radius: 4px; padding: 3px 6px; }
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
@@ -505,6 +505,20 @@
     #characterSelect { background: #ecf0f1; color: #333; border-radius: 4px; width: auto; flex-grow: 1; }
     #timeInput { width: 80px; text-align: center; }
     #eventInput { flex-grow: 4; }
+
+    /* 画面上部の警告バー（別タブ更新の検知・想定外エラーの復旧案内）。既存の描画に依存せず単独で表示できる */
+    .alert-bar {
+      position: sticky; top: 0; z-index: 3000;
+      background: #fef3c7; color: #92400e; border-bottom: 2px solid #f59e0b;
+      padding: 10px 14px; font-size: 14px; line-height: 1.5;
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .alert-bar button {
+      background: #f59e0b; color: #fff; border: none; border-radius: 6px;
+      padding: 6px 14px; font-size: 13px; cursor: pointer; white-space: nowrap;
+    }
+    #fatalErrorBar { background: #fee2e2; color: #991b1b; border-bottom-color: #ef4444; }
+    #fatalErrorBar button { background: #ef4444; }
   </style>
   <style id="cardColorsStyle"></style> <!-- JavaScriptで動的にCSSを生成 -->
 </head>
@@ -774,18 +788,88 @@
       try { return localStorage.getItem(key); } catch (e) { return null; }
     }
 
+    // --- 想定外エラー時の復旧案内（レビュー指摘4対応） ---
+    // 未捕捉の例外・Promise拒否が起きると画面が固まって見えるが、データ自体は localStorage に残っていることが多い。
+    // 「消えたのでは」という不安を防ぐため、既存の描画処理に一切依存しない最小限のDOMで案内バーを出す。
+    // メッセージに機微情報（メモ本文など）は含めず、ハンドラ内で再帰的にエラーが出ないよう処理は最小に留める。
+    let fatalErrorShown = false; // 案内バーは1回だけ出す
+    function showFatalErrorNotice() {
+      try {
+        if (fatalErrorShown) return;
+        fatalErrorShown = true;
+        const bar = document.createElement('div');
+        bar.id = 'fatalErrorBar';
+        bar.className = 'alert-bar';
+        bar.textContent = '⚠️ エラーで画面が止まりました。データは保存されています。ページを再読み込みしてください。';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = '再読み込み';
+        btn.onclick = () => location.reload();
+        bar.appendChild(btn);
+        (document.body || document.documentElement).prepend(bar);
+      } catch (e) { /* ハンドラ内では何もしない（二次エラー防止） */ }
+    }
+    window.addEventListener('error', showFatalErrorNotice);
+    window.addEventListener('unhandledrejection', showFatalErrorNotice);
+
+    // --- 別タブ・別端末での保存を検知して警告する（レビュー指摘3対応） ---
+    // 保存は localStorage への丸ごと上書きのため、同じHTMLを複数タブで開いて書き込むと後勝ちで消える。
+    // storage イベント（他タブの書き込みで発火。自タブでは発火しない）を購読し、警告バーで手動リロードを促す。
+    // 自動リロードは編集中の入力を失うため行わない。
+    window.addEventListener('storage', (e) => {
+      // このアプリのキー以外（同一オリジンの別アプリ等）の変更は無視。key === null は clear() による全消去
+      if (e.key !== null && !Object.values(KEYS).includes(e.key)) return;
+      if (document.getElementById('storageConflictBar')) return; // 表示は1回だけ
+      try {
+        const bar = document.createElement('div');
+        bar.id = 'storageConflictBar';
+        bar.className = 'alert-bar';
+        bar.textContent = '⚠️ 別のタブ／端末でデータが更新されました。このまま書き込むと上書きで消えます。ページを再読み込みしてください。';
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = '再読み込み';
+        btn.onclick = () => location.reload();
+        bar.appendChild(btn);
+        document.body.prepend(bar);
+      } catch (err) { console.warn('警告バーの表示に失敗しました', err); }
+    });
+
+    // --- 読み込んだイベント配列の正規化（レビュー指摘1・2対応） ---
+    // 手編集・別ツール製のインポートファイルなど「JSONとしては正しいが中身の形が壊れている」データでも
+    // 例外で画面が真っ白にならないよう、読み込み直後に各イベントを安全な形へ整える。
+    // - 配列でなければ空配列 ／ 要素が非オブジェクト・null なら除外
+    // - text は文字列以外なら空文字。time / endTime は文字列以外なら空文字、文字列なら normalizeTime で表記統一
+    //   （HH:MM 形式外を空に落とすことはしない。自由記述の時刻「夕方」等は正規の入力でも保存される仕様＝不詳扱いのため）
+    // - characters は配列以外なら空配列にし、文字列以外の要素は除外（旧データの character 単数からの移行もここで行う）
+    // - flag / concealed は真偽値へ変換
+    function normalizeEvents(list) {
+      if (!Array.isArray(list)) return [];
+      return list.filter(ev => ev && typeof ev === 'object' && !Array.isArray(ev)).map(ev => {
+        ev.text = typeof ev.text === 'string' ? ev.text : '';
+        ev.time = typeof ev.time === 'string' ? normalizeTime(ev.time) : '';
+        if ('endTime' in ev) {
+          const et = typeof ev.endTime === 'string' ? normalizeTime(ev.endTime) : '';
+          if (et) ev.endTime = et; else delete ev.endTime;
+        }
+        if (!Array.isArray(ev.characters)) {
+          ev.characters = (typeof ev.character === 'string' && ev.character) ? [ev.character] : [];
+        }
+        ev.characters = ev.characters.filter(c => typeof c === 'string');
+        ev.flag = !!ev.flag;
+        ev.concealed = !!ev.concealed;
+        return ev;
+      });
+    }
+
     // データの読み込み
-    let events = loadJSON(KEYS.events, []);
+    let events = normalizeEvents(loadJSON(KEYS.events, []));
     let characters = loadJSON(KEYS.characters, []);
     let newEventFlag = false; // 新規追加時にフラグを立てるか
     let newEventRange = false; // 新規追加時に「期間（開始〜終了）」で登録するか
     let newEventChars = []; // 新規追加時に選択している人物名（複数可）
     // 編集中キャラクターは位置ではなく「名前」で覚える（キャラ名は重複登録できないため一意。レビュー指摘1対応）
     let editingCharacterName = null; // nullは編集なし
-    // 後方互換：旧データ（character 単数）を characters 配列に移行する
-    events.forEach(ev => {
-      if (!Array.isArray(ev.characters)) ev.characters = ev.character ? [ev.character] : [];
-    });
+    // ※旧データ（character 単数）→ characters 配列への後方互換移行は normalizeEvents() 内で行っている
     // --- ID基盤（ID化 Phase 1）: イベントを配列の位置（index）ではなくIDで特定できるようにする ---
     // IDの生成（重複しないランダムな文字列。古いブラウザでも動くよう予備の方式も用意）
     function genId() {
@@ -1165,7 +1249,7 @@
 
     // すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除する
     function clearAllData() {
-      if (!confirm('すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除します。\nこの操作は元に戻せません。よろしいですか？')) return;
+      if (!confirm('すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除します。\nこの操作は元に戻せません。よろしいですか？\n\n※心配な場合は、いったんキャンセルして「⬆️ 書き出し」から\n今のセッションの記録を外部ファイルとして保存しておくこともできます。')) return;
       try { Object.values(KEYS).forEach(k => localStorage.removeItem(k)); }
       catch (e) { console.warn('データ削除に失敗しました', e); }
       location.reload();
