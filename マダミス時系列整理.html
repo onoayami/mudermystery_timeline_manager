@@ -379,8 +379,9 @@
     .compare-range-fill.concealed .compare-conceal { background: #cbd5e1; color: #475569; border-color: #94a3b8; filter: grayscale(0.65); opacity: 0.75; }
     .compare-range-fill .compare-card-actions { position: relative; z-index: 1; }
     .compare-empty { color: #cbd5e1; font-size: 0.9rem; padding: 12px 4px; line-height: 1.6; }
-    .compare-concealed-toggle, .compare-order-fixed-toggle, .compare-zoom-toggle { display: none; }
-    #modeCompareBtn.active ~ .compare-concealed-toggle { display: inline-flex; }
+    /* 「非表示設定中アイテムを不可視化」はリスト・比較の両ビューで常に表示する。
+       並び固定・表示倍率は人物比較ビュー専用のまま非表示にする */
+    .compare-order-fixed-toggle, .compare-zoom-toggle { display: none; }
     #modeCompareBtn.active ~ .compare-order-fixed-toggle { display: inline-flex; }
     #modeCompareBtn.active ~ .compare-zoom-toggle { display: inline-flex; }
     /* 「表示倍率」は「人物の並びを固定する」から少し離す */
@@ -399,8 +400,7 @@
     body.view-mobile .timeline-mode-toggle { flex-wrap: wrap; }
     /* スマホ版：「カード削除時に確認画面を表示」も下二つと同じく独立した行に落とし、
        [リスト/人物比較]との間隔を、下の設定同士と同じ8pxに揃える */
-    body.view-mobile .timeline-mode-toggle .confirm-delete-toggle:not(.compare-concealed-toggle):not(.compare-order-fixed-toggle) { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
-    body.view-mobile #modeCompareBtn.active ~ .compare-concealed-toggle { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
+    body.view-mobile .timeline-mode-toggle .confirm-delete-toggle:not(.compare-order-fixed-toggle) { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
     body.view-mobile #modeCompareBtn.active ~ .compare-order-fixed-toggle { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
     body.view-mobile #modeCompareBtn.active ~ .compare-zoom-toggle { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
 
@@ -637,7 +637,7 @@
           <input type="checkbox" id="confirmDeleteToggle" onchange="toggleConfirmDelete()">
           <span>カード削除時に確認画面を表示</span>
         </label>
-        <label class="confirm-delete-toggle compare-concealed-toggle" title="人物比較で非表示フラグ付きカードをビューから除外します">
+        <label class="confirm-delete-toggle compare-concealed-toggle" title="👁️で非表示にしたカードをビューから除外します">
           <input type="checkbox" id="showConcealedCompareToggle" onchange="toggleShowConcealedCompare()">
           <span>非表示設定中アイテムを不可視化</span>
         </label>
@@ -716,7 +716,7 @@
         <li>比較に並ぶ人物は <strong>絞り込みで選んだ人</strong>です（「全員」のときは全員分の列が並びます）。</li>
         <li>人物名の左右の <strong>⬅︎ ➡︎</strong> で <strong>列の並び順</strong> を入れ替えられます。</li>
         <li><strong>「人物の並びを固定する」</strong>にチェックを入れると、並べ替えた順番がリスト表示に戻しても保存されます。</li>
-        <li><strong>「非表示設定中アイテムを不可視化」</strong>にチェックを入れると、👁️で非表示にしたカードを比較表から丸ごと隠せます。</li>
+        <li><strong>「非表示設定中アイテムを不可視化」</strong>にチェックを入れると、👁️で非表示にしたカードをビュー（リスト・人物比較どちらも）から丸ごと隠せます。</li>
         <li><strong>「表示倍率」</strong>の <strong>−／＋</strong> で比較表の大きさを変えられます（<strong>リセット</strong>で等倍に戻ります。この画面だけの設定です）。</li>
       </ul>
 
@@ -2027,7 +2027,7 @@
     function toggleShowConcealedCompare() {
       hideConcealedInCompare = document.getElementById('showConcealedCompareToggle').checked;
       safeSet(KEYS.showConcealedCompare, hideConcealedInCompare);
-      if (timelineMode === 'compare') renderEvents();
+      renderEvents();
     }
     function toggleCompareOrderFixed() {
       compareOrderFixed = document.getElementById('compareOrderFixedToggle').checked;
@@ -2487,6 +2487,8 @@
       events.forEach((ev, index) => {
         // フラグ絞り込み中は、条件（フラグつき／フラグなし）に合うカードだけ表示
         if (useFilter && !eventPassesFlagFilter(ev)) return;
+        // 「非表示設定中アイテムを不可視化」がONのときは、👁️で非表示にしたカードをリストからも除外する
+        if (useFilter && hideConcealedInCompare && ev.concealed) return;
         if (filterActive) {
           const names = eventCharNames(ev);
           if (!names.some(n => charFilter.includes(n))) return;
