@@ -861,9 +861,32 @@
       });
     }
 
+    // --- 読み込んだキャラクター配列の正規化（normalizeEvents と対の堅牢化） ---
+    // 手編集・別ツール製のインポートファイルなどで characters が壊れていても、
+    // 起動時の renderCharacters() 等で例外を起こして画面が真っ白にならないよう安全な形へ整える。
+    // - 配列でなければ空配列 ／ 要素が非オブジェクト・null・配列なら除外
+    // - name は文字列のみ（前後空白を除去。空名・重複名は除外＝アプリが保証する不変条件に合わせる）
+    // - color は #RRGGBB 形式以外なら既定色へ（safeColor と同じ基準）
+    // - locked は元々「立っているときだけ true を持つ」形なので、真のときだけ付ける（正常データの形を変えない）
+    function normalizeCharacters(list) {
+      if (!Array.isArray(list)) return [];
+      const seen = new Set();
+      const out = [];
+      list.forEach(c => {
+        if (!c || typeof c !== 'object' || Array.isArray(c)) return;
+        const name = typeof c.name === 'string' ? c.name.trim() : '';
+        if (!name || seen.has(name)) return; // 空名・重複名は捨てる
+        seen.add(name);
+        const norm = { name, color: /^#[0-9a-fA-F]{6}$/.test(c.color) ? c.color : '#94a3b8' };
+        if (c.locked) norm.locked = true; // 正常データと同じく、ロック中のときだけフィールドを持たせる
+        out.push(norm);
+      });
+      return out;
+    }
+
     // データの読み込み
     let events = normalizeEvents(loadJSON(KEYS.events, []));
-    let characters = loadJSON(KEYS.characters, []);
+    let characters = normalizeCharacters(loadJSON(KEYS.characters, []));
     let newEventFlag = false; // 新規追加時にフラグを立てるか
     let newEventRange = false; // 新規追加時に「期間（開始〜終了）」で登録するか
     let newEventChars = []; // 新規追加時に選択している人物名（複数可）
@@ -933,6 +956,7 @@
     const sessionNameInput = document.getElementById('sessionNameInput');
     const sessionNameDisplay = document.getElementById('sessionNameDisplay');
     const sessionNameDisplayPc = document.getElementById('sessionNameDisplayPc');
+    const sessionNameEditBtn = document.getElementById('sessionNameEditBtn');
     const timelineContainer = document.getElementById('timelineContainer');
     const characterList = document.getElementById('characterList');
     const cardColorsStyle = document.getElementById('cardColorsStyle');
@@ -1020,7 +1044,7 @@
       sessionNameDisplayPc.textContent = v || placeholder;
       sessionNameDisplay.classList.toggle('empty', !v);
       sessionNameDisplayPc.classList.toggle('empty', !v);
-      document.getElementById('sessionNameEditBtn').style.display = v ? '' : 'none';
+      sessionNameEditBtn.style.display = v ? '' : 'none';
       sessionNameInput.value = v;
     }
 
@@ -1031,12 +1055,12 @@
       sessionNameDisplay.style.display = 'none';
       sessionNameDisplayPc.style.display = 'none';
       sessionNameInput.style.display = '';
-      document.getElementById('sessionNameEditBtn').style.display = '';
+      sessionNameEditBtn.style.display = '';
       sessionNameInput.focus();
       sessionNameInput.select();
-      document.getElementById('sessionNameEditBtn').textContent = '✓';
-      document.getElementById('sessionNameEditBtn').title = 'セッション名を保存';
-      document.getElementById('sessionNameEditBtn').classList.add('editing');
+      sessionNameEditBtn.textContent = '✓';
+      sessionNameEditBtn.title = 'セッション名を保存';
+      sessionNameEditBtn.classList.add('editing');
     }
     function toggleSessionNameEdit() {
       const editing = sessionNameInput.style.display !== 'none';
@@ -1053,9 +1077,9 @@
       sessionNameInput.style.display = 'none';
       sessionNameDisplay.style.display = '';
       sessionNameDisplayPc.style.display = '';
-      document.getElementById('sessionNameEditBtn').textContent = '✎';
-      document.getElementById('sessionNameEditBtn').title = 'セッション名を編集';
-      document.getElementById('sessionNameEditBtn').classList.remove('editing');
+      sessionNameEditBtn.textContent = '✎';
+      sessionNameEditBtn.title = 'セッション名を編集';
+      sessionNameEditBtn.classList.remove('editing');
       renderSessionName();
     }
 
@@ -1413,7 +1437,9 @@
 
       characters[index].name = trimmedName;
       events.forEach(ev => {
-        ev.characters = eventCharNames(ev).map(name => name === oldName ? trimmedName : name);
+        const names = eventCharNames(ev);
+        if (!names.includes(oldName)) return; // 旧名を含まないカードは触らない（無駄な配列再生成を避ける）
+        ev.characters = names.map(name => name === oldName ? trimmedName : name);
         ev.character = ev.characters[0] || '';
       });
       newEventChars = newEventChars.map(name => name === oldName ? trimmedName : name);
@@ -1817,12 +1843,17 @@
       // 「:」が含まれる場合は 時:分 として整形する
       if (s.includes(':')) {
         const parts = s.split(':');
+        // コロンが2個以上（例:「1:2:3」）は「時:分」として解釈できないので、
+        // 余分を切り捨てず、入力そのまま（自由記述＝不詳扱い）で残す（レビュー#5・案B）
+        if (parts.length > 2) return half;
         const h = parts[0].replace(/\D/g, '');
         const m = parts[1].replace(/\D/g, '');
         if (h === '' && m === '') return '';
         if (m === '') return h;               // 分がまだ入力されていない
+        // 分が3桁以上（例:「10:305」）も、末尾を黙って捨てず入力そのままで残す（レビュー#5・案B）
+        if (m.length > 2) return half;
         // 時は先頭ゼロを取って統一（09:05 → 9:05）。表記ゆらぎで同時刻が別扱いになるのを防ぐ
-        return `${parseInt(h || '0', 10)}:${m.slice(0, 2).padStart(2, '0')}`;
+        return `${parseInt(h || '0', 10)}:${m.padStart(2, '0')}`;
       }
       // 数字だけのときは自動で「:」を入れる（4桁→H:MM（先頭ゼロは除去）／3桁→H:MM）
       const digits = s.replace(/\D/g, '');
@@ -2918,9 +2949,19 @@
       // 期間と通常カードは別グループとしてレーンを分け、両方ある場合も
       // 同じ人物欄の中でそれぞれを確認できるようにする。
       // 同じグループ内で重なるときは、先に登録されたものを左レーンに置く。
+      // 事前に「人物名 → その人が登場するイベント」を1回の走査でバケット化しておく
+      // （列ごとに timed/interUntimed を全走査する O(列数×件数) を避ける。登録順は timed/interUntimed の順を保持）
+      const timedByName = new Map(colNames.map(n => [n, []]));
+      const interByName = new Map(colNames.map(n => [n, []]));
+      timed.forEach(ev => {
+        [...new Set(eventCharNames(ev))].forEach(n => { const b = timedByName.get(n); if (b) b.push(ev); });
+      });
+      interUntimed.forEach(ev => {
+        [...new Set(eventCharNames(ev))].forEach(n => { const b = interByName.get(n); if (b) b.push(ev); });
+      });
       const colLanes = colNames.map(name => {
-        const timedEvs = timed.filter(ev => eventCharNames(ev).includes(name)); // 登録順を保持
-        const interEvs = interUntimed.filter(ev => eventCharNames(ev).includes(name));
+        const timedEvs = timedByName.get(name); // 登録順を保持
+        const interEvs = interByName.get(name);
         const occ = [];          // occ[lane][row] = 占有中か
         const placed = [];       // { ev, lane, startRow, endRow }
         // 期間を左、通常カード・時間不詳カードを右に固定するため、グループ単位で配置する。

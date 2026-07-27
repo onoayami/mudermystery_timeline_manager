@@ -1,2 +1,8 @@
+# HTML と .gitignore 以外はすべて追跡しない
+/*
+!/.gitignore
+!/*.html
+!/OLD etc/
+/OLD etc/*
+!/OLD etc/*.html
 .DS_Store
-*.md
