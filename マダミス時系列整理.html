@@ -199,6 +199,9 @@
     .controls button { background: rgba(255, 255, 255, 0.12); border: 1px solid var(--card-btn-border, #a1a1a1); border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #555; }
     .controls button:hover { background: #e2e8f0; }
     .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
+    /* 👁️トグル時、右側の🎨とのボタン入れ替わりで👁️の位置がズレないよう、
+       ✕ボタンの幅を🎨と同じ31pxに固定する */
+    .controls .btn-delete { box-sizing: border-box; min-width: 31px; display: inline-flex; align-items: center; justify-content: center; }
     .btn-flag-card { font-size: 0.95rem; line-height: 1; }
     /* OFF時は絵文字だけグレー化（ボタン全体にfilterを掛けると枠線の色まで灰色化されるため） */
     .btn-flag-card .flag-glyph { filter: grayscale(1); }
@@ -246,11 +249,13 @@
     body.view-pc .edit-controls { align-self: stretch; align-items: center; }
     body.view-mobile .edit-controls { align-items: center; }
     .timeline-item.concealed .timeline-item-inner,
+    .timeline-item.concealed .btn-delete { display: none; }
+    /* 👁️ボタンの位置が動かないよう、それより前のボタン（✏️・👥・⬆︎⬇︎）は
+       display:noneではなくvisibility:hiddenで場所だけ残して隠す */
     .timeline-item.concealed .btn-edit-card,
     .timeline-item.concealed .card-char-wrap,
     .timeline-item.concealed .btn-move-up,
-    .timeline-item.concealed .btn-move-down,
-    .timeline-item.concealed .btn-delete { display: none; }
+    .timeline-item.concealed .btn-move-down { visibility: hidden; pointer-events: none; }
     .concealed-label { display: none; color: inherit; font-size: 0.85rem; font-style: italic; }
     .timeline-item.concealed .concealed-label { display: block; flex: 1 1 auto; }
     /* 非表示中の目アイコンは、フラグより目立たない暗い青灰色で表示する */
@@ -2761,12 +2766,16 @@
         // 不詳（時刻なし）カード、または同じ時刻のカードが複数あるとき、タイムライン上を上下に動かせる△▽を出す
         const isUnknownTime = timeToMinutes(ev.time) === Infinity;
         const hasSameTimeSibling = !isUnknownTime && kind !== 'end' && ev.time && timeCounts.get(ev.time) > 1;
+        // 同時刻カードは、実際に入れ替え先がある方向のボタンだけを表示する（不詳カードは常に両方出す）
+        const canMoveUp = isUnknownTime || (hasSameTimeSibling && pos > 0 && rows[pos - 1].kind !== 'end' && rows[pos - 1].ev.time === ev.time);
+        const canMoveDown = isUnknownTime || (hasSameTimeSibling && pos < rows.length - 1 && rows[pos + 1].kind !== 'end' && rows[pos + 1].ev.time === ev.time);
         const moveBtns = (isUnknownTime || hasSameTimeSibling)
           ? `<span class="controls-move-break" aria-hidden="true"></span>
-              <button class="btn-move-up" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button>
-              <button class="btn-move-down" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>
+              ${canMoveUp ? `<button class="btn-move-up" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button>` : ''}
+              ${canMoveDown ? `<button class="btn-move-down" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>` : ''}
               <button class="controls-move-spacer" tabindex="-1" aria-hidden="true">✕</button>`
           : '';
+
 
         if (editingId !== null && ev.id === editingId) {
           // 編集モード：時間・終了時間・内容を編集できるフォームを表示（人物はカードの👥で編集）
