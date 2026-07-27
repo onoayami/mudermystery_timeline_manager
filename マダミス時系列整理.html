@@ -167,8 +167,10 @@
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
     /* 余白は人物比較ビューの .compare-card（padding: 5px 8px）と揃える：
-       右=8px（✕ボタン右端からカード右端）・下=5px（操作ボタン下端からカード下端） */
-    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
+       右=8px（✕ボタン右端からカード右端）・下=5px（操作ボタン下端からカード下端）
+       左と上はフラグ表示時の黄色の縦線（box-shadow inset 5px）と文字が近すぎないよう、
+       フラグの有無に関係なく常に5pxを上乗せしておく（左=8+5=13px、上=5+5=10px） */
+    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 8px 5px 13px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
     /* 時間の右側にキャラ名と本文をまとめる。本文が折り返すときは時間の下ではなくキャラ名の開始位置に揃う */
     .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 6px; }
@@ -344,7 +346,7 @@
     .compare-table .compare-time-death { color: #ef4444; }
     .compare-table .compare-time-unknown { color: #cbd5e1; font-weight: normal; font-size: 0.85em; font-style: italic; }
     .compare-cell { min-width: 150px; }
-    .compare-card { border-radius: 6px; padding: 5px 8px; margin-bottom: 4px; font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
+    .compare-card { border-radius: 6px; padding: 9px 8px 5px 12px; margin-bottom: 4px; font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
     .compare-card:last-child { margin-bottom: 0; }
     .compare-card.flagged { box-shadow: inset 4px 0 0 #eaff00; }
     .compare-card, .compare-range-fill { box-sizing: border-box; }
@@ -433,7 +435,7 @@
     /* 人物比較：期間イベントは開始〜終了の行をまたぐ塗りセル（rowspan）で表示 */
     /* 塗りはセル内側に余白を空けた角丸ブロックで表現し、点カードと同じ見た目にする */
     .compare-table td.compare-cell-range { vertical-align: top; position: relative; padding: 0; }
-    .compare-range-fill { position: absolute; inset: 4px; border-radius: 6px; padding: 5px 8px; box-sizing: border-box; overflow: auto; }
+    .compare-range-fill { position: absolute; inset: 4px; border-radius: 6px; padding: 9px 8px 5px 12px; box-sizing: border-box; overflow: auto; }
     .compare-range-fill.flagged { box-shadow: inset 4px 0 0 #eaff00; }
     .compare-range-label { font-size: 0.9rem; line-height: 1.4; word-break: break-word; }
     /* どんなに内容が少なくても、操作アイコン（✏️🚩👁️✕の4つ）＋余白が必ず入る横幅を確保する。
