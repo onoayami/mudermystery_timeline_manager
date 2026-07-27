@@ -405,7 +405,9 @@
     .timeline-item > .timeline-item-inner,
     .timeline-item > .controls,
     .timeline-item > .concealed-label { position: relative; z-index: 1; }
-    /* 線幅25px。階層間は6pxの余白、通常カードとの余白は8px */
+    /* 基準は線幅25px・線同士の余白6px・通常カードとの余白8px。
+       重なりが多いときは JS（computeConnectorLayout）が width をインラインで上書きして
+       自動縮小する（最低8px）。ここの 25px はフォールバック値 */
     .timeline-item .conn-bar { position: absolute; width: 25px; top: 0; bottom: -8px; z-index: 0; background: var(--conn-color, #334155); }
     /* すき間（カード間の8px）をまたいで縦線を連続させ、終端では下を閉じる */
     .timeline-item .conn-bar.cap-top { border-top-right-radius: 6px; }
@@ -2511,9 +2513,14 @@
 
     // 期間コネクタ（コの字の縦バンド）のレイアウトを計算する。
     // 重なった期間は「入れ子（ネスト）」で内側へインデントして表示する。
+    // 【レーン幅の自動調整】通常は線幅25px・間隔6px。重なりが増えて縦線の合計が
+    // タイムライン領域の1/3を超えるときは、線幅と間隔を同じ比率で縮小する
+    // （線幅は最低8px・間隔は最低3pxで打ち止め。それでも収まらない場合は
+    //   1/3を超えて表示する＝「見えなくならない」ことを優先する）。
     function computeConnectorLayout(rows) {
-      const CONN_STEP = 31; // 線幅25px＋線同士の余白6px
       const CONN_GAP = 7;   // 通常カードとコネクタ線の間の余白
+      const BASE_BAR = 25, BASE_GAP = 6;  // 基準の線幅と線同士の間隔
+      const MIN_BAR = 8, MIN_GAP = 3;     // 縮小の下限（これ以下には絶対しない）
       const n = rows.length;
       // イベントindex → { start:行位置, end:行位置, ev }
       const posByIndex = new Map();
@@ -2544,6 +2551,19 @@
         r.depth = d;
         placed.push(r);
       });
+      // レーン幅を決める：必要幅（レーン数×基準幅）が領域の1/3を超えたら比例縮小
+      const lanes = ranges.length ? Math.max(...ranges.map(r => r.depth)) + 1 : 0;
+      let barW = BASE_BAR, gap = BASE_GAP;
+      if (lanes > 0) {
+        const avail = Math.max(60, (timelineContainer.clientWidth || window.innerWidth) / 3);
+        const need = lanes * (BASE_BAR + BASE_GAP);
+        if (need > avail) {
+          const f = avail / need;
+          barW = Math.max(MIN_BAR, Math.floor(BASE_BAR * f));
+          gap = Math.max(MIN_GAP, Math.floor(BASE_GAP * f));
+        }
+      }
+      const CONN_STEP = barW + gap; // 1レーンぶんの幅（線幅＋間隔）
       // 行ごとに通過するバンドを集める
       const barsByRow = Array.from({ length: n }, () => []);
       ranges.forEach(r => {
@@ -2563,31 +2583,21 @@
         const maxAll = Math.max(...bars.map(b => b.depth));
         // 背景をどこまで縮めるか（右マージン）を決める。
         // ・自分の腕がない点カードなどは、すべてのバンドを避けて左に寄せる。
-        // ・自分の腕がある開始/終了カードは、自分より「外側（浅い depth＝右側）」の
-        //   バンドだけを避ける。内側（深い depth）のバンドはカードの上に重ねて描くので
-        //   縮めない。外側にバンドが無い場合でも、背景は「自分の腕の右端」までに
-        //   とどめる（フル幅まで伸ばすと腕より右に色がはみ出て、コの字がユの字になる）。
+        // ・自分の腕がある開始/終了カードは、背景を「自分の線の右端」ちょうどまで
+        //   伸ばして線と密着させる（腕＝コの字の横棒）。自分より外側（浅い depth＝
+        //   右側）の線は右マージン領域に浮かぶ形になり、線が細いときでもカードの
+        //   角丸が線との隙間から覗かない。内側（深い depth）のバンドはカードの上に
+        //   重ねて描くので縮めない。
         let bg;
         if (dOwn === null) {
           bg = (maxAll + 1) * CONN_STEP + CONN_GAP;
         } else {
-          const shallower = bars.filter(b => b !== ownBar && b.depth < dOwn);
-          bg = shallower.length
-            ? (Math.max(...shallower.map(b => b.depth)) + 1) * CONN_STEP + CONN_GAP
-            : dOwn * CONN_STEP;
-        }
-        // 【共通の安全策】腕（縦線）を持つ開始/終了カードの背景は、必ず自分の腕の
-        // 右端までに収める。depth に隙間がある等で上の計算式が想定外に小さい値を
-        // 返しても、ここで必ず「コの字」を保証する（背景が線より右へはみ出す＝
-        // ユの字化を防ぐ）。計算式をどう変えても、この一行が最終防波堤になる。
-        if (dOwn !== null) {
-          const armRight = dOwn * CONN_STEP;      // 自分の腕の右端（右マージン換算）
-          if (bg < armRight) bg = armRight;       // これ未満だと線より右へはみ出す
+          bg = dOwn * CONN_STEP; // 自分の線の右端＝腕の右端。これより大きいと腕と線が離れてコの字が切れる
         }
         boxMargin[p] = bg;
         contentPad[p] = Math.max(CONN_GAP, (maxAll + 1) * CONN_STEP + CONN_GAP - bg); // 内容は全バンドを避ける
         // バンドの水平位置（カード右端基準の right 値）。全カードで同じ絶対位置に揃う
-        bars.forEach(b => { b.right = b.depth * CONN_STEP - bg; });
+        bars.forEach(b => { b.right = b.depth * CONN_STEP - bg; b.w = barW; });
       });
       return { barsByRow, boxMargin, contentPad };
     }
@@ -2813,6 +2823,9 @@
         if (width === lastViewportWidth) return;
         lastViewportWidth = width;
         applyView(); // 画面幅の変化でPC↔スマホの境界をまたいだら切り替える
+        // レーン幅の自動調整は領域幅に依存するので、リストビューは再描画して再計算する
+        // （編集用の入力欄が開いているときは、編集内容を消さないようスキップ）
+        if (timelineMode === 'list' && !timelineContainer.querySelector('input, textarea')) renderEvents();
         alignControlsToShortestCard();
       });
     });
@@ -2827,6 +2840,16 @@
         if (b.isBottom) bar.classList.add('cap-bottom');
         bar.style.setProperty('--conn-color', b.color);
         bar.style.right = b.right + 'px';
+        // 自動調整で細くなった線は幅をインラインで上書きし、端の角丸も線幅に合わせて
+        // 縮める（6px固定のままだと細い線でカーブが欠けて見える）
+        if (b.w) {
+          bar.style.width = b.w + 'px';
+          if (b.w < 12) {
+            const r = Math.max(2, Math.round(b.w / 2)) + 'px';
+            if (b.isTop) bar.style.borderTopRightRadius = r;
+            if (b.isBottom) bar.style.borderBottomRightRadius = r;
+          }
+        }
         div.appendChild(bar);
       });
     }
