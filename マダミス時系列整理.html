@@ -412,6 +412,8 @@
     /* すき間（カード間の8px）をまたいで縦線を連続させ、終端では下を閉じる */
     .timeline-item .conn-bar.cap-top { border-top-right-radius: 6px; }
     .timeline-item .conn-bar.cap-bottom { bottom: 0; border-bottom-right-radius: 6px; }
+    /* コの字の内側の曲がり角を丸める小片（JSが生成。背景は radial-gradient で四分円をくり抜く） */
+    .timeline-item .conn-fillet { position: absolute; z-index: 0; pointer-events: none; }
     .timeline-item.range-end-card .time-badge { color: #7c8799; }
     .range-badge-sep { margin: 0 2px; opacity: 0.7; }
     /* 人物比較：期間イベントは開始〜終了の行をまたぐ塗りセル（rowspan）で表示 */
@@ -2518,7 +2520,7 @@
     // （線幅は最低8px・間隔は最低3pxで打ち止め。それでも収まらない場合は
     //   1/3を超えて表示する＝「見えなくならない」ことを優先する）。
     function computeConnectorLayout(rows) {
-      const CONN_GAP = 7;   // 通常カードとコネクタ線の間の余白
+      const CONN_GAP = 5;   // 通常カードとコネクタ線の間の余白
       const BASE_BAR = 25, BASE_GAP = 6;  // 基準の線幅と線同士の間隔
       const MIN_BAR = 8, MIN_GAP = 3;     // 縮小の下限（これ以下には絶対しない）
       const n = rows.length;
@@ -2597,7 +2599,7 @@
         boxMargin[p] = bg;
         contentPad[p] = Math.max(CONN_GAP, (maxAll + 1) * CONN_STEP + CONN_GAP - bg); // 内容は全バンドを避ける
         // バンドの水平位置（カード右端基準の right 値）。全カードで同じ絶対位置に揃う
-        bars.forEach(b => { b.right = b.depth * CONN_STEP - bg; b.w = barW; });
+        bars.forEach(b => { b.right = b.depth * CONN_STEP - bg; b.w = barW; b.gap = gap; });
       });
       return { barsByRow, boxMargin, contentPad };
     }
@@ -2609,7 +2611,8 @@
       if (ev.colorHidden) return '#e5e7eb';
       const names = eventCharNames(ev);
       if (names.length >= 2) return '#C3CDDB';
-      return safeColor(names.length ? colorForChar(names[0]) : '#94a3b8');
+      // 人物なしは通常カードと同じ背景色に揃える（開始カード・コネクタ・終了カードが同色で繋がる）
+      return safeColor(names.length ? colorForChar(names[0]) : '#f0f2f5');
     }
     function renderEvents() {
       // 人物比較モードのときは専用の描画に切り替える
@@ -2842,15 +2845,37 @@
         bar.style.right = b.right + 'px';
         // 自動調整で細くなった線は幅をインラインで上書きし、端の角丸も線幅に合わせて
         // 縮める（6px固定のままだと細い線でカーブが欠けて見える）
+        const capR = (b.w && b.w < 12) ? Math.max(2, Math.round(b.w / 2)) : 6;
         if (b.w) {
           bar.style.width = b.w + 'px';
           if (b.w < 12) {
-            const r = Math.max(2, Math.round(b.w / 2)) + 'px';
-            if (b.isTop) bar.style.borderTopRightRadius = r;
-            if (b.isBottom) bar.style.borderBottomRightRadius = r;
+            if (b.isTop) bar.style.borderTopRightRadius = capR + 'px';
+            if (b.isBottom) bar.style.borderBottomRightRadius = capR + 'px';
           }
         }
         div.appendChild(bar);
+        // コの字の内側の曲がり角（腕と縦線の付け根の直角）を、カードの角丸と同じ
+        // 雰囲気の内Rにするフィレット。radial-gradient で四分円をくり抜いた小片を、
+        // 開始カードの下（isTop）／終了カードの上（isBottom）の線の左脇に置く。
+        // 大きさはレーン間隔以下に抑えて、隣の内側の線に重ならないようにする。
+        if (b.isTop !== b.isBottom) {
+          const r = Math.min(capR, b.gap || 6);
+          if (r >= 2) {
+            const f = document.createElement('div');
+            f.className = 'conn-fillet';
+            f.style.right = (b.right + (b.w || 25)) + 'px';
+            f.style.width = r + 'px';
+            f.style.height = r + 'px';
+            if (b.isTop) {
+              f.style.top = '100%';
+              f.style.background = `radial-gradient(circle ${r}px at 0% 100%, transparent ${Math.max(0, r - 0.5)}px, ${b.color} ${r}px)`;
+            } else {
+              f.style.bottom = '100%';
+              f.style.background = `radial-gradient(circle ${r}px at 0% 0%, transparent ${Math.max(0, r - 0.5)}px, ${b.color} ${r}px)`;
+            }
+            div.appendChild(f);
+          }
+        }
       });
     }
 
