@@ -166,7 +166,9 @@
     .help-close:hover { background: #e2e8f0; }
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
-    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 16px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
+    /* 余白は人物比較ビューの .compare-card（padding: 5px 8px）と揃える：
+       右=8px（✕ボタン右端からカード右端）・下=5px（操作ボタン下端からカード下端） */
+    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
     /* 時間の右側にキャラ名と本文をまとめる。本文が折り返すときは時間の下ではなくキャラ名の開始位置に揃う */
     .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 6px; }
@@ -191,8 +193,9 @@
     /* 内容の残り幅が狭くなったら（編集ボタンに重なりそうになったら）時間・キャラの下の行に折り返す */
     .event-text { flex: 1 1 200px; min-width: 0; font-size: 0.95rem; line-height: 1.4; word-break: break-all;}
     
-    /* 移動・削除・フラグボタン */
-    .controls { display: flex; gap: 4px; }
+    /* 移動・削除・フラグボタン。flex-wrap は最終防衛：レーン縮小が下限（線幅8px）に
+       達してもなお幅が足りない極端な画面では、カードからはみ出す代わりに折り返す */
+    .controls { display: flex; gap: 4px; flex-wrap: wrap; }
     .controls button { background: rgba(255, 255, 255, 0.12); border: 1px solid var(--card-btn-border, #a1a1a1); border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #555; }
     .controls button:hover { background: #e2e8f0; }
     .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
@@ -219,10 +222,16 @@
     /* 目アイコンで内容を非表示（目とフラグ以外を隠す） */
     .btn-conceal { font-size: 0.95rem; line-height: 1; }
     .btn-edit-card { font-size: 0.9rem; line-height: 1; }
-    /* 不詳カードの上下移動ボタン（ボタン自体は他のボタンと並べ、矢印の文字だけ下に下げる） */
-    .btn-move-up, .btn-move-down { font-size: 0.8rem; line-height: 1; font-weight: bold; }
+    /* 不詳/同時刻カードの上下移動ボタン。
+       ルール: ⬆︎⬇︎は表示されるいかなる場合でも 👁️(.btn-conceal)・🎨(.btn-color-toggle)
+       と完全に同じボタンサイズにする。そのため font-size・padding・box を揃え、
+       横幅は 👁️/🎨 と同じ 31px に固定（矢印グリフは絵文字より細いため min-width で合わせる）。 */
+    .btn-move-up, .btn-move-down { font-size: 0.95rem; line-height: 1; font-weight: bold; }
     .controls button.btn-move-up, .controls button.btn-move-down,
-    .compare-card-actions button.btn-move-up, .compare-card-actions button.btn-move-down { color: #3B3B3B; }
+    .compare-card-actions button.btn-move-up, .compare-card-actions button.btn-move-down {
+      color: #3B3B3B; box-sizing: border-box; min-width: 31px;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
     .btn-move-up .move-arrow-icon, .btn-move-down .move-arrow-icon { display: inline-block; position: relative; top: 1px; }
     /* 登録内容の編集フォーム */
     .timeline-item-inner.edit-mode { gap: 6px; }
@@ -468,15 +477,16 @@
     body.view-mobile .timeline-item.multi-character .badge-more { display: none; }
     body.view-mobile .timeline-item.multi-character .time-badge { align-self: flex-start; }
     body.view-mobile .controls { flex: 1 1 100%; justify-content: flex-end; order: 5; }
-     /* スマホ版：不詳カードが狭く、✏️が時間表示の真下まで来た場合だけ、⬆⬇を✕の右隣へ移す。
-       ✕（基点）は他カードと同じ右端位置に固定するため、✏️〜✕はそのまま流れに残し、
-       ⬆⬇だけを絶対配置で✕の右側へ（他ボタンと同じ大きさのまま）横並びで置く。 */
-     body.view-mobile .timeline-item.unknown-moves-relocated .controls { position: relative; }
-     body.view-mobile .timeline-item.unknown-moves-relocated .btn-move-up,
-     body.view-mobile .timeline-item.unknown-moves-relocated .btn-move-down {
-       position: absolute; top: 0; left: 100%; margin-left: 4px;
-     }
-     body.view-mobile .timeline-item.unknown-moves-relocated .btn-move-down { transform: translateX(calc(100% + 4px)); }
+    /* 通常は1行（⬆︎⬇︎は✏️の左）。コネクタ増加でカード幅が圧迫され1行に収まらないカードだけ
+       JSが .moves-wrapped を付与し、⬆︎⬇︎を👁️🎨の下段へ回す。末尾に✕サイズの透明スペーサーを
+       置くことで、右寄せ時に⬆︎⬇︎が✕の下ではなく👁️🎨の下に揃う。 */
+    .controls-move-break { display: none; }
+    .controls-move-spacer { display: none; }
+    .controls.moves-wrapped { flex-wrap: wrap; }
+    .controls.moves-wrapped .controls-move-break { display: block; flex: 0 0 100%; height: 0; order: 1; }
+    .controls.moves-wrapped .btn-move-up,
+    .controls.moves-wrapped .btn-move-down { order: 2; }
+    .controls.moves-wrapped .controls-move-spacer { display: inline-flex; order: 2; visibility: hidden; pointer-events: none; }
     body.view-mobile .timeline-item-inner.edit-mode { flex-wrap: wrap; }
     body.view-mobile .edit-text { flex: 1 1 100%; }
 
@@ -514,7 +524,7 @@
     .alert-bar {
       position: sticky; top: 0; z-index: 3000;
       background: #fef3c7; color: #92400e; border-bottom: 2px solid #f59e0b;
-      padding: 10px 14px; font-size: 14px; line-height: 1.5;
+      margin: 8px; border-radius: 8px; padding: 10px 14px; font-size: 14px; line-height: 1.5;
       display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
     }
     .alert-bar button {
@@ -2513,13 +2523,42 @@
       return rows;
     }
 
+    // 「⬆⬇✏️👥🚩👁️✕」のボタン行を一行で描くのに必要な幅を実測する。
+    // ※🎨(.btn-color-toggle)は非表示中(.concealed)のときだけ表示され、そのときは⬆⬇が消えるので
+    //   ⬆⬇と🎨は同時には出ない。よって移動ボタン付きカードの実際の一行は「⬆⬇✏️👥🚩👁️✕」（7個）。
+    // 非表示プローブで実際のCSSを適用して測る（フォント差に強い）。結果はビューごとにキャッシュ。
+    const controlsRowWidthCache = new Map();
+    function measureControlsRowWidth() {
+      const key = document.body.classList.contains('view-pc') ? 'pc' : 'mobile';
+      if (controlsRowWidthCache.has(key)) return controlsRowWidthCache.get(key);
+      const probe = document.createElement('div');
+      probe.className = 'controls';
+      probe.style.cssText = 'position:absolute; left:-9999px; top:0; visibility:hidden; width:max-content; flex-wrap:nowrap;';
+      probe.innerHTML = `
+        <button class="btn-move-up"><span class="move-arrow-icon">⬆︎</span></button>
+        <button class="btn-move-down"><span class="move-arrow-icon">⬇︎</span></button>
+        <button class="btn-edit-card">✏️</button>
+        <button class="btn-add-char-card">👥</button>
+        <button class="btn-flag-card"><span class="flag-glyph">🚩</span></button>
+        <button class="btn-conceal">👁️</button>
+        <button class="btn-delete">✕</button>`;
+      document.body.appendChild(probe);
+      const w = Math.ceil(probe.getBoundingClientRect().width);
+      probe.remove();
+      controlsRowWidthCache.set(key, w);
+      return w;
+    }
+
     // 期間コネクタ（コの字の縦バンド）のレイアウトを計算する。
     // 重なった期間は「入れ子（ネスト）」で内側へインデントして表示する。
     // 【レーン幅の自動調整】通常は線幅25px・間隔6px。重なりが増えて縦線の合計が
     // タイムライン領域の1/3を超えるときは、線幅と間隔を同じ比率で縮小する
     // （線幅は最低8px・間隔は最低3pxで打ち止め。それでも収まらない場合は
     //   1/3を超えて表示する＝「見えなくならない」ことを優先する）。
-    function computeConnectorLayout(rows) {
+    // さらに、⬆⬇ボタンを表示するカードがある場合（hasMoveButtons）は、そのカードが
+    // 「左余白＋⬆⬇✏️👥🚩👁️🎨✕＋右余白」を一行で描ける幅を必ず確保する。
+    // レーンが1/3以内に収まっていてもこの幅を圧迫するなら同じ比例縮小を行う（下限も同じ）。
+    function computeConnectorLayout(rows, hasMoveButtons) {
       const CONN_GAP = 5;   // 通常カードとコネクタ線の間の余白
       const BASE_BAR = 25, BASE_GAP = 6;  // 基準の線幅と線同士の間隔
       const MIN_BAR = 8, MIN_GAP = 3;     // 縮小の下限（これ以下には絶対しない）
@@ -2553,11 +2592,22 @@
         r.depth = d;
         placed.push(r);
       });
-      // レーン幅を決める：必要幅（レーン数×基準幅）が領域の1/3を超えたら比例縮小
+      // レーン幅を決める：必要幅（レーン数×基準幅）が領域の1/3を超えたら比例縮小。
+      // ⬆⬇つきカードがあるときは、ボタン行を一行で描けるカード幅も確保する
       const lanes = ranges.length ? Math.max(...ranges.map(r => r.depth)) + 1 : 0;
       let barW = BASE_BAR, gap = BASE_GAP;
       if (lanes > 0) {
-        const avail = Math.max(60, (timelineContainer.clientWidth || window.innerWidth) / 3);
+        const containerW = timelineContainer.clientWidth || window.innerWidth;
+        let avail = containerW / 3;
+        if (hasMoveButtons) {
+          // カードの内容幅 = 全体幅 − レーン合計 − 右余白(CONN_GAP)×2 − 左padding(16px)。
+          // これがボタン行の実測幅を下回らないようレーンの予算を狭める
+          avail = Math.min(avail, containerW - measureControlsRowWidth() - 16 - CONN_GAP * 2);
+        }
+        // ⬆⬇つきカードでは、ボタン行を1行に収めるためレーンを最小幅(MIN_BAR/MIN_GAP)まで
+        // 縮めてよい。60pxの下限を課すとあと数pxが足りず不要な折り返しが起きるため、
+        // 移動ボタン時はレーン1本ぶんの最小値まで下限を下げる。
+        avail = Math.max(hasMoveButtons ? (MIN_BAR + MIN_GAP) : 60, avail);
         const need = lanes * (BASE_BAR + BASE_GAP);
         if (need > avail) {
           const f = avail / need;
@@ -2624,13 +2674,17 @@
 
       // 表示する行を組み立て（絞り込み反映）、時間の早い順に並べる
       const rows = buildSortedRows(true);
-      const { barsByRow, boxMargin, contentPad } = computeConnectorLayout(rows);
       // 同じ時刻のカードが複数あるかを調べる（それらにも⬆︎⬇︎ボタンを出すため）
       const timeCounts = new Map();
       rows.forEach(r => {
         if (r.kind === 'end' || !r.ev.time) return;
         timeCounts.set(r.ev.time, (timeCounts.get(r.ev.time) || 0) + 1);
       });
+      // ⬆︎⬇︎を表示するカードがあれば、コネクタのレーン幅計算に
+      // 「ボタン行を一行で描けるカード幅を確保する」制約を追加する
+      const hasMoveButtons = rows.some(r =>
+        r.kind !== 'end' && (timeToMinutes(r.ev.time) === Infinity || (r.ev.time && timeCounts.get(r.ev.time) > 1)));
+      const { barsByRow, boxMargin, contentPad } = computeConnectorLayout(rows, hasMoveButtons);
 
       rows.forEach((row, pos) => {
         const { ev, index, kind } = row;
@@ -2643,7 +2697,11 @@
         const bars = barsByRow[pos];
         if (bars && bars.length) {
           if (boxMargin[pos]) div.style.marginRight = boxMargin[pos] + 'px';
+          // コネクターを避けるため、開始/終了カードだけでなく、コネクター途中に
+          // 収まる通常の点カードにも全バンド分の contentPad を適用する。
           div.style.paddingRight = contentPad[pos] + 'px';
+          // 操作ボタン下端からカード下端までの余白は、人物比較ビューの .compare-card と同じ5pxに揃える。
+          div.style.paddingBottom = '5px';
         }
 
         // 終了マーカー：終了時刻だけを表示する（内容は上の開始カードにある）
@@ -2704,8 +2762,10 @@
         const isUnknownTime = timeToMinutes(ev.time) === Infinity;
         const hasSameTimeSibling = !isUnknownTime && kind !== 'end' && ev.time && timeCounts.get(ev.time) > 1;
         const moveBtns = (isUnknownTime || hasSameTimeSibling)
-          ? `<button class="btn-move-up" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button>
-              <button class="btn-move-down" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>`
+          ? `<span class="controls-move-break" aria-hidden="true"></span>
+              <button class="btn-move-up" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button>
+              <button class="btn-move-down" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>
+              <button class="controls-move-spacer" tabindex="-1" aria-hidden="true">✕</button>`
           : '';
 
         if (editingId !== null && ev.id === editingId) {
@@ -2758,7 +2818,25 @@
         appendConnBars(div, bars);
         timelineContainer.appendChild(div);
       });
+      applyMoveButtonWrap();
       alignControlsToShortestCard();
+    }
+
+    // 基本は1行（⬆︎⬇︎は✏️の左）。コネクタが増えてカード幅が圧迫され、ボタン行が
+    // 一行に収まらないカードだけ .moves-wrapped を付けて ⬆︎⬇︎ を 👁️🎨 の下段へ回す。
+    // 判定：一行分の必要幅（measureControlsRowWidth）＞コントロールの使える幅 なら折り返す。
+    function applyMoveButtonWrap() {
+      const mobile = document.body.classList.contains('view-mobile');
+      const list = [...timelineContainer.querySelectorAll('.timeline-item .controls')];
+      // まず全部リセット（幅が広がったとき元の1行に戻すため）
+      list.forEach(c => c.classList.remove('moves-wrapped'));
+      if (!mobile) return; // PCは常に1行
+      const need = measureControlsRowWidth();
+      list.forEach(c => {
+        if (!c.querySelector('.btn-move-up')) return;
+        // コントロールは flex:1 1 100% でカード内容幅いっぱいに広がるので clientWidth が使える幅
+        if (need > c.clientWidth + 0.5) c.classList.add('moves-wrapped');
+      });
     }
 
     // 幅が最短のカードを基準に、操作アイコン群の右端を揃える
@@ -2790,26 +2868,6 @@
       controls.forEach((c, i) => {
         const adjustedOffset = Math.round(anchorRight - rects2[i]);
         c.style.transform = adjustedOffset ? `translateX(${adjustedOffset}px)` : '';
-      });
-      relocateUnknownMoveButtonsIfNeeded();
-    }
-
-    // スマホ版の狭い不詳カードだけを調整する。
-    // 先に移動状態を解除して通常配置で測るため、画面幅が広がった場合も元へ戻せる。
-    function relocateUnknownMoveButtonsIfNeeded() {
-      const cards = [...timelineContainer.querySelectorAll('.timeline-item')];
-      cards.forEach(card => card.classList.remove('unknown-moves-relocated'));
-      if (!document.body.classList.contains('view-mobile')) return;
-
-      cards.forEach(card => {
-        const time = card.querySelector('.time-badge');
-        const edit = card.querySelector('.btn-edit-card');
-        const moveUp = card.querySelector('.btn-move-up');
-        if (!time || !edit || !moveUp) return;
-        const timeRect = time.getBoundingClientRect();
-        const editRect = edit.getBoundingClientRect();
-        const editIsUnderTime = editRect.left < timeRect.right && editRect.right > timeRect.left;
-        if (editIsUnderTime) card.classList.add('unknown-moves-relocated');
       });
     }
 
