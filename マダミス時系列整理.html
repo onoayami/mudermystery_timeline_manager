@@ -456,6 +456,10 @@
     body.view-pc .time-badge { align-self: center; }
     body.view-pc .event-body { align-items: flex-start; }
     body.view-pc .timeline-item > .controls { align-self: flex-end; }
+    /* PC版はボタンを常に1行にする（カード幅が詰まってもカード内容側を縮め、操作ボタンは折り返さない）。
+       .controls 既定の flex-wrap:wrap ＋ flex-shrink:1 だと横幅不足で1行分すら確保できず折り返すため、
+       PCでは nowrap＋縮小しないよう上書きする（折り返し制御はスマホ版の applyMoveButtonWrap のみが担う）。 */
+    body.view-pc .timeline-item > .controls:not(.edit-controls) { flex-wrap: nowrap; flex-shrink: 0; }
     /* 編集モードの✔️✕は下揃えではなく中央揃えにする（上のflex-endを上書き） */
     body.view-pc .timeline-item > .edit-controls { align-self: center; }
     body.view-pc .event-text { flex: 1 1 100%; margin-left: 10px; }
