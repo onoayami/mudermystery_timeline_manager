@@ -171,10 +171,10 @@
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
     /* 余白は人物比較ビューの .compare-card（padding: 5px 8px）と揃える：
-       右=8px（✕ボタン右端からカード右端）・下=5px（操作ボタン下端からカード下端）
+      右=8px（✕ボタン右端からカード右端）・下=10px（操作ボタン下端からカード下端）
        左と上はフラグ表示時の黄色の縦線（box-shadow inset 5px）と文字が近すぎないよう、
-       フラグの有無に関係なく常に5pxを上乗せしておく（左=8+5=13px、上=5+5=10px） */
-    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 8px 5px 13px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
+      フラグの有無に関係なく常に5pxを上乗せしておく（左=8+5=13px、上=5+5=10px） */
+    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 8px; padding-left: 13px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
     /* カード内の内容領域をカード全体の高さに伸ばし、時間バッジの中心をカードの中心に揃える */
     .timeline-item > .timeline-item-inner { align-self: stretch; align-items: center; }
@@ -474,6 +474,9 @@
     body.view-pc .timeline-item > .edit-controls { align-self: center; }
     body.view-pc .event-text { flex: 1 1 100%; margin-left: 10px; }
     body.view-pc .timeline-item { row-gap: 11px; }
+    .timeline-item.no-character .time-badge { transform: none !important; }
+    body.view-pc .timeline-item.no-character .char-badges-empty,
+    body.view-mobile .timeline-item.no-character .char-badges-empty { display: none; }
     body.view-mobile .timeline-item { flex-wrap: wrap; align-items: center; row-gap: 8px; }
     /* スマホ版のみ：名前の横に各操作ボタンを並べる。
        inner と event-body を display:contents で解除し、カード直下の flex に
@@ -490,6 +493,7 @@
      /* スマホ版：本文はカード左端ではなく、最初の人物名の文字位置から始める。
        時間バッジ(60px)＋間隔(8px)＋人物バッジ内側余白(10px)ぶんを左へ空ける。 */
     body.view-mobile .event-text { margin-left: 78px; }
+    body.view-mobile .timeline-item.no-character .event-text { flex: 1 1 0; order: initial; margin-left: 0; }
     body.view-mobile .char-badge { flex: 0 1 auto; max-width: 100%; }
     body.view-mobile .char-badges { flex: 0 1 auto; max-width: 100%; }
     body.view-mobile .char-badges-empty { flex: 0 1 auto; }
@@ -2138,6 +2142,24 @@
       }
     }
 
+    // 編集中にフォーム外を押した場合は保存せず、編集前の表示へ戻す。
+    // captureで先に処理することで、時間入力のblur保存も発生させない。
+    document.addEventListener('click', (e) => {
+      const compareEditing = timelineContainer.querySelector('.compare-edit');
+      const editing = editingId !== null || editingTimeId !== null || compareEditing;
+      if (!editing) return;
+      const targetCard = e.target.closest('.timeline-item');
+      const targetCompareCard = e.target.closest('.compare-card, .compare-range-fill');
+      if ((targetCard && targetCard.querySelector('.edit-mode, .time-badge-editing'))
+        || (targetCompareCard && targetCompareCard.querySelector('.compare-edit'))) return;
+      editingId = null;
+      editingTimeId = null;
+      editingFocus = 'start';
+      e.preventDefault();
+      e.stopPropagation();
+      renderEventsPreservingScroll();
+    }, true);
+
     // トグルボタンの見た目を現在の状態に合わせる
     function updateDeathToggleBtn() {
       const btn = document.getElementById('deathToggleBtn');
@@ -2158,6 +2180,14 @@
 
     function saveEvents() {
       safeSet(KEYS.events, JSON.stringify(events));
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
+      renderEvents();
+      window.scrollTo(scrollX, scrollY);
+    }
+
+    // 編集フォームの再描画で、ブラウザのスクロールアンカーが位置を変えないようにする
+    function renderEventsPreservingScroll() {
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
       renderEvents();
@@ -2433,6 +2463,8 @@
     function startCompareEdit(index, btn) {
       const card = btn.closest('.compare-card, .compare-range-fill');
       if (!card || card.querySelector('.compare-edit')) return; // すでに編集中なら何もしない
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
       const ev = events[index];
       // 期間指定の有無に関わらず、終了時間の入力欄を常に表示する（空なら単一時刻のまま）
       const endField = `<input type="text" class="edit-endtime compare-edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleCompareEditKeydownById(event, '${sanitizeId(ev.id)}')">`;
@@ -2443,18 +2475,19 @@
           ${endField}
           <div class="compare-edit-actions">
             <button type="button" class="compare-edit-save" onclick="saveCompareEditById('${sanitizeId(ev.id)}', this)" title="保存"><span class="edit-check">✓</span></button>
-            <button type="button" class="compare-edit-cancel" onclick="renderEvents()" title="取消">✕</button>
+            <button type="button" class="compare-edit-cancel" onclick="renderEventsPreservingScroll()" title="取消">✕</button>
           </div>
         </div>
       </div>`;
       const textEl = card.querySelector('.compare-edit-text');
       textEl.focus();
       textEl.select();
+      window.scrollTo(scrollX, scrollY);
     }
 
     // 比較ビューの編集欄で Enter を連続2回押したら保存する（Escで取消）
     function handleCompareEditKeydown(e, index) {
-      if (e.key === 'Escape') { e.preventDefault(); renderEvents(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); renderEventsPreservingScroll(); return; }
       handleDoubleEnterSave(e, (el) => saveCompareEdit(index, el));
     }
 
@@ -2469,41 +2502,47 @@
 
     // カードを編集モードにする
     function startEditEvent(index, focusEnd = false) {
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
       editingId = events[index] ? events[index].id : null; // 「何番目か」ではなく「どのカードか」を覚える
       editingTimeId = null; // フル編集を始めるときは時間だけ編集は解除する
       editingFocus = focusEnd ? 'end' : 'start';
-      renderEvents();
+      renderEventsPreservingScroll();
       const cardSelector = editingFocus === 'end'
         ? `.timeline-item.range-end-card[data-index="${index}"]`
         : `.timeline-item[data-index="${index}"]:not(.range-end-card)`;
       const card = events[index] && timelineContainer.querySelector(cardSelector);
       const input = card && card.querySelector(editingFocus === 'end' ? '.edit-endtime' : '.edit-time');
       if (input) { input.focus(); input.select(); }
+      window.scrollTo(scrollX, scrollY);
     }
 
     // 編集をキャンセルする
     function cancelEditEvent() {
       editingId = null;
       editingFocus = 'start';
-      renderEvents();
+      renderEventsPreservingScroll();
     }
 
     // 時間バッジのクリックで「時間だけ」を編集し始める
     function startEditTime(index) {
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
       editingId = null;        // フル編集中なら解除する
       editingTimeId = events[index] ? events[index].id : null;
-      renderEvents();
+      renderEventsPreservingScroll();
       // 生成された入力欄にフォーカスして全選択する
       const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
       const input = card && card.querySelector('.edit-time-inline');
       if (input) { input.focus(); input.select(); }
+      window.scrollTo(scrollX, scrollY);
     }
 
     // 時間だけ編集をキャンセルする
     function cancelEditTime() {
       if (editingTimeId === null) return;
       editingTimeId = null;
-      renderEvents();
+      renderEventsPreservingScroll();
     }
 
     // 時間だけ編集を保存する（内容・終了時刻・期間はそのまま）
@@ -2825,7 +2864,7 @@
           // 収まる通常の点カードにも全バンド分の contentPad を適用する。
           div.style.paddingRight = contentPad[pos] + 'px';
           // 操作ボタン下端からカード下端までの余白は、人物比較ビューの .compare-card と同じ5pxに揃える。
-          div.style.paddingBottom = '5px';
+          div.style.paddingBottom = '10px';
         }
 
         // 終了マーカー：終了時刻だけを表示する（内容は上の開始カードにある）
