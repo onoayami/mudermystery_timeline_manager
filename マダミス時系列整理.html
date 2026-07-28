@@ -470,6 +470,7 @@
        .controls 既定の flex-wrap:wrap ＋ flex-shrink:1 だと横幅不足で1行分すら確保できず折り返すため、
        PCでは nowrap＋縮小しないよう上書きする（折り返し制御はスマホ版の applyMoveButtonWrap のみが担う）。 */
     body.view-pc .timeline-item > .controls:not(.edit-controls) { flex-wrap: nowrap; flex-shrink: 0; }
+    .timeline-item > .controls:not(.edit-controls) { translate: 0 5px; }
     /* 編集モードの✔️✕は下揃えではなく中央揃えにする（上のflex-endを上書き） */
     body.view-pc .timeline-item > .edit-controls { align-self: center; }
     body.view-pc .event-text { flex: 1 1 100%; margin-left: 10px; }
