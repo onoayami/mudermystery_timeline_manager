@@ -144,6 +144,10 @@
     .btn-help { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 1.1rem; height: 1.1rem; padding: 0; background: #ecf0f1; border: 1px solid #4a627a; border-radius: 50%; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.75rem; line-height: 1; }
     .btn-help:hover { background: #dbe4e8; }
     .death-time-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; flex-wrap: wrap; }
+    .death-label-wrap { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+    .death-label-edit-btn { background: transparent; border: none; padding: 0; cursor: pointer; font-size: 0.95rem; line-height: 1; display: inline-flex; align-items: center; }
+    .death-label-edit-btn.editing { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
+    .death-label-input { width: 8em; min-width: 0; padding: 3px 5px !important; font-size: 0.85rem !important; }
     .death-range { display: inline-flex; align-items: center; background: #64748b; border: 1px solid #64748b; border-radius: 4px; padding: 0 5px; }
     .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 4px 1px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
     .death-range select:focus { outline: none; }
@@ -172,6 +176,8 @@
        フラグの有無に関係なく常に5pxを上乗せしておく（左=8+5=13px、上=5+5=10px） */
     .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 8px 5px 13px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
+    /* カード内の内容領域をカード全体の高さに伸ばし、時間バッジの中心をカードの中心に揃える */
+    .timeline-item > .timeline-item-inner { align-self: stretch; align-items: center; }
     /* 時間の右側にキャラ名と本文をまとめる。本文が折り返すときは時間の下ではなくキャラ名の開始位置に揃う */
     .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 6px; }
     .timeline-item.multi-character { background: #C3CDDB; }
@@ -190,8 +196,9 @@
     /* 時間だけ編集中のバッジ内の入力欄（バッジと同じ幅・見た目に収める） */
     .time-badge.time-badge-editing { padding: 2px; background: #fff; }
     .edit-time-inline { width: 100%; box-sizing: border-box; text-align: center; font-weight: bold; font-size: 0.9rem; padding: 3px 2px; border: 1px solid #3b82f6; border-radius: 16px; background: #fff; color: #333; }
-    /* 複数人物カードでは、時間をカード内容の縦中央に揃える */
-    .timeline-item.multi-character .time-badge { align-self: center; }
+    /* 時間・人物なし本文はカード内容の縦中央に揃える */
+    .timeline-item:not(.range-end-card) .time-badge { align-self: center; }
+    .timeline-item.no-character .event-text { align-self: center; }
     /* 内容の残り幅が狭くなったら（編集ボタンに重なりそうになったら）時間・キャラの下の行に折り返す */
     .event-text { flex: 1 1 200px; min-width: 0; font-size: 0.95rem; line-height: 1.4; word-break: break-all;}
     
@@ -259,7 +266,7 @@
     .timeline-item.concealed .btn-move-up,
     .timeline-item.concealed .btn-move-down { visibility: hidden; pointer-events: none; }
     .concealed-label { display: none; color: inherit; font-size: 0.85rem; font-style: italic; }
-    .timeline-item.concealed .concealed-label { display: block; flex: 1 1 auto; }
+    .timeline-item.concealed .concealed-label { display: block; flex: 1 1 auto; align-self: center; }
     /* 非表示中の目アイコンは、フラグより目立たない暗い青灰色で表示する */
     .timeline-item.concealed .btn-conceal { background: #cbd5e1; color: #475569; border-color: #94a3b8; filter: grayscale(0.65); opacity: 0.75; }
     /* 🎨でカード色を隠した場合も、非表示中と同じ控えめな色調に揃える */
@@ -431,6 +438,7 @@
     /* コの字の内側の曲がり角を丸める小片（JSが生成。背景は radial-gradient で四分円をくり抜く） */
     .timeline-item .conn-fillet { position: absolute; z-index: 0; pointer-events: none; }
     .timeline-item.range-end-card .time-badge { color: #7c8799; }
+    .timeline-item.range-end-card > .timeline-item-inner { align-self: stretch; align-items: center; }
     .range-badge-sep { margin: 0 2px; opacity: 0.7; }
     /* 人物比較：期間イベントは開始〜終了の行をまたぐ塗りセル（rowspan）で表示 */
     /* 塗りはセル内側に余白を空けた角丸ブロックで表現し、点カードと同じ見た目にする */
@@ -443,8 +451,10 @@
     /* カード列の最小幅：（余白8）＋終了時間ボックス(92)＋gap4＋✓(31.33)＋gap4＋✕(31.33)＋（余白8）＝178.66px */
     .compare-table td.compare-lane { min-width: 178.66px; }
     .compare-table td.compare-lane-untimed { min-width: 232px; }
-    /* 「〓」は入力枠の色に揃え、10px下に配置する */
+    /* 「〜」は入力枠の色に揃え、10px下に配置する */
     .range-sep-edit { display: inline-flex; align-items: center; color: #FFFFFF; position: relative; top: 8px; }
+    .timeline-item.no-character .range-sep-edit,
+    .timeline-item.multi-character .range-sep-edit { color: #4a627a; }
     .edit-endtime { flex: 0 0 32px; text-align: center; }
     /* リストビューの終了ボックスだけ幅を倍に（人物比較の 92px はそのまま） */
     .timeline-item-inner.edit-mode .edit-endtime { width: 64px; box-sizing: border-box; }
@@ -477,6 +487,9 @@
     body.view-mobile .controls,
     body.view-mobile .event-text { position: relative; z-index: 1; }
     body.view-mobile .event-text { flex: 1 1 100%; order: 4; }
+     /* スマホ版：本文はカード左端ではなく、最初の人物名の文字位置から始める。
+       時間バッジ(60px)＋間隔(8px)＋人物バッジ内側余白(10px)ぶんを左へ空ける。 */
+    body.view-mobile .event-text { margin-left: 78px; }
     body.view-mobile .char-badge { flex: 0 1 auto; max-width: 100%; }
     body.view-mobile .char-badges { flex: 0 1 auto; max-width: 100%; }
     body.view-mobile .char-badges-empty { flex: 0 1 auto; }
@@ -608,7 +621,11 @@
           <button type="button" class="btn-help" onclick="toggleHelp()" title="使い方">？</button>
         </div>
         <div class="death-time-group">
-          <span>⚰️ 死亡推定時刻</span>
+          <span class="death-label-wrap">
+            <button type="button" id="deathLabelEditBtn" class="death-label-edit-btn" onclick="toggleDeathLabelEdit(event)" title="死亡推定時刻の名称を編集">⚰️</button>
+            <span id="deathLabelDisplay">死亡推定時刻</span>
+            <input type="text" id="deathLabelInput" class="death-label-input" placeholder="内容を入力" style="display:none;">
+          </span>
           <span class="death-range">
             <select id="deathFromH" onchange="onDeathTimeChange()" title="開始（時）"></select>
             <span class="colon">:</span>
@@ -774,6 +791,7 @@
       deathFrom: 'madamisu_death_from',
       deathTo: 'madamisu_death_to',
       deathEnabled: 'madamisu_death_enabled',
+      deathLabel: 'madamisu_death_label',
       view: 'madamisu_view',
       timelineMode: 'madamisu_timeline_mode',
       flagFilter: 'madamisu_flag_filter',
@@ -958,6 +976,7 @@
     // 保存時に無関係なカードを上書きする事故が起きない。
     let editingId = null; // 現在フル編集中のカードのID（nullは編集なし）
     let editingTimeId = null; // 時間バッジをクリックして時間だけ編集中のカードのID（nullはなし）
+    let editingFocus = 'start'; // フル編集開始時にフォーカスする欄（start / end）
     let charFilter = loadJSON(KEYS.charFilter, []); // 絞り込み中の人物名（空なら全表示）
     // フラグ絞り込み: 'all' / 'flag'（フラグつきのみ） / 'noflag'（フラグなしのみ）
     // 旧データ（true/false の2択）からの移行も行う
@@ -975,6 +994,8 @@
     let compareZoom = clampCompareZoom(parseFloat(safeGet(KEYS.compareZoom)));
     let confirmDelete = safeGet(KEYS.confirmDelete) !== 'false';
     let sessionDataExpanded = safeGet(KEYS.sessionDataExpanded) === 'true';
+    let deathLabel = (safeGet(KEYS.deathLabel) || '').trim() || '死亡推定時刻';
+    let deathLabelEditing = false;
     // 表示モード（スマホ版 / PC版）。未設定なら画面幅で自動判定
     let currentView = safeGet(KEYS.view) || (window.innerWidth < 900 ? 'mobile' : 'pc');
     const memoInput = document.getElementById('memoInput');
@@ -982,6 +1003,9 @@
     const sessionNameDisplay = document.getElementById('sessionNameDisplay');
     const sessionNameDisplayPc = document.getElementById('sessionNameDisplayPc');
     const sessionNameEditBtn = document.getElementById('sessionNameEditBtn');
+    const deathLabelDisplay = document.getElementById('deathLabelDisplay');
+    const deathLabelInput = document.getElementById('deathLabelInput');
+    const deathLabelEditBtn = document.getElementById('deathLabelEditBtn');
     const timelineContainer = document.getElementById('timelineContainer');
     const characterList = document.getElementById('characterList');
     const cardColorsStyle = document.getElementById('cardColorsStyle');
@@ -993,6 +1017,7 @@
       // メモと、キャラクター・色のスタイルを適用
       memoInput.value = safeGet(KEYS.memo) || '';
       renderSessionName();
+      renderDeathLabel();
       applyView();
       updateSessionDataToggle();
       applyMemoConceal();
@@ -1107,6 +1132,55 @@
       sessionNameEditBtn.classList.remove('editing');
       renderSessionName();
     }
+
+    // ⚰️を押したときだけ使える死亡推定時刻の名称編集（隠し機能）
+    function renderDeathLabel() {
+      deathLabelDisplay.textContent = deathLabel;
+      deathLabelInput.value = deathLabel;
+    }
+    function startDeathLabelEdit() {
+      if (deathLabelEditing) return;
+      deathLabelEditing = true;
+      deathLabelDisplay.style.display = 'none';
+      deathLabelInput.style.display = '';
+      deathLabelEditBtn.textContent = '✅️';
+      deathLabelEditBtn.title = '名称を保存';
+      deathLabelEditBtn.classList.add('editing');
+      deathLabelInput.focus();
+      deathLabelInput.select();
+    }
+    function toggleDeathLabelEdit(e) {
+      e.stopPropagation();
+      if (deathLabelEditing) finishDeathLabelEdit(true);
+      else startDeathLabelEdit();
+    }
+    function cancelDeathLabelEdit() {
+      if (!deathLabelEditing) return;
+      deathLabelEditing = false;
+      deathLabelInput.style.display = 'none';
+      deathLabelDisplay.style.display = '';
+      deathLabelEditBtn.textContent = '⚰️';
+      deathLabelEditBtn.title = '死亡推定時刻の名称を編集';
+      deathLabelEditBtn.classList.remove('editing');
+      renderDeathLabel();
+    }
+    function finishDeathLabelEdit(save) {
+      if (!deathLabelEditing) return;
+      const value = deathLabelInput.value.trim();
+      if (save) deathLabel = value || '死亡推定時刻';
+      deathLabelEditing = false;
+      if (save) safeSet(KEYS.deathLabel, deathLabel === '死亡推定時刻' ? '' : deathLabel);
+      deathLabelInput.style.display = 'none';
+      deathLabelDisplay.style.display = '';
+      deathLabelEditBtn.textContent = '⚰️';
+      deathLabelEditBtn.title = '死亡推定時刻の名称を編集';
+      deathLabelEditBtn.classList.remove('editing');
+      renderDeathLabel();
+    }
+    deathLabelInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); cancelDeathLabelEdit(); }
+      if (e.key === 'Enter') { e.preventDefault(); finishDeathLabelEdit(true); }
+    });
 
     // 時間欄で、半角の数字だけが入ったら区切りの「:」を自動で挿入して見せる（入力ミス防止）。
     // 4桁そろった瞬間に HH:MM へ整形する（例: 1030 → 10:30）。それ以外は半角化のみ。
@@ -1348,6 +1422,7 @@
 
     // ポップアップの外側をクリックしたらカラーパレットを閉じる
     document.addEventListener('click', (e) => {
+      if (deathLabelEditing && !e.target.closest('.death-label-wrap')) cancelDeathLabelEdit();
       const popup = document.getElementById('colorPalettePopup');
       const btn = document.getElementById('colorPickerBtn');
       if (popup.classList.contains('open') && !popup.contains(e.target) && e.target !== btn) {
@@ -1906,9 +1981,13 @@
       return (typeof ev.anchor === 'number') ? ev.anchor : 100000;
     }
 
-    // 早い順に並べ替える（同値は追加順を維持）
+    // 早い順に並べ替える。同じ開始時刻では、単一時刻を先、期間を後にする。
     function sortEvents() {
-      events.sort((a, b) => effectiveSortMinutes(a) - effectiveSortMinutes(b));
+      events.sort((a, b) => {
+        const timeDiff = effectiveSortMinutes(a) - effectiveSortMinutes(b);
+        if (timeDiff !== 0) return timeDiff;
+        return Number(isRangeEvent(a)) - Number(isRangeEvent(b));
+      });
     }
 
     // --- 死亡推定時刻（トグル式） ---
@@ -1921,6 +2000,11 @@
       }
       const mOpts = ['<option value="">--</option>'];
       ['00', '15', '30', '45'].forEach(m => mOpts.push(`<option value="${m}">${m}</option>`));
+      mOpts.push('<option disabled>--</option>');
+      for (let m = 1; m <= 59; m++) {
+        const value = String(m).padStart(2, '0');
+        if (!['15', '30', '45'].includes(value)) mOpts.push(`<option value="${value}">${value}</option>`);
+      }
       const hHtml = hOpts.join('');
       const mHtml = mOpts.join('');
       document.getElementById('deathFromH').innerHTML = hHtml;
@@ -2074,7 +2158,10 @@
 
     function saveEvents() {
       safeSet(KEYS.events, JSON.stringify(events));
+      const scrollX = window.scrollX;
+      const scrollY = window.scrollY;
       renderEvents();
+      window.scrollTo(scrollX, scrollY);
     }
 
     // 全件を作り直さずに保存だけ行う（軽量更新用）
@@ -2087,7 +2174,13 @@
     // 指定カードの見た目状態（フラグ・非表示・色）だけを更新する（全再描画を避ける）
     function refreshCard(index) {
       const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
-      if (!card) { renderEvents(); return; } // 見つからなければ安全側に全描画
+      if (!card) {
+        // 見つからなければ安全側に全描画（丸ごと作り直すのでスクロール位置がズレないよう保持する）
+        const scrollY = window.scrollY;
+        renderEvents();
+        window.scrollTo(0, scrollY);
+        return;
+      }
       const ev = events[index];
       card.classList.toggle('flagged', !!ev.flag);
       card.classList.toggle('in-death-range', isInDeathRange(ev.time));
@@ -2097,6 +2190,7 @@
       if (flagBtn) flagBtn.classList.toggle('active', !!ev.flag);
       const colorBtn = card.querySelector('.btn-color-toggle');
       if (colorBtn) colorBtn.classList.toggle('active', !!ev.colorHidden);
+      alignTimelineTimeBadges();
     }
 
     function addEvent() {
@@ -2177,7 +2271,16 @@
       events[index].concealed = !events[index].concealed;
       if (!events[index].concealed) events[index].colorHidden = false; // 表示に戻したら色隠しも解除
       persistEvents();
-      if (timelineMode === 'compare' || isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
+      if (timelineMode === 'compare' || isRangeEvent(events[index])) {
+        // renderEvents()は一覧を丸ごと作り直すため、その瞬間だけ描画が縮んでスクロール位置が
+        // 一番上に引き戻されることがある。非表示にした直後の見た目の位置がズレないよう、
+        // 再描画前後でスクロール位置を保持する。
+        const scrollY = window.scrollY;
+        renderEvents();
+        window.scrollTo(0, scrollY);
+      } else {
+        refreshCard(index);
+      }
     }
 
     // 🎨：非表示中のカードの色を隠す/戻すを切り替える
@@ -2224,10 +2327,10 @@
       if (index < 0) { renderEvents(); return; }
       moveUnknownEvent(index, dir);
     }
-    function startEditEventById(id) {
+    function startEditEventById(id, focusEnd = false) {
       const index = evIndexById(id);
       if (index < 0) { renderEvents(); return; }
-      startEditEvent(index);
+      startEditEvent(index, focusEnd);
     }
     function startEditTimeById(id) {
       const index = evIndexById(id);
@@ -2365,15 +2468,23 @@
     }
 
     // カードを編集モードにする
-    function startEditEvent(index) {
+    function startEditEvent(index, focusEnd = false) {
       editingId = events[index] ? events[index].id : null; // 「何番目か」ではなく「どのカードか」を覚える
       editingTimeId = null; // フル編集を始めるときは時間だけ編集は解除する
+      editingFocus = focusEnd ? 'end' : 'start';
       renderEvents();
+      const cardSelector = editingFocus === 'end'
+        ? `.timeline-item.range-end-card[data-index="${index}"]`
+        : `.timeline-item[data-index="${index}"]:not(.range-end-card)`;
+      const card = events[index] && timelineContainer.querySelector(cardSelector);
+      const input = card && card.querySelector(editingFocus === 'end' ? '.edit-endtime' : '.edit-time');
+      if (input) { input.focus(); input.select(); }
     }
 
     // 編集をキャンセルする
     function cancelEditEvent() {
       editingId = null;
+      editingFocus = 'start';
       renderEvents();
     }
 
@@ -2459,7 +2570,7 @@
         card.querySelector('.edit-time'),
         card.querySelector('.edit-endtime'),
         card.querySelector('.edit-text'),
-        () => { editingId = null; }); // 保存成功時だけ編集モードを解除（内容が空のときは編集を続ける）
+        () => { editingId = null; editingFocus = 'start'; }); // 保存成功時だけ編集モードを解除（内容が空のときは編集を続ける）
     }
 
     // 「できごと」欄で Enter を連続2回押したら保存する
@@ -2725,12 +2836,33 @@
           if (ev.colorHidden) div.classList.add('color-hidden');
           // 終了カードも開始カードと同じ人物色で塗る
           div.style.setProperty('--conn-color', rangeColor(ev));
+          if (names.length >= 2) div.classList.add('multi-character');
+          else if (names.length === 0) div.classList.add('no-character');
           if (names.length === 1 && indexMap.has(names[0])) div.classList.add(`char-idx-${indexMap.get(names[0])}`);
-          div.innerHTML = `
-            <div class="timeline-item-inner">
-              <div class="time-badge">${escapeHtml(ev.endTime || '不詳')}</div>
-            </div>
-          `;
+          if (editingId !== null && ev.id === editingId && editingFocus === 'end') {
+            div.innerHTML = `
+              <div class="timeline-item-inner edit-mode">
+                <input type="text" class="edit-time" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTextKeydownById(event, '${sanitizeId(ev.id)}')">
+                <span class="range-sep-edit">〜</span>
+                <input type="text" class="edit-endtime" value="${escapeHtml(ev.endTime || '')}" placeholder="任意" onkeydown="handleEditTextKeydownById(event, '${sanitizeId(ev.id)}')">
+                <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容" onkeydown="handleEditTextKeydownById(event, '${sanitizeId(ev.id)}')">
+              </div>
+              <div class="controls edit-controls compare-edit-actions">
+                <div class="card-char-wrap">
+                  <button type="button" class="btn-add-char-card" onclick="toggleCardCharPopupById(event, '${sanitizeId(ev.id)}')" title="登場人物を追加/削除">👥</button>
+                  <div class="char-assign-popup" id="charAssign-${index}"></div>
+                </div>
+                <button type="button" class="compare-edit-save" onclick="saveEditEventById('${sanitizeId(ev.id)}', this)" title="保存"><span class="edit-check">✓</span></button>
+                <button type="button" class="compare-edit-cancel" onclick="cancelEditEvent()" title="取消">✕</button>
+              </div>
+            `;
+          } else {
+            div.innerHTML = `
+              <div class="timeline-item-inner">
+                <div class="time-badge time-badge-editable" onclick="startEditEventById('${sanitizeId(ev.id)}', true)" title="クリックして終了時間を編集">${escapeHtml(ev.endTime || '不詳')}</div>
+              </div>
+            `;
+          }
           appendConnBars(div, bars);
           timelineContainer.appendChild(div);
           return;
@@ -2785,7 +2917,7 @@
           : '';
 
 
-        if (editingId !== null && ev.id === editingId) {
+        if (editingId !== null && ev.id === editingId && editingFocus !== 'end') {
           // 編集モード：時間・終了時間・内容を編集できるフォームを表示（人物はカードの👥で編集）
           div.innerHTML = `
             <div class="timeline-item-inner edit-mode">
@@ -2795,6 +2927,10 @@
               <input type="text" class="edit-text" value="${escapeHtml(ev.text || '')}" placeholder="内容" onkeydown="handleEditTextKeydownById(event, '${sanitizeId(ev.id)}')">
             </div>
             <div class="controls edit-controls compare-edit-actions">
+              <div class="card-char-wrap">
+                <button type="button" class="btn-add-char-card" onclick="toggleCardCharPopupById(event, '${sanitizeId(ev.id)}')" title="登場人物を追加/削除">👥</button>
+                <div class="char-assign-popup" id="charAssign-${index}"></div>
+              </div>
               <button type="button" class="compare-edit-save" onclick="saveEditEventById('${sanitizeId(ev.id)}', this)" title="保存"><span class="edit-check">✓</span></button>
               <button type="button" class="compare-edit-cancel" onclick="cancelEditEvent()" title="取消">✕</button>
             </div>
@@ -2804,8 +2940,8 @@
           const timeBadgeText = (kind === 'range')
             ? `${escapeHtml(ev.time)}<br>${escapeHtml(ev.endTime)}`
             : escapeHtml(ev.time || '不詳');
-          // 単一カードの期間（開始・終了の両方を持つ）は、時間バッジのクリックで✏️と同じフル編集を開く
-          const timeBadgeClickHandler = (kind === 'range') ? `startEditEventById('${sanitizeId(ev.id)}')` : `startEditTimeById('${sanitizeId(ev.id)}')`;
+          // 時間バッジのクリックは、単一時刻でも期間と同じフル編集を開く
+          const timeBadgeClickHandler = `startEditEventById('${sanitizeId(ev.id)}')`;
           const timeBadgeHtml = isEditingTime
             ? `<div class="time-badge time-badge-editing"><input type="text" class="edit-time-inline" value="${escapeHtml(ev.time || '')}" placeholder="時間" onkeydown="handleEditTimeKeydownById(event, '${sanitizeId(ev.id)}')" onblur="saveEditTimeById('${sanitizeId(ev.id)}')"></div>`
             : `<div class="time-badge time-badge-editable" onclick="${timeBadgeClickHandler}" title="クリックして時間を編集">${timeBadgeText}</div>`;
@@ -2837,6 +2973,24 @@
       });
       applyMoveButtonWrap();
       alignControlsToShortestCard();
+      alignTimelineTimeBadges();
+    }
+
+    // flex-wrapで時間が先頭行に配置されるビューでも、カード全体の上下中央へ実測補正する。
+    // transformだけを使うため、横方向の並びやカード高さの計算には影響させない。
+    function alignTimelineTimeBadges() {
+      const pairs = [...timelineContainer.querySelectorAll('.timeline-item')].flatMap(item =>
+        [...item.querySelectorAll('.time-badge, .concealed-label')].map(target => ({ item, target }))
+      );
+      pairs.forEach(({ target }) => { target.style.transform = ''; });
+      const shifts = pairs.map(({ item, target }) => {
+        const itemRect = item.getBoundingClientRect();
+        const targetRect = target.getBoundingClientRect();
+        return { target, shift: (itemRect.top + itemRect.height / 2) - (targetRect.top + targetRect.height / 2) };
+      });
+      shifts.forEach(({ target, shift }) => {
+        if (Math.abs(shift) > 0.5) target.style.transform = `translateY(${shift}px)`;
+      });
     }
 
     // 基本は1行（⬆︎⬇︎は✏️の左）。コネクタが増えてカード幅が圧迫され、ボタン行が
@@ -2905,6 +3059,7 @@
         // （編集用の入力欄が開いているときは、編集内容を消さないようスキップ）
         if (timelineMode === 'list' && !timelineContainer.querySelector('input, textarea')) renderEvents();
         alignControlsToShortestCard();
+        alignTimelineTimeBadges();
       });
     });
 
