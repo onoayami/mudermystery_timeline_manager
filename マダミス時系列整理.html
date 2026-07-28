@@ -1898,7 +1898,11 @@
       events[index].character = list[0] || '';        // 後方互換
       events[index].color = list[0] ? colorForChar(list[0]) : '#fafafa'; // 書き込み専用（読まないこと。レビュー指摘9）
       safeSet(KEYS.events, JSON.stringify(events));
+      // renderEvents()は一覧を丸ごと作り直すため、その瞬間だけ描画が縮んでスクロール位置が
+      // 一番上に引き戻されることがある。編集中のカードから視点が飛ばないよう、再描画前後でスクロール位置を保持する。
+      const scrollY = window.scrollY;
       renderEvents();
+      window.scrollTo(0, scrollY);
       // 再描画でポップアップが作り直されるので、続けて操作できるよう開き直す
       const popup = document.getElementById(`charAssign-${index}`);
       if (popup) {
@@ -2294,7 +2298,15 @@
     function toggleEventFlag(index) {
       events[index].flag = !events[index].flag;
       persistEvents();
-      if (timelineMode === 'compare' || isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
+      if (timelineMode === 'compare' || isRangeEvent(events[index])) {
+        // renderEvents()は一覧を丸ごと作り直すため、その瞬間だけ描画が縮んでスクロール位置が
+        // 一番上に引き戻されることがある。編集中のカードから視点が飛ばないよう、再描画前後でスクロール位置を保持する。
+        const scrollY = window.scrollY;
+        renderEvents();
+        window.scrollTo(0, scrollY);
+      } else {
+        refreshCard(index);
+      }
     }
 
     // カードの内容の表示/非表示を切り替える
@@ -2318,7 +2330,15 @@
     function toggleEventColor(index) {
       events[index].colorHidden = !events[index].colorHidden;
       persistEvents();
-      if (timelineMode === 'compare' || isRangeEvent(events[index])) renderEvents(); else refreshCard(index);
+      if (timelineMode === 'compare' || isRangeEvent(events[index])) {
+        // renderEvents()は一覧を丸ごと作り直すため、その瞬間だけ描画が縮んでスクロール位置が
+        // 一番上に引き戻されることがある。編集中のカードから視点が飛ばないよう、再描画前後でスクロール位置を保持する。
+        const scrollY = window.scrollY;
+        renderEvents();
+        window.scrollTo(0, scrollY);
+      } else {
+        refreshCard(index);
+      }
     }
 
     function deleteEvent(index) {
@@ -2332,22 +2352,22 @@
     // IDが見つからない場合＝画面の表示が古い可能性があるので、静かに再描画だけして何もしない（安全側）
     function toggleEventFlagById(id) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       toggleEventFlag(index);
     }
     function toggleEventConcealById(id) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       toggleEventConceal(index);
     }
     function toggleEventColorById(id) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       toggleEventColor(index);
     }
     function deleteEventById(id) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       deleteEvent(index);
     }
 
@@ -2355,27 +2375,27 @@
     // 移動・編集開始系：対象が見つからなければ静かに再描画のみ（安全側）
     function moveUnknownEventById(id, dir) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       moveUnknownEvent(index, dir);
     }
     function startEditEventById(id, focusEnd = false) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       startEditEvent(index, focusEnd);
     }
     function startEditTimeById(id) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       startEditTime(index);
     }
     function startCompareEditById(id, btn) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       startCompareEdit(index, btn);
     }
     function toggleCardCharPopupById(e, id) {
       const index = evIndexById(id);
-      if (index < 0) { renderEvents(); return; }
+      if (index < 0) { renderEventsPreservingScroll(); return; }
       toggleCardCharPopup(e, index);
     }
     // 保存系：編集内容が失われるので、ひと言知らせてから最新表示に戻す
@@ -2384,7 +2404,7 @@
       if (index < 0) {
         editingId = null;
         alert('対象が見つかりませんでした。表示を最新にします。');
-        renderEvents();
+        renderEventsPreservingScroll();
         return;
       }
       saveEditEvent(index, btnEl);
@@ -2393,7 +2413,7 @@
       const index = evIndexById(id);
       if (index < 0) {
         alert('対象が見つかりませんでした。表示を最新にします。');
-        renderEvents();
+        renderEventsPreservingScroll();
         return;
       }
       saveCompareEdit(index, el);
@@ -2403,7 +2423,7 @@
       if (index < 0) {
         editingTimeId = null;
         alert('対象が見つかりませんでした。表示を最新にします。');
-        renderEvents();
+        renderEventsPreservingScroll();
         return;
       }
       saveEditTime(index);
@@ -2411,17 +2431,17 @@
     // キー操作系：IDを現在位置に引き直して既存ハンドラにそのまま渡す
     function handleEditTimeKeydownById(e, id) {
       const index = evIndexById(id);
-      if (index < 0) { editingTimeId = null; renderEvents(); return; }
+      if (index < 0) { editingTimeId = null; renderEventsPreservingScroll(); return; }
       handleEditTimeKeydown(e, index);
     }
     function handleEditTextKeydownById(e, id) {
       const index = evIndexById(id);
-      if (index < 0) { e.preventDefault(); editingId = null; renderEvents(); return; }
+      if (index < 0) { e.preventDefault(); editingId = null; renderEventsPreservingScroll(); return; }
       handleEditTextKeydown(e, index);
     }
     function handleCompareEditKeydownById(e, id) {
       const index = evIndexById(id);
-      if (index < 0) { e.preventDefault(); renderEvents(); return; }
+      if (index < 0) { e.preventDefault(); renderEventsPreservingScroll(); return; }
       handleCompareEditKeydown(e, index);
     }
 
@@ -2553,7 +2573,7 @@
       if (!events[index] || events[index].id !== editingTimeId) return;
       const card = timelineContainer.querySelector(`.timeline-item[data-index="${index}"]`);
       const input = card && card.querySelector('.edit-time-inline');
-      if (!input) { editingTimeId = null; renderEvents(); return; }
+      if (!input) { editingTimeId = null; renderEventsPreservingScroll(); return; }
       events[index].time = normalizeTime(input.value);
       // 時刻が入ったら手動位置（anchor）は不要なので片付ける
       if (timeToMinutes(events[index].time) !== Infinity) delete events[index].anchor;
