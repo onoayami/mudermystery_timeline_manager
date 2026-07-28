@@ -171,10 +171,10 @@
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
     /* 余白は人物比較ビューの .compare-card（padding: 5px 8px）と揃える：
-      右=8px（✕ボタン右端からカード右端）・下=10px（操作ボタン下端からカード下端）
+      右=8px（✕ボタン右端からカード右端）・下=14px（操作ボタン下端からカード下端）
        左と上はフラグ表示時の黄色の縦線（box-shadow inset 5px）と文字が近すぎないよう、
       フラグの有無に関係なく常に5pxを上乗せしておく（左=8+5=13px、上=5+5=10px） */
-    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 8px; padding-left: 13px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
+    .timeline-item { display: flex; align-items: center; gap: 8px; padding: 10px 8px 14px; padding-left: 13px; background: #f0f2f5; color: #333; margin-bottom: 8px; border-radius: 6px; transition: background 0.3s; position: relative; }
     .timeline-item-inner { flex: 1 1 auto; min-width: 0; display: flex; align-items: flex-start; flex-wrap: nowrap; gap: 8px; }
     /* カード内の内容領域をカード全体の高さに伸ばし、時間バッジの中心をカードの中心に揃える */
     .timeline-item > .timeline-item-inner { align-self: stretch; align-items: center; }
@@ -470,7 +470,7 @@
        .controls 既定の flex-wrap:wrap ＋ flex-shrink:1 だと横幅不足で1行分すら確保できず折り返すため、
        PCでは nowrap＋縮小しないよう上書きする（折り返し制御はスマホ版の applyMoveButtonWrap のみが担う）。 */
     body.view-pc .timeline-item > .controls:not(.edit-controls) { flex-wrap: nowrap; flex-shrink: 0; }
-    .timeline-item > .controls:not(.edit-controls) { translate: 0 5px; }
+    .timeline-item > .controls:not(.edit-controls) { translate: 0 9px; }
     /* 編集モードの✔️✕は下揃えではなく中央揃えにする（上のflex-endを上書き） */
     body.view-pc .timeline-item > .edit-controls { align-self: center; }
     body.view-pc .event-text { flex: 1 1 100%; margin-left: 10px; }
@@ -2865,7 +2865,7 @@
           // 収まる通常の点カードにも全バンド分の contentPad を適用する。
           div.style.paddingRight = contentPad[pos] + 'px';
           // 操作ボタン下端からカード下端までの余白は、人物比較ビューの .compare-card と同じ5pxに揃える。
-          div.style.paddingBottom = '10px';
+          div.style.paddingBottom = '14px';
         }
 
         // 終了マーカー：終了時刻だけを表示する（内容は上の開始カードにある）
