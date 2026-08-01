@@ -166,7 +166,7 @@
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
     .color-picker-wrap { position: relative; display: inline-flex; }
-    .color-picker-btn { width: 40px; height: 36px; border: none; border-radius: 4px; cursor: pointer; padding: 0; background: #60a5fa; }
+    .color-picker-btn { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border: none; border-radius: 4px; cursor: pointer; padding: 0; background: #60a5fa; }
     .color-palette-popup { display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; background: #20303e; border: 1px solid #3d5166; border-radius: 6px; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.35); grid-template-columns: repeat(7, 1fr); gap: 6px; width: max-content; max-width: calc(100vw - 20px); box-sizing: border-box; }
     .color-palette-popup.open { display: grid; }
     .color-palette-popup .color-swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-sizing: border-box; transition: transform 0.1s; }
@@ -179,7 +179,7 @@
     .timeline-header h2 { margin-bottom: 0; }
     .timeline-title { display: flex; align-items: center; gap: 8px; }
     .timeline-title h2 { padding-bottom: 0; }
-    .btn-help { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 1.1rem; height: 1.1rem; padding: 0; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 50%; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.75rem; line-height: 1; }
+    .btn-help { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 44px; min-height: 44px; width: auto; height: auto; padding: 4px; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 50%; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.75rem; line-height: 1; }
     .btn-help:hover { background: #dbe4e8; }
     .death-time-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; flex-wrap: wrap; }
     .death-label-wrap { display: inline-flex; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
@@ -188,7 +188,7 @@
     .death-label-edit-btn.editing { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
     .death-label-input { width: 8em; min-width: 0; padding: 3px 5px !important; font-size: 0.85rem !important; }
     .death-range { display: inline-flex; align-items: center; background: #64748b; border: 1px solid #64748b; border-radius: 4px; padding: 0 5px; }
-    .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 4px 1px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
+    .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 8px 4px; min-height: 44px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
     .death-range select:focus { outline: none; }
     .death-range select option { background: #2a394c; color: #e2e8f0; }
     .death-range .colon { color: #cbd5e1; padding: 0 1px; position: relative; top: -1px; }
@@ -674,6 +674,37 @@
       opacity: 0; visibility: hidden; transition: opacity 0.18s ease;
     }
     #appToast.show { opacity: 1; visibility: visible; }
+    /* §6: スクリーンリーダー専用テキスト */
+    .sr-only {
+      position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+      overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+    }
+    /* §6: フォーカス可視化 */
+    button:focus-visible, a:focus-visible, input:focus-visible,
+    select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+      outline:3px solid #facc15;outline-offset:3px;
+    }
+    /* §9: 印刷 */
+    @media print {
+      body { background:#fff;color:#000; }
+      .top-bar, .controls, .btn-help, .memo-conceal-btn,
+      .timeline-mode-toggle { display:none !important; }
+      .panel, .timeline-item { box-shadow:none;break-inside:avoid; }
+    }
+    /* §9: ハイコントラスト */
+    @media (forced-colors: active) {
+      button, input, select, textarea { border:1px solid ButtonText; }
+      :focus-visible { outline:3px solid Highlight; }
+    }
+    /* §9: 動きの軽減 */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior:auto !important;
+        transition-duration:0.01ms !important;
+        animation-duration:0.01ms !important;
+        animation-iteration-count:1 !important;
+      }
+    }
   </style>
   <style id="cardColorsStyle"></style> <!-- JavaScriptで動的にCSSを生成 -->
 </head>
@@ -712,12 +743,13 @@
       <div id="charPanel" class="panel">
         <h2>👤 キャラクター一覧</h2>
         <div class="input-group" id="charInputGroup">
+          <label for="newCharName" class="sr-only">キャラクター名</label>
           <input type="text" id="newCharName" placeholder="キャラ名" style="flex: 1 1 60px;">
           <div class="color-picker-wrap">
             <button type="button" id="colorPickerBtn" class="color-picker-btn" onclick="toggleColorPalette(event)" title="色を選ぶ"></button>
             <div id="colorPalettePopup" class="color-palette-popup"></div>
           </div>
-          <button class="btn-add" onclick="addCharacter()">追加</button>
+          <button type="button" class="btn-add" onclick="addCharacter()">追加</button>
         </div>
         <div id="characterList"></div>
       </div>
@@ -728,6 +760,7 @@
           <h2>📝 秘密のメモ</h2>
           <button type="button" id="memoConcealBtn" class="memo-conceal-btn" onclick="toggleMemoConceal()" title="メモの表示/非表示">👁️</button>
         </div>
+        <label for="memoInput" class="sr-only">秘密のメモ</label>
         <textarea id="memoInput" placeholder="自分の推理や、嘘をつくポイントなどを自由に書き込めます...（自動保存されます）"></textarea>
         <div id="memoConcealedLabel" class="concealed-label memo-concealed-label">（非表示中）</div>
       </div>
@@ -738,7 +771,9 @@
       <div class="timeline-header">
         <div class="timeline-title">
           <h2>⏳ 時系列整理</h2>
-          <button type="button" class="btn-help" onclick="toggleHelp()" title="使い方">？</button>
+          <button type="button" class="btn-help" id="helpOpenButton"
+            aria-haspopup="dialog" aria-controls="helpOverlay" aria-expanded="false"
+            title="使い方"><span aria-hidden="true">？</span><span class="sr-only">使い方を開く</span></button>
         </div>
         <div class="death-time-group">
           <span class="death-label-wrap">
@@ -747,19 +782,20 @@
             <input type="text" id="deathLabelInput" class="death-label-input" placeholder="内容を入力" style="display:none;">
           </span>
           <span class="death-range">
-            <select id="deathFromH" onchange="onDeathTimeChange()" title="開始（時）"></select>
+            <select id="deathFromH" onchange="onDeathTimeChange()" title="開始（時）" aria-label="死亡推定時刻の開始・時"></select>
             <span class="colon">:</span>
-            <select id="deathFromM" onchange="onDeathTimeChange()" title="開始（分）"></select>
+            <select id="deathFromM" onchange="onDeathTimeChange()" title="開始（分）" aria-label="死亡推定時刻の開始・分"></select>
             <span class="tilde">〜</span>
-            <select id="deathToH" onchange="onDeathTimeChange()" title="終了（時）"></select>
+            <select id="deathToH" onchange="onDeathTimeChange()" title="終了（時）" aria-label="死亡推定時刻の終了・時"></select>
             <span class="colon">:</span>
-            <select id="deathToM" onchange="onDeathTimeChange()" title="終了（分）"></select>
+            <select id="deathToM" onchange="onDeathTimeChange()" title="終了（分）" aria-label="死亡推定時刻の終了・分"></select>
           </span>
           <button type="button" id="deathToggleBtn" class="btn-death-toggle" onclick="toggleDeathTime()">OFF</button>
         </div>
       </div>
       <div id="deathWarn" class="death-warn">⚠️ 開始が終了より後です。日付を跨ぐ範囲（例: 23:00〜翌1:00）として扱います。</div>
       <div class="input-group" id="addEventGroup">
+        <label for="timeInput" class="sr-only">開始時刻</label>
         <input type="text" id="timeInput" placeholder="時間">
         <span class="range-sep">〜</span>
         <input type="text" id="endTimeInput" placeholder="終了">
@@ -768,9 +804,10 @@
           <button type="button" id="charSelectBtn" onclick="toggleCharSelectPopup(event)" title="登場人物を選ぶ（複数可）">人物<span class="char-select-caret">▼</span></button>
           <div id="charSelectPopup" class="char-select-popup"></div>
         </div>
+        <label for="eventInput" class="sr-only">できごと（必須）</label>
         <input type="text" id="eventInput" placeholder="できごと（必須）">
         <button type="button" id="flagToggleBtn" class="btn-flag" onclick="toggleNewFlag()" title="重要フラグを付けて追加">🚩</button>
-        <button class="btn-add" onclick="addEvent()">追加</button>
+        <button type="button" class="btn-add" onclick="addEvent()">追加</button>
       </div>
       <div id="charFilterBar" class="char-filter-bar"></div>
       <div class="timeline-mode-toggle">
@@ -801,10 +838,11 @@
   </div>
 
   <!-- 使い方（ヘルプ）モーダル -->
-  <div id="helpOverlay" class="help-overlay" onclick="closeHelpOverlay(event)">
-    <div class="help-modal">
-      <button type="button" class="help-close" onclick="toggleHelp()" title="閉じる">✕</button>
-      <h3>❓ 使い方 / チュートリアル</h3>
+  <div id="helpOverlay" class="help-overlay" role="dialog"
+    aria-modal="true" aria-labelledby="helpTitle" aria-hidden="true">
+    <div class="help-modal" tabindex="-1">
+      <button type="button" class="help-close" aria-label="使い方を閉じる">✕</button>
+      <h3 id="helpTitle">❓ 使い方 / チュートリアル</h3>
 
       <h4>📌 基本の登録方法</h4>
       <ul>
@@ -961,11 +999,54 @@
     // 上書きをやめて警告バーを出す。events / characters / memo など「消えると痛い」保存だけを対象にする。
     let lastKnownRev = safeGet(KEYS.rev) || '0';
     function guardedSet(key, value) {
-      const rev = safeGet(KEYS.rev) || '0';
-      if (rev !== lastKnownRev) { showStorageConflictBar(); return false; } // 上書きせず中断
-      const ok = safeSet(key, value);
-      if (ok) { lastKnownRev = String((Number(rev) || 0) + 1); safeSet(KEYS.rev, lastKnownRev); }
-      return ok;
+      return mutateStorage(() => {
+        if (!safeSet(key, value)) throw new Error(key);
+      });
+    }
+
+    // --- §1 保存の原子性・競合保護（mutateStorage） ---
+    function storageSnapshot() {
+      return Object.fromEntries(
+        Object.values(KEYS).map(key => [key, safeGet(key)])
+      );
+    }
+    function restoreSnapshot(snapshot) {
+      for (const key of Object.values(KEYS)) { try { localStorage.removeItem(key); } catch(e){} }
+      for (const [key, value] of Object.entries(snapshot)) {
+        if (value !== null) { try { localStorage.setItem(key, value); } catch(e){} }
+      }
+    }
+    let editingLockedByConflict = false;
+    function lockEditingAfterConflict() {
+      editingLockedByConflict = true;
+      editingId = null;
+      editingTimeId = null;
+    }
+    function mutateStorage(mutator) {
+      const currentRev = safeGet(KEYS.rev) || '0';
+      if (currentRev !== lastKnownRev) {
+        showStorageConflictBar();
+        lockEditingAfterConflict();
+        return false;
+      }
+      const backup = storageSnapshot();
+      try {
+        mutator();
+        const nextRev = String((Number(currentRev) || 0) + 1);
+        if (!safeSet(KEYS.rev, nextRev)) throw new Error('rev保存失敗');
+        lastKnownRev = nextRev;
+        return true;
+      } catch (error) {
+        try { restoreSnapshot(backup); } catch (e) { console.warn('復元失敗', e); }
+        alert('保存に失敗したため、保存前の状態へ戻しました。');
+        return false;
+      }
+    }
+    // §1-3 ストレージ利用可否の自己診断
+    function canUseLocalStorage() {
+      const key = '__madamisu_storage_test__';
+      try { localStorage.setItem(key, '1'); localStorage.removeItem(key); return true; }
+      catch (e) { return false; }
     }
 
     // --- 想定外エラー時の復旧案内（レビュー指摘4対応） ---
@@ -1036,6 +1117,16 @@
       if (!el) return;
       if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
       el.classList.remove('show');
+    }
+
+    function normalizeStringArray(value) {
+      if (!Array.isArray(value)) return [];
+      return [...new Set(value.filter(v => typeof v === 'string'))];
+    }
+    function normalizeObjectArray(value) {
+      return Array.isArray(value)
+        ? value.filter(item => item && typeof item === 'object' && !Array.isArray(item))
+        : [];
     }
 
     // --- 読み込んだイベント配列の正規化（レビュー指摘1・2対応） ---
@@ -1231,7 +1322,7 @@
     let editingId = null; // 現在フル編集中のカードのID（nullは編集なし）
     let editingTimeId = null; // 時間バッジをクリックして時間だけ編集中のカードのID（nullはなし）
     let editingFocus = 'start'; // フル編集開始時にフォーカスする欄（start / end）
-    let charFilter = loadJSON(KEYS.charFilter, []); // 絞り込み中の人物名（空なら全表示）
+    let charFilter = normalizeStringArray(loadJSON(KEYS.charFilter, [])).filter(name => characters.some(c => c.name === name)); // 絞り込み中の人物名（空なら全表示）
     // フラグ絞り込み: 'all' / 'flag'（フラグつきのみ） / 'noflag'（フラグなしのみ）
     // 旧データ（true/false の2択）からの移行も行う
     let flagFilter = (() => {
@@ -1241,7 +1332,7 @@
     })();
     let timelineMode = safeGet(KEYS.timelineMode) || 'list'; // 時系列の表示モード（list / compare）
     let hideConcealedInCompare = safeGet(KEYS.showConcealedCompare) === 'true';
-    let compareOrder = loadJSON(KEYS.compareOrder, []); // 人物比較ビュー専用の列の並び順（キャラ一覧の順序とは独立）
+    let compareOrder = normalizeStringArray(loadJSON(KEYS.compareOrder, [])).filter(name => characters.some(c => c.name === name)); // 人物比較ビュー専用の列の並び順（キャラ一覧の順序とは独立）
     let compareOrderFixed = safeGet(KEYS.compareOrderFixed) === 'true'; // 比較ビューの人物順をリスト表示後も維持するか
     // 人物比較ビューだけの表示倍率（0.1〜2.0）。他の画面には影響しない
     const COMPARE_ZOOM_MIN = 0.1, COMPARE_ZOOM_MAX = 2, COMPARE_ZOOM_STEP = 0.1;
@@ -1268,6 +1359,16 @@
     // 呼び出し順には依存関係がある（例: updateTimelineModeBtn でモードボタンの文言が確定した後でないと
     // 2回目の applyView の折返し判定が正しく測れない）ため、順序を入れ替えないこと。
     function init() {
+      // §1-3 ストレージが使えない環境では警告バーを出す
+      if (!canUseLocalStorage()) {
+        try {
+          const bar = document.createElement('div');
+          bar.id = 'storageConflictBar';
+          bar.className = 'alert-bar';
+          bar.textContent = 'この環境では保存できません。データを書き出してから、保存可能なブラウザで開いてください。';
+          document.body.prepend(bar);
+        } catch (e) {}
+      }
       // メモと、キャラクター・色のスタイルを適用
       memoInput.value = safeGet(KEYS.memo) || '';
       renderSessionName();
@@ -1767,9 +1868,14 @@
 
     // --- キャラクター管理機能 ---
     function saveCharacters() {
-      guardedSet(KEYS.characters, JSON.stringify(characters));
-      renderCharacters(); // 末尾で updateCharacterSelect() まで呼ばれる（二重呼び出しを避ける。レビュー指摘8）
-      updateCardColorCss(); // キャラクターの色が変わったかもしれないので、CSSを再生成
+      const ok = mutateStorage(() => {
+        if (!safeSet(KEYS.characters, JSON.stringify(characters))) throw new Error('characters');
+      });
+      if (!ok) {
+        characters = normalizeCharacters(loadJSON(KEYS.characters, []));
+      }
+      renderCharacters();
+      updateCardColorCss();
     }
 
     function addCharacter() {
@@ -1816,6 +1922,26 @@
       renderCharacters();
     }
 
+    function renameCharacterReferences(oldName, newName) {
+      events.forEach(ev => {
+        ev.characters = normalizeStringArray(ev.characters)
+          .map(name => name === oldName ? newName : name);
+        ev.character = ev.characters[0] || '';
+      });
+      charFilter = charFilter.map(name => name === oldName ? newName : name);
+      compareOrder = compareOrder.map(name => name === oldName ? newName : name);
+      if (playerCharacter === oldName) playerCharacter = newName;
+    }
+    function removeCharacterReferences(name) {
+      events.forEach(ev => {
+        ev.characters = normalizeStringArray(ev.characters).filter(n => n !== name);
+        ev.character = ev.characters[0] || '';
+      });
+      charFilter = charFilter.filter(n => n !== name);
+      compareOrder = compareOrder.filter(n => n !== name);
+      if (playerCharacter === name) playerCharacter = null;
+    }
+
     function saveEditCharacter(index) {
       const oldName = characters[index].name;
       const input = document.getElementById(`characterNameEdit-${index}`);
@@ -1830,21 +1956,30 @@
       }
 
       characters[index].name = trimmedName;
-      events.forEach(ev => {
-        const names = eventCharNames(ev);
-        if (!names.includes(oldName)) return; // 旧名を含まないカードは触らない（無駄な配列再生成を避ける）
-        ev.characters = names.map(name => name === oldName ? trimmedName : name);
-        ev.character = ev.characters[0] || '';
-      });
+      renameCharacterReferences(oldName, trimmedName);
       newEventChars = newEventChars.map(name => name === oldName ? trimmedName : name);
-      charFilter = charFilter.map(name => name === oldName ? trimmedName : name);
-      // 比較ビューの列の並び順も旧名→新名へ置き換える（並べ替えた順序が失われないように）
-      compareOrder = compareOrder.map(name => name === oldName ? trimmedName : name);
-      safeSet(KEYS.events, JSON.stringify(events));
-      safeSet(KEYS.charFilter, JSON.stringify(charFilter));
-      safeSet(KEYS.compareOrder, JSON.stringify(compareOrder));
+
+      const ok = mutateStorage(() => {
+        if (!safeSet(KEYS.characters, JSON.stringify(characters))) throw new Error('characters');
+        if (!safeSet(KEYS.events, JSON.stringify(events))) throw new Error('events');
+        if (!safeSet(KEYS.charFilter, JSON.stringify(charFilter))) throw new Error('charFilter');
+        if (!safeSet(KEYS.compareOrder, JSON.stringify(compareOrder))) throw new Error('compareOrder');
+        if (!safeSet(KEYS.playerCharacter, playerCharacter || '')) throw new Error('playerCharacter');
+      });
+      if (!ok) {
+        characters = normalizeCharacters(loadJSON(KEYS.characters, []));
+        events = normalizeEvents(loadJSON(KEYS.events, []));
+        charFilter = normalizeStringArray(loadJSON(KEYS.charFilter, []));
+        compareOrder = normalizeStringArray(loadJSON(KEYS.compareOrder, []));
+        playerCharacter = safeGet(KEYS.playerCharacter) || null;
+        renderCharacters();
+        updateCardColorCss();
+        renderEvents();
+        return;
+      }
       editingCharacterName = null;
-      saveCharacters();
+      renderCharacters();
+      updateCardColorCss();
       renderEvents();
     }
 
@@ -1852,22 +1987,31 @@
       if (characters[index].locked) return;
       const name = characters[index].name;
       if (!confirm(`キャラクター「${name}」を削除しますか？\nこの人物は各カードの登場人物から外れます（カード自体は残ります）。`)) return;
-      // 各イベントの登場人物からこのキャラを外す
-      events.forEach(ev => {
-        ev.characters = eventCharNames(ev).filter(n => n !== name);
-        ev.character = ev.characters[0] || '';
-      });
-      safeSet(KEYS.events, JSON.stringify(events));
+      removeCharacterReferences(name);
       newEventChars = newEventChars.filter(n => n !== name);
-      charFilter = charFilter.filter(n => n !== name);
-      safeSet(KEYS.charFilter, JSON.stringify(charFilter));
-      // 比較ビューの列順からも削除する（改名時と同様に。残すと同名再登録で旧位置に戻る。レビュー指摘22）
-      compareOrder = compareOrder.filter(n => n !== name);
-      safeSet(KEYS.compareOrder, JSON.stringify(compareOrder));
-
       characters.splice(index, 1);
-      saveCharacters();
-      renderEvents(); // 時系列を再描画して更新
+
+      const ok = mutateStorage(() => {
+        if (!safeSet(KEYS.characters, JSON.stringify(characters))) throw new Error('characters');
+        if (!safeSet(KEYS.events, JSON.stringify(events))) throw new Error('events');
+        if (!safeSet(KEYS.charFilter, JSON.stringify(charFilter))) throw new Error('charFilter');
+        if (!safeSet(KEYS.compareOrder, JSON.stringify(compareOrder))) throw new Error('compareOrder');
+        if (!safeSet(KEYS.playerCharacter, playerCharacter || '')) throw new Error('playerCharacter');
+      });
+      if (!ok) {
+        characters = normalizeCharacters(loadJSON(KEYS.characters, []));
+        events = normalizeEvents(loadJSON(KEYS.events, []));
+        charFilter = normalizeStringArray(loadJSON(KEYS.charFilter, []));
+        compareOrder = normalizeStringArray(loadJSON(KEYS.compareOrder, []));
+        playerCharacter = safeGet(KEYS.playerCharacter) || null;
+        renderCharacters();
+        updateCardColorCss();
+        renderEvents();
+        return;
+      }
+      renderCharacters();
+      updateCardColorCss();
+      renderEvents();
     }
 
     // キャラの色選び直しパレットを開閉する
@@ -2238,13 +2382,13 @@
     function toggleCharFilter(name) {
       if (charFilter.includes(name)) charFilter = charFilter.filter(n => n !== name);
       else charFilter.push(name);
-      safeSet(KEYS.charFilter, JSON.stringify(charFilter));
+      guardedSet(KEYS.charFilter, JSON.stringify(charFilter));
       renderCharFilter();
       renderEvents();
     }
     function clearCharFilter() {
       charFilter = [];
-      safeSet(KEYS.charFilter, JSON.stringify(charFilter));
+      guardedSet(KEYS.charFilter, JSON.stringify(charFilter));
       renderCharFilter();
       renderEvents();
     }
@@ -2361,6 +2505,16 @@
         .replace(/\u3000/g, ' ');
     }
 
+    function parseClockTime(value) {
+      const normalized = String(value ?? '').trim().replace(/：/g, ':');
+      const match = normalized.match(/^(\d{1,2}):([0-5]\d)$/);
+      if (!match) return null;
+      const hour = Number(match[1]);
+      const minute = Number(match[2]);
+      if (hour > 23) return null;
+      return { hour, minute, totalMinutes: hour * 60 + minute };
+    }
+
     function normalizeTime(t) {
       if (!t) return t;
       const half = toHalfWidth(t).trim();
@@ -2394,12 +2548,7 @@
     // 時間文字列を分単位に変換（ソート用、不正・未入力は末尾へ）
     // 「時:分」として丸ごと読める文字列だけを時刻とみなす（前後に他の文字が混ざる自由記述は末尾扱い）
     function timeToMinutes(t) {
-      if (!t) return Infinity;
-      const m = String(t).trim().match(/^(\d{1,2}):(\d{2})$/);
-      if (!m) return Infinity;
-      const h = parseInt(m[1], 10), mi = parseInt(m[2], 10);
-      if (mi > 59) return Infinity; // 分が60以上（例: 9:99）は時刻として実在しないので自由記述扱い
-      return h * 60 + mi;
+      return parseClockTime(t)?.totalMinutes ?? Infinity;
     }
 
     // 不詳（時刻なし）カードの基本位置。実時刻（0〜1439分）より十分大きな値にして末尾側に置く
@@ -2553,19 +2702,51 @@
       safeSet(KEYS.compareOrderFixed, compareOrderFixed ? 'true' : 'false');
       // ONにしたときはその時点の並びを確定させる。OFFに戻しても並びはそのまま維持し、矢印だけ動かせるようにする
       compareOrder = normalizedCompareOrder();
-      safeSet(KEYS.compareOrder, JSON.stringify(compareOrder));
+      guardedSet(KEYS.compareOrder, JSON.stringify(compareOrder));
       if (timelineMode === 'compare') renderEvents();
     }
 
-    // 使い方（ヘルプ）モーダルの開閉
-    function toggleHelp() {
-      document.getElementById('helpOverlay').classList.toggle('open');
-    }
-    function closeHelpOverlay(e) {
-      if (e.target === document.getElementById('helpOverlay')) {
-        document.getElementById('helpOverlay').classList.remove('open');
+    // --- §5 ヘルプモーダル（アクセシブルなdialog） ---
+    (function() {
+      const helpOverlay = document.getElementById('helpOverlay');
+      const helpModal = helpOverlay.querySelector('.help-modal');
+      const helpOpenButton = document.getElementById('helpOpenButton');
+      const helpCloseButton = helpOverlay.querySelector('.help-close');
+      let helpReturnFocus = null;
+
+      function openHelp() {
+        helpReturnFocus = document.activeElement;
+        helpOverlay.classList.add('open');
+        helpOverlay.setAttribute('aria-hidden', 'false');
+        helpOpenButton.setAttribute('aria-expanded', 'true');
+        helpModal.focus();
       }
-    }
+
+      function closeHelp() {
+        helpOverlay.classList.remove('open');
+        helpOverlay.setAttribute('aria-hidden', 'true');
+        helpOpenButton.setAttribute('aria-expanded', 'false');
+        helpReturnFocus?.focus();
+      }
+
+      helpOpenButton.addEventListener('click', openHelp);
+      helpCloseButton.addEventListener('click', closeHelp);
+      helpOverlay.addEventListener('click', e => { if (e.target === helpOverlay) closeHelp(); });
+      helpOverlay.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { e.preventDefault(); closeHelp(); return; }
+        if (e.key !== 'Tab') return;
+        const focusable = [...helpOverlay.querySelectorAll(
+          'button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )].filter(el => !el.disabled && !el.hidden);
+        const first = focusable[0], last = focusable[focusable.length - 1];
+        if (!first || !last) return;
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault(); first.focus();
+        }
+      });
+    })();
 
     // 編集中にフォーム外を押した場合は保存せず、編集前の表示へ戻す。
     // captureで先に処理することで、時間入力のblur保存も発生させない。
@@ -2604,7 +2785,12 @@
     }
 
     function saveEvents() {
-      guardedSet(KEYS.events, JSON.stringify(events));
+      const ok = mutateStorage(() => {
+        if (!safeSet(KEYS.events, JSON.stringify(events))) throw new Error('events');
+      });
+      if (!ok) {
+        events = normalizeEvents(loadJSON(KEYS.events, []));
+      }
       const scrollX = window.scrollX;
       const scrollY = window.scrollY;
       renderEvents();
@@ -2623,7 +2809,12 @@
     // （保存は毎回全件をJSON化する。現規模では十分軽いが、件数が数千を超えるなら
     //   メモ保存と同じ300msデバウンス化を検討。レビュー指摘11）
     function persistEvents() {
-      guardedSet(KEYS.events, JSON.stringify(events));
+      const ok = mutateStorage(() => {
+        if (!safeSet(KEYS.events, JSON.stringify(events))) throw new Error('events');
+      });
+      if (!ok) {
+        events = normalizeEvents(loadJSON(KEYS.events, []));
+      }
     }
 
     // 指定カードの見た目状態（フラグ・非表示・色）だけを更新する（全再描画を避ける）
@@ -3696,7 +3887,7 @@
       if (ai < 0 || bi < 0) return;
       [order[ai], order[bi]] = [order[bi], order[ai]];
       compareOrder = order;
-      safeSet(KEYS.compareOrder, JSON.stringify(compareOrder));
+      guardedSet(KEYS.compareOrder, JSON.stringify(compareOrder));
       renderEvents(); // 比較ビューを再描画
     }
 
