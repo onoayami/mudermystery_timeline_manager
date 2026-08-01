@@ -26,7 +26,7 @@
     input[type="checkbox"] { width: 15px; height: 15px; margin: 0; flex: 0 0 auto; vertical-align: middle; accent-color: #4697DB; }
     /* モノクロ記号（⬆︎⬇︎⬅︎➡︎▶︎↩︎など・異体字セレクタFE0E付き）を使うボタンは、
        モノクロ字形を確実に持つ記号フォントを優先させる（Androidでの豆腐化・Windowsでの絵文字化を防ぐ） */
-    .move-arrow-icon, .compare-move-btn, .char-action-icon, .session-data-toggle { font-family: "Hiragino Sans", "Segoe UI Symbol", "Noto Sans Symbols", "Noto Sans Symbols 2", -apple-system, "Segoe UI", Roboto, "Noto Sans JP", Meiryo, sans-serif; }
+    .move-arrow-icon, .compare-move-btn, .char-action-icon, .session-data-toggle, .player-char-caret, .char-select-caret { font-family: "Hiragino Sans", "Segoe UI Symbol", "Noto Sans Symbols", "Noto Sans Symbols 2", -apple-system, "Segoe UI", Roboto, "Noto Sans JP", Meiryo, sans-serif; }
     /* iPad/iPhone(Safari)では、装飾だけの余白をタップしても document に click が届かず、
        ポップアップの「外側タップで閉じる」が効かないことがある。タッチ端末のときだけ
        body に cursor:pointer を与えると、余白タップでも click が発火するようになる。 */
@@ -89,7 +89,7 @@
     .session-name-display-pc::before { content: '『'; }
     .session-name-display-pc::after { content: '』'; }
     #sessionNameInput { flex: 1 1 auto; min-width: 0; box-sizing: border-box; font-weight: bold; font-size: 1rem; }
-    .session-name-edit { background: transparent; color: #cbd5e1; border: none; padding: 0; cursor: pointer; font-size: 0.8rem; line-height: 1; flex: 0 0 auto; align-self: flex-end; position: relative; top: -3px; left: -6px; }
+    .session-name-edit { display: inline-flex; align-items: center; justify-content: center; background: transparent; color: #cbd5e1; border: none; padding: 0; cursor: pointer; font-size: 0.8rem; line-height: 1; flex: 0 0 auto; align-self: flex-end; position: relative; top: -3px; left: -6px; }
     .session-name-edit:hover { color: #fff; }
     .session-name-edit.editing { background: transparent; left: 2px; font-size: 1.25rem; }
     /* スマホ版：共通のh2にある下パディングを外し、タイトルの上下余白を均等にする */
@@ -105,7 +105,7 @@
     input[type="text"], select, textarea { padding: 8px; border: 1px solid #3d5166; border-radius: 4px; font-size: 0.9rem; background: #ecf0f1; color: #333; }
     .btn-add { background: #4697DB; color: #fff; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; white-space: nowrap; }
     .btn-add:hover { background: #397bc0; }
-    .btn-flag { background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-size: 1rem; line-height: 1; filter: grayscale(1); opacity: 0.55; }
+    .btn-flag { display: inline-flex; align-items: center; justify-content: center; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; padding: 6px 10px; font-size: 1rem; line-height: 1; filter: grayscale(1); opacity: 0.55; }
     .btn-flag.active { filter: none; opacity: 1; background: linear-gradient(135deg, #fdf3ae, #f8b8a0); border-color: #ec7f52; }
     
     /* 左列（キャラクター一覧＋秘密のメモを縦積み） */
@@ -142,7 +142,7 @@
     .player-char-toggle { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px; background: #223142; color: #cbd5e1; border: 1px solid #3d5166; border-radius: 6px; padding: 8px 10px; cursor: pointer; font-size: 0.9rem; font-weight: bold; }
     .player-char-toggle:hover { background: #2c4056; color: #fff; }
     .player-char-toggle > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .player-char-caret { flex: 0 0 auto; display: inline-block; transition: transform 0.15s; }
+    .player-char-caret { flex: 0 0 auto; display: inline-block; font-size: 0.8rem; line-height: 1; transition: transform 0.15s; }
     .player-char-toggle.open .player-char-caret { transform: rotate(180deg); }
     .player-char-selected-name { color: #7dd3fc; }
     .player-char-list { display: none; margin-top: 6px; border: 1px solid #3d5166; border-radius: 6px; padding: 4px; background: #20303e; max-height: 220px; overflow-y: auto; }
@@ -158,15 +158,16 @@
     .btn-finish-charreg:hover { background: #397bc0; }
     /* 登録終了後：読み取り専用のキャラ一覧（プレーヤーは先頭・太字） */
     .char-name.player-char-name { font-weight: bold; }
+    .player-you-tag { font-weight: bold; }
     .char-edit-resume-bar { display: flex; justify-content: flex-start; margin-top: 10px; }
     /* 「キャラクターを編集する」：見えづらい色・小さめで左下に置く */
-    .btn-resume-charreg { background: #33414f; color: #7c8a99; border: 1px solid #3d5166; border-radius: 5px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; }
-    .btn-resume-charreg:hover { background: #3f4f5e; color: #cbd5e1; }
+    .btn-resume-charreg { background: #2a394c; color: #7c8a99; border: 1px solid #34455a; border-radius: 5px; padding: 4px 10px; cursor: pointer; font-size: 0.75rem; }
+    .btn-resume-charreg:hover { background: #33465c; color: #cbd5e1; }
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
     .color-picker-wrap { position: relative; display: inline-flex; }
     .color-picker-btn { width: 40px; height: 36px; border: none; border-radius: 4px; cursor: pointer; padding: 0; background: #60a5fa; }
-    .color-palette-popup { display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; background: #20303e; border: 1px solid #3d5166; border-radius: 6px; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.35); grid-template-columns: repeat(7, 1fr); gap: 6px; width: max-content; }
+    .color-palette-popup { display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; background: #20303e; border: 1px solid #3d5166; border-radius: 6px; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.35); grid-template-columns: repeat(7, 1fr); gap: 6px; width: max-content; max-width: calc(100vw - 20px); box-sizing: border-box; }
     .color-palette-popup.open { display: grid; }
     .color-palette-popup .color-swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-sizing: border-box; transition: transform 0.1s; }
     .color-palette-popup .color-swatch:hover { transform: scale(1.15); }
@@ -181,7 +182,8 @@
     .btn-help { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 1.1rem; height: 1.1rem; padding: 0; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 50%; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.75rem; line-height: 1; }
     .btn-help:hover { background: #dbe4e8; }
     .death-time-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; flex-wrap: wrap; }
-    .death-label-wrap { display: inline-flex; align-items: center; gap: 2px; white-space: nowrap; }
+    .death-label-wrap { display: inline-flex; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
+    #deathLabelDisplay { min-width: 0; overflow-wrap: anywhere; }
     .death-label-edit-btn { background: transparent; border: none; padding: 0; cursor: pointer; font-size: 0.95rem; line-height: 1; display: inline-flex; align-items: center; position: relative; top: 2px; }
     .death-label-edit-btn.editing { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
     .death-label-input { width: 8em; min-width: 0; padding: 3px 5px !important; font-size: 0.85rem !important; }
@@ -249,7 +251,7 @@
     /* 移動・削除・フラグボタン。flex-wrap は最終防衛：レーン縮小が下限（線幅8px）に
        達してもなお幅が足りない極端な画面では、カードからはみ出す代わりに折り返す */
     .controls { display: flex; gap: 4px; flex-wrap: wrap; }
-    .controls button { background: rgba(255, 255, 255, 0.12); border: 1px solid var(--card-btn-border, #a1a1a1); border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #444; }
+    .controls button { display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.12); border: 1px solid var(--card-btn-border, #a1a1a1); border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #444; }
     .controls button:hover { background: #e2e8f0; }
     .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
     /* 👁️トグル時、右側の🎨とのボタン入れ替わりで👁️の位置がズレないよう、
@@ -354,14 +356,16 @@
 
     /* ── 人物の複数選択ポップアップ（追加フォーム・カード共通） ── */
     .char-multi-wrap, .card-char-wrap { position: relative; display: inline-flex; }
-    #charSelectBtn { background: #ecf0f1; color: #333; border: 1px solid #3d5166; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
-    .char-select-popup, .char-assign-popup { display: none; position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; background: #20303e; border: 1px solid #3d5166; border-radius: 6px; padding: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); min-width: 170px; max-height: 260px; overflow-y: auto; }
+    #charSelectBtn { background: #ecf0f1; color: #757575; border: 1px solid #3d5166; border-radius: 4px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; text-align: center; }
+    .char-select-caret { display: inline-block; font-size: 0.7rem; line-height: 1; margin-left: 4px; vertical-align: middle; }
+    .char-select-popup, .char-assign-popup { display: none; position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; background: #20303e; border: 1px solid #3d5166; border-radius: 6px; padding: 8px; box-shadow: 0 6px 16px rgba(0,0,0,0.4); min-width: 170px; max-width: calc(100vw - 20px); max-height: 260px; overflow-y: auto; overflow-x: hidden; box-sizing: border-box; }
     .char-assign-popup { left: auto; right: 0; }
     .char-select-popup.open, .char-assign-popup.open { display: block; }
     /* 人物選択ポップアップを開いている間は、そのカードを他のカードより前面に持ち上げて、
        下方向に開いたポップアップが次のカードのボタンに覆われないようにする */
     .timeline-item.char-popup-open { z-index: 40; }
-    .char-check-row { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 4px; cursor: pointer; color: #e2e8f0; font-size: 0.9rem; white-space: nowrap; }
+    .char-check-row { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 5px 6px; border-radius: 4px; cursor: pointer; color: #e2e8f0; font-size: 0.9rem; box-sizing: border-box; }
+    .char-check-row > span:last-child { min-width: 0; overflow-wrap: anywhere; }
     .char-check-row:hover { background: #3b4b5e; }
     .char-check-row .dot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 auto; border: 1px solid rgba(255,255,255,0.5); }
     .char-check-row input { accent-color: #3b82f6; margin: 0; }
@@ -369,9 +373,9 @@
     .btn-add-char-card { font-size: 0.9rem; line-height: 1; }
 
     /* ── キャラ絞り込みフィルタ ── */
-    .char-filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; align-items: center; }
+    .char-filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 12px; padding-top: 12px; border-top: 1px solid #3d5166; align-items: center; }
     .char-filter-bar .filter-label { font-size: 0.8rem; color: #cbd5e1; margin-right: 2px; }
-    .filter-chip { border: 1px solid #3d5166; background: #20303e; color: #cbd5e1; border-radius: 999px; padding: 3px 12px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .filter-chip { border: 1px solid #3d5166; background: #20303e; color: #cbd5e1; border-radius: 999px; max-width: 100%; padding: 3px 12px; font-size: 0.8rem; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: normal; overflow-wrap: anywhere; box-sizing: border-box; }
     .filter-chip .dot { width: 12px; height: 12px; border-radius: 50%; }
     .filter-chip.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
     .filter-chip-all.active { background: #64748b; border-color: #64748b; }
@@ -394,9 +398,11 @@
     .compare-table { border-collapse: separate; border-spacing: 0; width: 100%; }
     .compare-table th, .compare-table td { border-right: 1px solid #3d5166; border-bottom: 1px solid #3d5166; padding: 6px; vertical-align: top; text-align: left; }
     .compare-table thead th { position: sticky; top: 0; z-index: 2; background: #20303e; color: #fff; white-space: nowrap; text-align: center; border-top: 1px solid #3d5166; }
-    .compare-col-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
-    .compare-col-name { flex: 1; text-align: center; }
-    .compare-move-btn { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; background: transparent; color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; opacity: 0.7; }
+    .compare-col-head { position: relative; display: flex; align-items: center; justify-content: center; min-height: 28px; padding: 0 24px; box-sizing: border-box; }
+    .compare-col-name { display: flex; flex: 1 1 auto; align-items: center; justify-content: center; min-width: 0; text-align: center; line-height: 1.2; }
+    .compare-move-btn { position: absolute; top: 50%; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; transform: translateY(-50%); background: transparent; color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0; opacity: 0.7; }
+    .compare-move-prev { left: 0; }
+    .compare-move-next { right: 0; }
     .compare-move-btn:hover:not(:disabled) { opacity: 1; }
     .compare-move-btn:disabled { opacity: 0.2; cursor: default; }
     .compare-table .time-col { position: sticky; left: 0; z-index: 1; background: #20303e; color: #e2e8f0; font-weight: bold; white-space: nowrap; text-align: center; border-left: 1px solid #3d5166; }
@@ -439,7 +445,7 @@
     .compare-edit-actions .compare-edit-save { background: #dcfce7; border-color: #86efac; color: #16a34a; }
     .compare-edit-actions button:hover { filter: brightness(0.95); }
     .compare-card-actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 6px; }
-    .compare-card-actions button { background: rgba(255, 255, 255, 0.12); border: 1px solid var(--card-btn-border, #a1a1a1); border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; color: #444; }
+    .compare-card-actions button { display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.12); border: 1px solid var(--card-btn-border, #a1a1a1); border-radius: 4px; cursor: pointer; padding: 3px 6px; line-height: 1; color: #444; }
     .compare-card-actions button:hover { background: #e2e8f0; }
     /* 人物比較の🚩もリストと同じON/OFF表示にする */
     .compare-card-actions .compare-flag { font-size: 0.95rem; }
@@ -478,7 +484,7 @@
     body.view-mobile #modeCompareBtn.active ~ .compare-zoom-toggle { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
 
     /* ── 期間（開始〜終了）の入力 ── */
-    .range-toggle-btn { background: #ecf0f1; color: #333; border: 1px solid #3d5166; border-radius: 4px; padding: 8px 10px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+    .range-toggle-btn { background: #ecf0f1; color: #757575; border: 1px solid #3d5166; border-radius: 4px; padding: 8px 10px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; text-align: center; }
     .range-toggle-btn.active { background: #dbeafe; border-color: #3b82f6; color: #1e40af; font-weight: bold; }
     #endTimeInput { width: 80px; text-align: center; display: none; }
     #addEventGroup.range-mode #endTimeInput { display: inline-block; }
@@ -534,8 +540,8 @@
     .compare-table td.compare-lane-range .compare-edit-endrow { flex-wrap: wrap; }
     .compare-table td.compare-lane-range .compare-edit-time,
     .compare-table td.compare-lane-range .compare-edit-endtime { width: 100%; }
-    /* 「〜」は入力枠の色に揃え、10px下に配置する */
-    .range-sep-edit { display: inline-flex; align-items: center; color: #FFFFFF; position: relative; top: 8px; }
+    /* 「〜」は前後の時間入力欄と同じ行の縦中央に置く */
+    .range-sep-edit { display: inline-flex; align-items: center; align-self: center; color: #FFFFFF; }
     .timeline-item.no-character .range-sep-edit,
     .timeline-item.multi-character .range-sep-edit { color: #3d5166; }
     .edit-endtime { flex: 0 0 32px; text-align: center; }
@@ -558,8 +564,9 @@
     body.view-pc .timeline-item > .edit-controls { align-self: center; }
     body.view-pc .event-text { flex: 1 1 100%; margin-left: 10px; }
     body.view-pc .timeline-item { row-gap: 11px; }
-    /* 人物なしカードは、時間バッジとできごとを alignTimelineTimeBadges() が
-       「ひとかたまり」として同じ量だけ動かして中央に揃える（バッジだけ動かす旧仕様は廃止）。 */
+     /* 人物なしカードは、時間バッジとできごとを alignTimelineTimeBadges() が
+       「ひとかたまり」として同じ量だけ動かして中央に揃える（バッジだけ動かす旧仕様は廃止）。
+       スマホでは時間と本文が上下2行になるため、2行全体を中央に置く。 */
     body.view-pc .timeline-item.no-character .char-badges-empty,
     body.view-mobile .timeline-item.no-character .char-badges-empty { display: none; }
     body.view-mobile .timeline-item { flex-wrap: wrap; align-items: center; row-gap: 8px; }
@@ -576,9 +583,12 @@
     body.view-mobile .event-text { position: relative; z-index: 1; }
     body.view-mobile .event-text { flex: 1 1 100%; order: 4; }
      /* スマホ版：本文はカード左端ではなく、最初の人物名の文字位置から始める。
-       時間バッジ(60px)＋間隔(8px)＋人物バッジ内側余白(10px)ぶんを左へ空ける。 */
+       時間バッジ(60px)＋間隔(8px)＋人物バッジ内側余白(10px)ぶんを左へ空ける。
+       人物なしカードも同じ開始位置に揃える（人物バッジがない場合も例外にしない）。 */
     body.view-mobile .event-text { margin-left: 78px; }
-    body.view-mobile .timeline-item.no-character .event-text { flex: 1 1 0; order: initial; margin-left: 0; }
+    /* 人物なしカードも、時間と本文をカード内の中央揃え対象として扱う。 */
+    body.view-mobile .timeline-item.no-character .time-badge,
+    body.view-mobile .timeline-item.no-character .event-text { align-self: center; }
     body.view-mobile .char-badge { flex: 0 1 auto; max-width: 100%; }
     body.view-mobile .char-badges { flex: 0 1 auto; max-width: 100%; }
     body.view-mobile .char-badges-empty { flex: 0 1 auto; }
@@ -589,17 +599,22 @@
     body.view-mobile .timeline-item.multi-character .char-badges .char-badge.badge-hidden { display: flex; }
     body.view-mobile .timeline-item.multi-character .badge-more { display: none; }
     body.view-mobile .timeline-item.multi-character .time-badge { align-self: flex-start; }
-    body.view-mobile .controls { flex: 1 1 100%; justify-content: flex-end; order: 5; }
-    /* 通常は1行（⬆︎⬇︎は✏️の左）。コネクタ増加でカード幅が圧迫され1行に収まらないカードだけ
-       JSが .moves-wrapped を付与し、⬆︎⬇︎を👁️🎨の下段へ回す。末尾に✕サイズの透明スペーサーを
-       置くことで、右寄せ時に⬆︎⬇︎が✕の下ではなく👁️🎨の下に揃う。 */
+     /* 操作列はカードの内容幅を上限にする。JSの折り返し判定に依存せず、幅不足時は
+       flex-wrap でカード内に留まるための最終防衛として width/max-width/min-width を固定する。 */
+     body.view-mobile .timeline-item > .controls { flex: 1 1 100%; width: 100%; max-width: 100%; min-width: 0; box-sizing: border-box; justify-content: flex-end; order: 5; }
+     /* 通常は1行（⬆︎⬇︎は✏️の左）。コネクタ増加でカード幅が圧迫され1行に収まらないカードだけ
+       JSが .moves-wrapped を付与し、⬆︎⬇︎を👁️🎨の下段へ回す。末尾に✕サイズのレイアウト用スペーサーを
+       置くことで、右寄せ時に⬆︎⬇︎が✕の下ではなく👁️🎨の下に揃う。スペーサーは文字を持たない要素にする。 */
     .controls-move-break { display: none; }
     .controls-move-spacer { display: none; }
     .controls.moves-wrapped { flex-wrap: wrap; }
     .controls.moves-wrapped .controls-move-break { display: block; flex: 0 0 100%; height: 0; order: 1; }
     .controls.moves-wrapped .btn-move-up,
     .controls.moves-wrapped .btn-move-down { order: 2; }
-    .controls.moves-wrapped .controls-move-spacer { display: inline-flex; order: 2; visibility: hidden; pointer-events: none; }
+    .controls.moves-wrapped .controls-move-spacer {
+      display: block; order: 2; flex: 0 0 31px; width: 31px; height: 25px;
+      pointer-events: none;
+    }
     body.view-mobile .timeline-item-inner.edit-mode { flex-wrap: wrap; }
     body.view-mobile .edit-text { flex: 1 1 100%; }
 
@@ -620,7 +635,7 @@
     /* メモパネル（キャラクター一覧の下へ移動） */
     .memo-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 0.83em; }
     .memo-header h2 { padding-bottom: 0; margin-bottom: 0; line-height: 1.2; }
-    .memo-conceal-btn { background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; padding: 4px 9px; font-size: 0.95rem; line-height: 1; }
+    .memo-conceal-btn { display: inline-flex; align-items: center; justify-content: center; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; padding: 4px 9px; font-size: 0.95rem; line-height: 1; }
     .memo-concealed-label { display: none; }
     #memoPanel.concealed #memoInput { display: none; }
     #memoPanel.concealed .memo-concealed-label { display: block; }
@@ -629,7 +644,6 @@
     textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 400px; line-height: 1.6; background: #fff; color: #333; padding: 10px; border-radius: 4px;}
 
     /* image_0.png のスタイルを再現するための調整 */
-    #characterSelect { background: #ecf0f1; color: #333; border-radius: 4px; width: auto; flex-grow: 1; }
     #timeInput { width: 80px; text-align: center; }
     #eventInput { flex-grow: 4; }
 
@@ -655,6 +669,7 @@
       z-index: 4000; max-width: min(92vw, 420px);
       background: #1f2937; color: #fff; border-radius: 10px;
       padding: 10px 16px; font-size: 14px; line-height: 1.5; text-align: center;
+      box-sizing: border-box; overflow-wrap: anywhere;
       box-shadow: 0 4px 14px rgba(0,0,0,0.28); cursor: pointer;
       opacity: 0; visibility: hidden; transition: opacity 0.18s ease;
     }
@@ -750,7 +765,7 @@
         <input type="text" id="endTimeInput" placeholder="終了">
         <button type="button" id="rangeToggleBtn" class="range-toggle-btn" onclick="toggleRangeMode()" title="開始〜終了の期間で登録">⏱ 期間</button>
         <div class="char-multi-wrap">
-          <button type="button" id="charSelectBtn" onclick="toggleCharSelectPopup(event)" title="登場人物を選ぶ（複数可）">人物 ▾</button>
+          <button type="button" id="charSelectBtn" onclick="toggleCharSelectPopup(event)" title="登場人物を選ぶ（複数可）">人物<span class="char-select-caret">▼</span></button>
           <div id="charSelectPopup" class="char-select-popup"></div>
         </div>
         <input type="text" id="eventInput" placeholder="できごと（必須）">
@@ -1713,7 +1728,22 @@
     // ボタンクリックでパレットの開閉を切り替える
     function toggleColorPalette(e) {
       e.stopPropagation();
-      document.getElementById('colorPalettePopup').classList.toggle('open');
+      const popup = document.getElementById('colorPalettePopup');
+      popup.classList.toggle('open');
+      if (popup.classList.contains('open')) fitPopupToViewport(popup);
+    }
+
+    // 絶対配置ポップアップを、左右10pxの余白を残して必ず画面内へ戻す。
+    function fitPopupToViewport(popup) {
+      popup.style.transform = '';
+      const rect = popup.getBoundingClientRect();
+      const margin = 10;
+      const minLeft = margin;
+      const maxRight = document.documentElement.clientWidth - margin;
+      let shift = 0;
+      if (rect.left < minLeft) shift = minLeft - rect.left;
+      else if (rect.right > maxRight) shift = maxRight - rect.right;
+      if (shift) popup.style.transform = `translateX(${Math.round(shift)}px)`;
     }
 
     // ポップアップ内にカラースウォッチを描画する
@@ -1862,6 +1892,7 @@
         popup.appendChild(sw);
       });
       popup.classList.add('open');
+      fitPopupToViewport(popup);
     }
 
     // キャラクターの色を変更し、そのキャラのカードバッジにも反映する
@@ -1886,9 +1917,10 @@
         const div = document.createElement('div');
         div.className = 'char-item';
         const isEditing = editingCharacterName !== null && char.name === editingCharacterName;
+        const isPlayer = playerCharacter && char.name === playerCharacter;
         const nameHtml = isEditing
           ? `<input type="text" class="char-name-edit" id="characterNameEdit-${index}" value="${escapeHtml(char.name)}" aria-label="キャラクター名" onkeydown="handleEditCharacterKeydown(event, ${index})">`
-          : `<div class="char-name">${escapeHtml(char.name)}</div>`;
+          : `<div class="char-name${isPlayer ? ' player-char-name' : ''}">${escapeHtml(char.name)}${isPlayer ? '<span class="player-you-tag">（あなた）</span>' : ''}</div>`;
         if (isEditing) {
           div.innerHTML = `
             <div class="char-color-dot" style="background: ${safeColor(char.color)}; color: ${safeColor(char.color)};"></div>
@@ -1933,9 +1965,9 @@
       const section = document.createElement('div');
       section.className = 'player-char-section';
       const validPlayer = playerCharacter && characters.some(c => c.name === playerCharacter);
-      const selectedLabel = validPlayer
-        ? `：<span class="player-char-selected-name">${escapeHtml(playerCharacter)}</span>`
-        : '';
+      const toggleLabel = validPlayer
+        ? `あなたは：<span class="player-char-selected-name">${escapeHtml(playerCharacter)}</span>`
+        : 'あなたのキャラクターを選択';
       const rows = characters.map((char, index) => {
         const isSel = validPlayer && char.name === playerCharacter;
         return `
@@ -1947,8 +1979,8 @@
       }).join('');
       section.innerHTML = `
         <button type="button" class="player-char-toggle${playerCharPopupOpen ? ' open' : ''}" onclick="togglePlayerCharPopup()">
-          <span>あなたのキャラクター${selectedLabel}</span>
-          <span class="player-char-caret">🔽</span>
+          <span>${toggleLabel}</span>
+          <span class="player-char-caret">▼</span>
         </button>
         <div class="player-char-list${playerCharPopupOpen ? ' open' : ''}">${rows}</div>
         <button type="button" class="btn-finish-charreg" onclick="finishCharRegistration()">キャラクター登録終了</button>
@@ -1970,7 +2002,7 @@
         div.className = 'char-item char-item-readonly';
         div.innerHTML = `
           <div class="char-color-dot" style="background: ${safeColor(char.color)}; color: ${safeColor(char.color)};"></div>
-          <div class="char-name${isPlayer ? ' player-char-name' : ''}">${escapeHtml(char.name)}</div>
+          <div class="char-name${isPlayer ? ' player-char-name' : ''}">${escapeHtml(char.name)}${isPlayer ? '<span class="player-you-tag">（あなた）</span>' : ''}</div>
         `;
         characterList.appendChild(div);
       });
@@ -2133,9 +2165,10 @@
     function renderCharSelectBtn() {
       const btn = document.getElementById('charSelectBtn');
       if (!btn) return;
-      if (newEventChars.length === 0) { btn.textContent = '人物 ▾'; return; }
-      if (newEventChars.length <= 2) { btn.textContent = newEventChars.join('・') + ' ▾'; return; }
-      btn.textContent = `${newEventChars.length}人選択 ▾`;
+      const caret = '<span class="char-select-caret">▼</span>';
+      if (newEventChars.length === 0) { btn.innerHTML = '人物' + caret; return; }
+      if (newEventChars.length <= 2) { btn.innerHTML = escapeHtml(newEventChars.join('・')) + caret; return; }
+      btn.innerHTML = `${newEventChars.length}人選択` + caret;
     }
 
     // 追加フォームの人物チェックを切り替える
@@ -2151,7 +2184,11 @@
       const popup = document.getElementById('charSelectPopup');
       const willOpen = !popup.classList.contains('open');
       closeAllCharPopups();
-      if (willOpen) { renderCharSelect(); popup.classList.add('open'); }
+      if (willOpen) {
+        renderCharSelect();
+        popup.classList.add('open');
+        fitPopupToViewport(popup);
+      }
     }
 
     // 開いている人物ポップアップをすべて閉じる
@@ -2243,6 +2280,7 @@
       if (!willOpen) return;
       renderCardCharPopup(index, suffix);
       popup.classList.add('open');
+      fitPopupToViewport(popup);
       // ポップアップが他カードのボタンに覆われないよう、カードを前面へ
       const popupItem = popup.closest('.timeline-item');
       if (popupItem) popupItem.classList.add('char-popup-open');
@@ -2289,6 +2327,7 @@
       if (popup) {
         renderCardCharPopup(index, suffix);
         popup.classList.add('open');
+        fitPopupToViewport(popup);
         const popupItem = popup.closest('.timeline-item');
         if (popupItem) popupItem.classList.add('char-popup-open');
       }
@@ -3404,7 +3443,7 @@
           ? `<span class="controls-move-break" aria-hidden="true"></span>
               ${canMoveUp ? `<button class="btn-move-up" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', -1)" title="1つ上へ移動"><span class="move-arrow-icon">⬆︎</span></button>` : ''}
               ${canMoveDown ? `<button class="btn-move-down" onclick="moveUnknownEventById('${sanitizeId(ev.id)}', 1)" title="1つ下へ移動"><span class="move-arrow-icon">⬇︎</span></button>` : ''}
-              <button class="controls-move-spacer" tabindex="-1" aria-hidden="true">✕</button>`
+              <span class="controls-move-spacer" aria-hidden="true"></span>`
           : '';
 
 
@@ -3465,12 +3504,13 @@
       applyMoveButtonWrap();
       alignControlsToShortestCard();
       alignTimelineTimeBadges();
+      requestAnimationFrame(alignTimelineTimeBadges);
     }
 
     // flex-wrapで時間が先頭行に配置されるビューでも、カード全体の上下中央へ実測補正する。
     // transformだけを使うため、横方向の並びやカード高さの計算には影響させない。
-    // 人物なしカードは「時間バッジ」と「できごと」が同じ行に並ぶため、2つを1つのかたまりとして
-    // 同じ量だけ動かし、かたまり全体の中心をカードの中心に合わせる
+    // 人物なしカードはスマホでは「時間バッジ」と「できごと」が上下に並ぶため、
+    // 2つを1つのかたまりとして同じ量だけ動かし、かたまり全体の中心をカードの中心に合わせる
     // （バッジだけ動かすと隣のできごととの行が崩れるため。右下の操作ボタンは動かさない）。
     function alignTimelineTimeBadges() {
       const visible = el => !!el && el.getBoundingClientRect().height > 0;
@@ -3551,11 +3591,15 @@
         const inner = innerByControls.get(c);
         if (pcView && inner && offset < 0) inner.style.paddingRight = `${-offset + 8}px`;
       });
-      // 3) 再度まとめて読み、transform をまとめて書く
-      const rects2 = controls.map(c => c.getBoundingClientRect().right);
+      // 3) 再度まとめて読み、カードの左右端を越えない範囲に移動量を制限してから transform を書く
+      const rects2 = controls.map(c => c.getBoundingClientRect());
+      const itemRects = controls.map(c => c.closest('.timeline-item').getBoundingClientRect());
       controls.forEach((c, i) => {
-        const adjustedOffset = Math.round(anchorRight - rects2[i]);
-        c.style.transform = adjustedOffset ? `translateX(${adjustedOffset}px)` : '';
+        const desiredOffset = Math.round(anchorRight - rects2[i].right);
+        const minOffset = Math.ceil(itemRects[i].left - rects2[i].left);
+        const maxOffset = Math.floor(itemRects[i].right - rects2[i].right);
+        const containedOffset = Math.min(maxOffset, Math.max(minOffset, desiredOffset));
+        c.style.transform = containedOffset ? `translateX(${containedOffset}px)` : '';
       });
     }
 
