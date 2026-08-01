@@ -119,7 +119,7 @@
     .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #3d5166; }
     /* 色丸は縮まないよう flex: 0 0 auto を付ける（付けないと長い名前に押されて横だけ潰れ、
        真円が楕円になる。ポップアップ側の .char-check-row .dot と同じ考え方） */
-    .char-color-dot { width: 19px; height: 19px; border-radius: 50%; border: 1px solid currentColor; flex: 0 0 auto; }
+    .char-color-dot { width: 18px; height: 18px; border-radius: 50%; border: 1px solid currentColor; flex: 0 0 auto; }
     /* キャラ名は残り幅いっぱいを使い、長い名前は折り返す。
        min-width: 0 が無いと「最小幅＝名前の幅」となって行がはみ出し、代わりに色丸が潰れる。
        word-break: break-all は区切りのない長い英数字名でも必ず折り返すため（.event-text と同じ方針）。 */
@@ -396,7 +396,7 @@
     .compare-table thead th { position: sticky; top: 0; z-index: 2; background: #20303e; color: #fff; white-space: nowrap; text-align: center; border-top: 1px solid #3d5166; }
     .compare-col-head { display: flex; align-items: center; justify-content: space-between; gap: 4px; }
     .compare-col-name { flex: 1; text-align: center; }
-    .compare-move-btn { background: rgba(255, 255, 255, 0.12); color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; opacity: 0.7; }
+    .compare-move-btn { display: inline-flex; align-items: center; justify-content: center; vertical-align: middle; background: transparent; color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0 2px; opacity: 0.7; }
     .compare-move-btn:hover:not(:disabled) { opacity: 1; }
     .compare-move-btn:disabled { opacity: 0.2; cursor: default; }
     .compare-table .time-col { position: sticky; left: 0; z-index: 1; background: #20303e; color: #e2e8f0; font-weight: bold; white-space: nowrap; text-align: center; border-left: 1px solid #3d5166; }
@@ -1092,7 +1092,7 @@
       '#a78bfa', // violet-400
       '#c084fc', // purple-400
       '#f472b6', // pink-400
-      '#caa172'  // stone（カスタム茶色）
+      '#a8a29e'  // stone-400
     ];
     let selectedCharColor = '#60a5fa'; // 初期選択は blue-400
     // 旧パレット（Tailwind 500系）→ 新パレット（400系）の対応表。
@@ -1112,8 +1112,7 @@
       '#8b5cf6': '#a78bfa',
       '#a855f7': '#c084fc',
       '#ec4899': '#f472b6',
-      '#78716c': '#caa172',
-      '#a8a29e': '#caa172'
+      '#78716c': '#a8a29e'
     };
     // カード色ごとのボタン枠線色（最終調整済みの確定値）。照合は小文字に正規化して行う。
     // 末尾2件は無所属カード・複数人物カードの背景色に対応する。
@@ -1131,7 +1130,7 @@
       '#a78bfa': '#b9a5fa', // violet
       '#c084fc': '#d19afb', // purple
       '#f472b6': '#f78ac6', // pink
-      '#caa172': '#d6b48c', // stone
+      '#a8a29e': '#b9b4b0', // stone
       '#dcebf0': '#bfdbe4', // 複数人物カード
       '#c3cddb': '#aab8cc'  // 人物なし（不詳）カード
     };
