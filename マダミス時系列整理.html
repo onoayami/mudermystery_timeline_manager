@@ -33,6 +33,9 @@
     @media (hover: none) and (pointer: coarse) {
       body { cursor: pointer; }
     }
+    /* 🔵20: 箱の寸法計算を全要素で border-box に統一（パディング・枠を含めた幅で計算）。
+       個別の box-sizing 指定と同じ挙動なので見た目は変わらない。 */
+    *, *::before, *::after { box-sizing: border-box; }
     .main-container { display: flex; flex-direction: column; gap: 15px; max-width: 1400px; margin: auto; }
     
     /* PC版（横並び）は body.view-pc で制御する */
@@ -74,7 +77,7 @@
     
     /* パネルの基本設定（image_0.pngに合わせて調整） */
     .panel { background: #2a394c; padding: 15px; border-radius: 8px; box-shadow: 0 3px 8px rgba(0,0,0,0.30); }
-    h2 { margin-top: 0; font-size: 1.1rem; padding-bottom: 5px; display: inline-block; }
+    .panel h2 { margin-top: 0; font-size: 1.1rem; padding-bottom: 5px; display: inline-block; }
     .session-heading { display: flex; align-items: center; gap: 6px; width: 100%; box-sizing: border-box; flex-wrap: wrap; margin-bottom: 0; }
     /* 「🎭 セッション名：」は使わず、両モードで「マーダーミステリー『…』」表記にする */
     .session-label { display: none; white-space: nowrap; }
@@ -113,9 +116,9 @@
     body.view-pc .side-column { flex: 0 0 300px; min-width: 0; }
     /* キャラクターパネル（新規） */
     #charPanel .input-group { flex-wrap: nowrap; justify-content: center; }
-    #newCharName { flex: 0 1 130px !important; min-width: 0; border: none; text-align: left; }
+    #charPanel #newCharName { flex: 0 1 130px; min-width: 0; border: none; text-align: left; }
     /* スマホ版のみ：キャラ名入力欄を少し広げる */
-    body.view-mobile #newCharName { flex: 0 1 220px !important; }
+    body.view-mobile #charPanel #newCharName { flex: 0 1 220px; }
     .char-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-bottom: 1px solid #3d5166; }
     /* 色丸は縮まないよう flex: 0 0 auto を付ける（付けないと長い名前に押されて横だけ潰れ、
        真円が楕円になる。ポップアップ側の .char-check-row .dot と同じ考え方） */
@@ -127,7 +130,11 @@
     .btn-delete-char { background: #fee2e2; color: #ef4444; border: none; border-radius: 4px; cursor: pointer; }
     .btn-unlock-char { background: #fef9c3; }
     .btn-delete-char, .btn-recolor, .btn-edit-char { flex: 0 0 25px; width: 25px; height: 21px; box-sizing: border-box; padding: 0; font-size: 0.8rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; }
+    /* モノクロ記号（✓✕↩︎🔐🔓など）は字形ごとにベースライン付近の高さがバラつくため、
+       align-items:center で「文字の枠」を中央に置いても絵柄が約0.7〜0.8px下寄りに見える（🔵21実測）。
+       視覚的な中心を合わせる1px補正。※カラー絵文字はズレ0なので本来不要。将来SVGアイコン化すれば削除可。 */
     .char-action-icon { position: relative; top: 1px; display: block; line-height: 1; }
+    /* ↩︎（取消）は他のモノクロ記号よりさらに上寄り字形のため2px。目視調整値で、増やすと上へ行き過ぎる（🔵21）。 */
     .btn-cancel-char .char-action-icon { top: 2px; }
     .btn-recolor { background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; }
     .btn-recolor:hover { background: #dbe4e8; }
@@ -184,12 +191,17 @@
     .death-time-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; flex-wrap: wrap; }
     .death-label-wrap { display: inline-flex; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
     #deathLabelDisplay { min-width: 0; overflow-wrap: anywhere; }
-    .death-label-edit-btn { background: transparent; border: none; padding: 0; cursor: pointer; font-size: 0.95rem; line-height: 1; display: inline-flex; align-items: center; position: relative; top: 2px; }
+    /* 再レビュー指摘6：19×15.2px しかなくタップしづらかったため 44×44px を確保する。
+       見た目の位置を変えないよう、背景は透明のまま当たり判定だけを広げる */
+    .death-label-edit-btn { background: transparent; border: none; padding: 0; cursor: pointer; font-size: 0.95rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 44px; min-height: 44px; position: relative; top: 2px; }
     .death-label-edit-btn.editing { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
     .death-label-input { width: 8em; min-width: 0; padding: 3px 5px !important; font-size: 0.85rem !important; }
-    .death-range { display: inline-flex; align-items: center; background: #64748b; border: 1px solid #64748b; border-radius: 4px; padding: 0 5px; }
-    .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 8px 4px; min-height: 44px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
-    .death-range select:focus { outline: none; }
+    /* 🔴2・案A：入りきらなければ折り返し・縮めるようにして、スマホ幅で画面外へ突き抜けないようにする */
+    .death-range { display: inline-flex; align-items: center; flex-wrap: wrap; min-width: 0; max-width: 100%; box-sizing: border-box; background: #64748b; border: 1px solid #64748b; border-radius: 4px; padding: 0 5px; }
+    .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 8px 4px; min-width: 44px; min-height: 44px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
+    /* 再レビュー指摘6：outline:none を廃止。キーボード操作位置が見えないとselectを追えなくなる。
+       マウス操作時に枠が出ないよう :focus ではなく :focus-visible を使う */
+    .death-range select:focus-visible { outline: 3px solid #facc15; outline-offset: 3px; }
     .death-range select option { background: #2a394c; color: #e2e8f0; }
     .death-range .colon { color: #cbd5e1; padding: 0 1px; position: relative; top: -1px; }
     .death-range .tilde { color: #cbd5e1; padding: 0 4px; line-height: 1; }
@@ -205,7 +217,8 @@
     .help-modal h4 { margin: 16px 0 4px; color: #1e40af; }
     .help-modal ul { margin: 4px 0 10px; padding-left: 20px; }
     .help-modal li { margin-bottom: 4px; }
-    .help-close { position: absolute; top: 12px; right: 12px; background: #f1f5f9; border: none; border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 1rem; color: #334155; }
+    /* 再レビュー指摘6：30×30px → 44×44px */
+    .help-close { position: absolute; top: 12px; right: 12px; background: #f1f5f9; border: none; border-radius: 6px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; cursor: pointer; font-size: 1rem; color: #334155; }
     .help-close:hover { background: #e2e8f0; }
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
@@ -253,7 +266,7 @@
     .controls { display: flex; gap: 4px; flex-wrap: wrap; }
     .controls button { display: inline-flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.12); border: 1px solid var(--card-btn-border, #a1a1a1); border-radius: 4px; cursor: pointer; padding: 4px 7px; color: #444; }
     .controls button:hover { background: #e2e8f0; }
-    .btn-delete { background: #fee2e2 !important; color: #ef4444 !important; border-color: #fca5a5 !important; }
+    .controls .btn-delete { background: #fee2e2; color: #ef4444; border-color: #fca5a5; }
     /* 👁️トグル時、右側の🎨とのボタン入れ替わりで👁️の位置がズレないよう、
        ✕ボタンの幅を🎨と同じ31pxに固定する */
     .controls .btn-delete { box-sizing: border-box; min-width: 31px; display: inline-flex; align-items: center; justify-content: center; }
@@ -303,6 +316,8 @@
       color: #3B3B3B; box-sizing: border-box; min-width: 31px;
       display: inline-flex; align-items: center; justify-content: center;
     }
+    /* ⬆︎⬇︎はモノクロ記号で、枠の中央に置くと絵柄がわずかに上寄りに見える（🔵21実測：約-0.4px）。
+       視覚的な中心へ寄せる1px補正。ズレは全文字で最大0.84pxのため2px以上にはしないこと。将来SVG化で削除可。 */
     .btn-move-up .move-arrow-icon, .btn-move-down .move-arrow-icon { display: inline-block; position: relative; top: 1px; }
     /* 登録内容の編集フォーム */
     .timeline-item-inner.edit-mode { gap: 6px; }
@@ -394,7 +409,7 @@
     .timeline-mode-toggle .confirm-delete-toggle { margin-left: 10px; }
 
     /* ── 人物比較表示（時間を左端に、選択した人物を列に並べる） ── */
-    .compare-wrap { overflow-x: auto; max-width: 100%; border-radius: 6px; }
+    .compare-wrap { overflow-x: auto; overflow-y: auto; max-height: 80vh; max-width: 100%; border-radius: 6px; }
     .compare-table { border-collapse: separate; border-spacing: 0; width: 100%; }
     .compare-table th, .compare-table td { border-right: 1px solid #3d5166; border-bottom: 1px solid #3d5166; padding: 6px; vertical-align: top; text-align: left; }
     .compare-table thead th { position: sticky; top: 0; z-index: 2; background: #20303e; color: #fff; white-space: nowrap; text-align: center; border-top: 1px solid #3d5166; }
@@ -403,6 +418,8 @@
     .compare-move-btn { position: absolute; top: 50%; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; transform: translateY(-50%); background: transparent; color: inherit; border: none; cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 0; opacity: 0.7; }
     .compare-move-prev { left: 0; }
     .compare-move-next { right: 0; }
+    /* 🟡11: 見た目は24pxのまま、タップ判定だけ44px四方に広げる（絶対配置なので列幅は変わらない） */
+    .compare-move-btn::before { content: ""; position: absolute; top: 50%; left: 50%; width: 44px; height: 44px; transform: translate(-50%, -50%); }
     .compare-move-btn:hover:not(:disabled) { opacity: 1; }
     .compare-move-btn:disabled { opacity: 0.2; cursor: default; }
     .compare-table .time-col { position: sticky; left: 0; z-index: 1; background: #20303e; color: #e2e8f0; font-weight: bold; white-space: nowrap; text-align: center; border-left: 1px solid #3d5166; }
@@ -461,8 +478,9 @@
     /* 「非表示設定中アイテムを不可視化」はリスト・比較の両ビューで常に表示する。
        並び固定・表示倍率は人物比較ビュー専用のまま非表示にする */
     .compare-order-fixed-toggle, .compare-zoom-toggle { display: none; }
-    #modeCompareBtn.active ~ .compare-order-fixed-toggle { display: inline-flex; }
-    #modeCompareBtn.active ~ .compare-zoom-toggle { display: inline-flex; }
+    /* 🟡14: 兄弟セレクタ(~)依存をやめ、親の状態(.compare-active)で判定（中の構造を変えても壊れない） */
+    .timeline-mode-toggle.compare-active .compare-order-fixed-toggle,
+    .timeline-mode-toggle.compare-active .compare-zoom-toggle { display: inline-flex; }
     /* 「表示倍率」は「人物の並びを固定する」から少し離す */
     .timeline-mode-toggle .compare-zoom-toggle { margin-left: 22px; }
     /* 人物比較の表示倍率ボタン */
@@ -480,8 +498,8 @@
     /* スマホ版：「カード削除時に確認画面を表示」も下二つと同じく独立した行に落とし、
        [リスト/人物比較]との間隔を、下の設定同士と同じ8pxに揃える */
     body.view-mobile .timeline-mode-toggle .confirm-delete-toggle:not(.compare-order-fixed-toggle) { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
-    body.view-mobile #modeCompareBtn.active ~ .compare-order-fixed-toggle { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
-    body.view-mobile #modeCompareBtn.active ~ .compare-zoom-toggle { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
+    body.view-mobile .timeline-mode-toggle.compare-active .compare-order-fixed-toggle,
+    body.view-mobile .timeline-mode-toggle.compare-active .compare-zoom-toggle { flex-basis: 100%; margin-left: 0; margin-top: 8px; }
 
     /* ── 期間（開始〜終了）の入力 ── */
     .range-toggle-btn { background: #ecf0f1; color: #757575; border: 1px solid #3d5166; border-radius: 4px; padding: 8px 10px; cursor: pointer; font-size: 0.85rem; white-space: nowrap; text-align: center; }
@@ -544,7 +562,7 @@
     .range-sep-edit { display: inline-flex; align-items: center; align-self: center; color: #FFFFFF; }
     .timeline-item.no-character .range-sep-edit,
     .timeline-item.multi-character .range-sep-edit { color: #3d5166; }
-    .edit-endtime { flex: 0 0 32px; text-align: center; }
+    .edit-endtime { flex: 0 0 auto; width: 32px; text-align: center; }
     /* リストビューの終了ボックスだけ幅を倍に（人物比較の 92px はそのまま） */
     .timeline-item-inner.edit-mode .edit-endtime { width: 64px; box-sizing: border-box; }
 
@@ -635,13 +653,18 @@
     /* メモパネル（キャラクター一覧の下へ移動） */
     .memo-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 0.83em; }
     .memo-header h2 { padding-bottom: 0; margin-bottom: 0; line-height: 1.2; }
-    .memo-conceal-btn { display: inline-flex; align-items: center; justify-content: center; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; padding: 4px 9px; font-size: 0.95rem; line-height: 1; }
+    /* 再レビュー指摘6：39×25.2px → 44×44px */
+    .memo-conceal-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 44px; min-height: 44px; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; padding: 4px 9px; font-size: 0.95rem; line-height: 1; }
+    /* メモの保存状態表示（保存中／保存済み／未保存）。見出しと👁️の間に置く */
+    .memo-save-state { margin-left: auto; margin-right: 8px; font-size: 0.75rem; color: #94a3b8; white-space: nowrap; }
+    .memo-save-state.state-saved { color: #4ade80; }
+    .memo-save-state.state-unsaved { color: #fca5a5; font-weight: bold; }
     .memo-concealed-label { display: none; }
     #memoPanel.concealed #memoInput { display: none; }
     #memoPanel.concealed .memo-concealed-label { display: block; }
     #memoPanel.concealed .memo-conceal-btn { background: #cbd5e1; color: #475569; border-color: #94a3b8; filter: grayscale(0.65); opacity: 0.75; }
     #memoInput { min-height: 260px; }
-    textarea { width: 100%; box-sizing: border-box; resize: vertical; min-height: 400px; line-height: 1.6; background: #fff; color: #333; padding: 10px; border-radius: 4px;}
+    #memoInput { width: 100%; box-sizing: border-box; resize: vertical; line-height: 1.6; background: #fff; color: #333; padding: 10px; border-radius: 4px;}
 
     /* image_0.png のスタイルを再現するための調整 */
     #timeInput { width: 80px; text-align: center; }
@@ -690,6 +713,15 @@
       .top-bar, .controls, .btn-help, .memo-conceal-btn,
       .timeline-mode-toggle { display:none !important; }
       .panel, .timeline-item { box-shadow:none;break-inside:avoid; }
+      /* 🔴3・案A：印刷でも背景色（人物の色分け・死亡推定時刻の赤いバー・フラグ帯）を保持する */
+      .timeline-item, .timeline-item::before, .timeline-item::after,
+      .char-badge, .compare-card, .compare-card::before, .compare-range-fill,
+      .char-color-dot, .filter-chip .dot {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      /* 🟡5・案A：画面では縦スクロールで見出しを固定するが、印刷時は解除して全体を出力する（1画面分で切れないように） */
+      .compare-wrap { max-height: none; overflow: visible; }
     }
     /* §9: ハイコントラスト */
     @media (forced-colors: active) {
@@ -700,8 +732,10 @@
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         scroll-behavior:auto !important;
-        transition-duration:0.01ms !important;
-        animation-duration:0.01ms !important;
+        transition-duration:0s !important;
+        transition-delay:0s !important;
+        animation-duration:0s !important;
+        animation-delay:0s !important;
         animation-iteration-count:1 !important;
       }
     }
@@ -715,9 +749,10 @@
 
   <!-- 表示モード切替（スマホ版 / PC版）とデータ削除 -->
   <div class="top-bar">
-    <button type="button" id="sessionDataToggle" class="session-data-toggle" onclick="toggleSessionData()" aria-expanded="false">▶︎ セッションデータ</button>
+    <!-- ロック中も開閉できるようにする（この中に「⬆️ 書き出し」があり、閉じたままでは救出できなくなる） -->
+    <button type="button" id="sessionDataToggle" class="session-data-toggle" data-allow-when-locked onclick="toggleSessionData()" aria-expanded="false">▶︎ セッションデータ</button>
     <div id="sessionDataActions" class="data-actions">
-      <button type="button" class="btn-data" onclick="exportData()" title="すべての保存データをファイルに書き出します（バックアップ・共有用）">⬆️ 書き出し</button>
+      <button type="button" class="btn-data" data-allow-when-locked onclick="exportData()" title="すべての保存データをファイルに書き出します（バックアップ・共有用）">⬆️ 書き出し</button>
       <button type="button" class="btn-data" onclick="document.getElementById('importFileInput').click()" title="書き出したファイルを読み込んで、現在のデータを置き換えます">⬇️ 取り込み</button>
       <input type="file" id="importFileInput" accept="application/json,.json" style="display:none" onchange="importData(this)">
       <div class="data-actions-break"></div>
@@ -744,7 +779,7 @@
         <h2>👤 キャラクター一覧</h2>
         <div class="input-group" id="charInputGroup">
           <label for="newCharName" class="sr-only">キャラクター名</label>
-          <input type="text" id="newCharName" placeholder="キャラ名" style="flex: 1 1 60px;">
+          <input type="text" id="newCharName" placeholder="キャラ名">
           <div class="color-picker-wrap">
             <button type="button" id="colorPickerBtn" class="color-picker-btn" onclick="toggleColorPalette(event)" title="色を選ぶ"></button>
             <div id="colorPalettePopup" class="color-palette-popup"></div>
@@ -758,7 +793,9 @@
       <div id="memoPanel" class="panel">
         <div class="memo-header">
           <h2>📝 秘密のメモ</h2>
-          <button type="button" id="memoConcealBtn" class="memo-conceal-btn" onclick="toggleMemoConceal()" title="メモの表示/非表示">👁️</button>
+          <!-- 保存状態（保存中／保存済み／未保存）。aria-live で支援技術にも変化を伝える -->
+          <span id="memoSaveState" class="memo-save-state" role="status" aria-live="polite"></span>
+          <button type="button" id="memoConcealBtn" class="memo-conceal-btn" onclick="toggleMemoConceal()" aria-pressed="false" aria-label="メモの表示／非表示を切り替える" title="メモの表示/非表示">👁️</button>
         </div>
         <label for="memoInput" class="sr-only">秘密のメモ</label>
         <textarea id="memoInput" placeholder="自分の推理や、嘘をつくポイントなどを自由に書き込めます...（自動保存されます）"></textarea>
@@ -771,7 +808,7 @@
       <div class="timeline-header">
         <div class="timeline-title">
           <h2>⏳ 時系列整理</h2>
-          <button type="button" class="btn-help" id="helpOpenButton"
+          <button type="button" class="btn-help" id="helpOpenButton" data-allow-when-locked
             aria-haspopup="dialog" aria-controls="helpOverlay" aria-expanded="false"
             title="使い方"><span aria-hidden="true">？</span><span class="sr-only">使い方を開く</span></button>
         </div>
@@ -797,16 +834,17 @@
       <div class="input-group" id="addEventGroup">
         <label for="timeInput" class="sr-only">開始時刻</label>
         <input type="text" id="timeInput" placeholder="時間">
-        <span class="range-sep">〜</span>
+        <span class="range-sep" aria-hidden="true">〜</span>
+        <label for="endTimeInput" class="sr-only">終了時刻</label>
         <input type="text" id="endTimeInput" placeholder="終了">
-        <button type="button" id="rangeToggleBtn" class="range-toggle-btn" onclick="toggleRangeMode()" title="開始〜終了の期間で登録">⏱ 期間</button>
+        <button type="button" id="rangeToggleBtn" class="range-toggle-btn" onclick="toggleRangeMode()" aria-pressed="false" title="開始〜終了の期間で登録">⏱ 期間</button>
         <div class="char-multi-wrap">
-          <button type="button" id="charSelectBtn" onclick="toggleCharSelectPopup(event)" title="登場人物を選ぶ（複数可）">人物<span class="char-select-caret">▼</span></button>
+          <button type="button" id="charSelectBtn" onclick="toggleCharSelectPopup(event)" aria-expanded="false" title="登場人物を選ぶ（複数可）">人物<span class="char-select-caret" aria-hidden="true">▼</span></button>
           <div id="charSelectPopup" class="char-select-popup"></div>
         </div>
         <label for="eventInput" class="sr-only">できごと（必須）</label>
-        <input type="text" id="eventInput" placeholder="できごと（必須）">
-        <button type="button" id="flagToggleBtn" class="btn-flag" onclick="toggleNewFlag()" title="重要フラグを付けて追加">🚩</button>
+        <input type="text" id="eventInput" placeholder="できごと（必須）" required aria-required="true">
+        <button type="button" id="flagToggleBtn" class="btn-flag" onclick="toggleNewFlag()" aria-pressed="false" aria-label="重要フラグを付けて追加" title="重要フラグを付けて追加">🚩</button>
         <button type="button" class="btn-add" onclick="addEvent()">追加</button>
       </div>
       <div id="charFilterBar" class="char-filter-bar"></div>
@@ -841,7 +879,7 @@
   <div id="helpOverlay" class="help-overlay" role="dialog"
     aria-modal="true" aria-labelledby="helpTitle" aria-hidden="true">
     <div class="help-modal" tabindex="-1">
-      <button type="button" class="help-close" aria-label="使い方を閉じる">✕</button>
+      <button type="button" class="help-close" data-allow-when-locked aria-label="使い方を閉じる">✕</button>
       <h3 id="helpTitle">❓ 使い方 / チュートリアル</h3>
 
       <h4>📌 基本の登録方法</h4>
@@ -1010,35 +1048,53 @@
         Object.values(KEYS).map(key => [key, safeGet(key)])
       );
     }
-    function restoreSnapshot(snapshot) {
-      for (const key of Object.values(KEYS)) { try { localStorage.removeItem(key); } catch(e){} }
-      for (const [key, value] of Object.entries(snapshot)) {
-        if (value !== null) { try { localStorage.setItem(key, value); } catch(e){} }
-      }
+    // 削除も失敗を握り潰さない（再レビュー指摘1・3）。mutator 内から呼ぶと mutateStorage が
+    // 例外を受けてロールバックへ回すため、一括削除でも「消えたのに rev が進まない」状態を作らない。
+    function removeKeyOrThrow(key) {
+      try { localStorage.removeItem(key); }
+      catch (error) { throw new Error(`${key} の削除に失敗しました`, { cause: error }); }
     }
-    let editingLockedByConflict = false;
-    function lockEditingAfterConflict() {
-      editingLockedByConflict = true;
-      editingId = null;
-      editingTimeId = null;
+    // 保存前状態への復元を試み、どこで失敗したかを返す（再レビュー指摘3）。
+    // 以前は例外を握り潰していたため、途中までしか戻っていなくても「戻しました」と誤案内していた。
+    function restoreSnapshot(snapshot) {
+      const errors = [];
+      for (const key of Object.values(KEYS)) {
+        const value = snapshot[key];
+        try {
+          // 元々存在しなかったキーだけ削除。存在したキーは「上書き」で戻す（先に消さない）。
+          // 容量超過などで setItem が失敗しても、消していなければ既存の値はそのまま残る（🔴1・案A）。
+          if (value === null || value === undefined) localStorage.removeItem(key);
+          else localStorage.setItem(key, value);
+        } catch (error) {
+          errors.push({ key, phase: value == null ? 'remove' : 'restore', error });
+        }
+      }
+      return { ok: errors.length === 0, errors };
     }
     function mutateStorage(mutator) {
+      if (!canEdit()) return false; // 競合・保存不可・復元失敗後は一切書き込まない（再レビュー指摘2）
       const currentRev = safeGet(KEYS.rev) || '0';
       if (currentRev !== lastKnownRev) {
-        showStorageConflictBar();
-        lockEditingAfterConflict();
+        enterConflictMode();
         return false;
       }
       const backup = storageSnapshot();
       try {
         mutator();
         const nextRev = String((Number(currentRev) || 0) + 1);
-        if (!safeSet(KEYS.rev, nextRev)) throw new Error('rev保存失敗');
+        if (!safeSet(KEYS.rev, nextRev)) throw new Error('世代番号の保存に失敗しました');
         lastKnownRev = nextRev;
         return true;
       } catch (error) {
-        try { restoreSnapshot(backup); } catch (e) { console.warn('復元失敗', e); }
-        alert('保存に失敗したため、保存前の状態へ戻しました。');
+        console.warn('保存に失敗しました', error);
+        const restored = restoreSnapshot(backup);
+        if (restored.ok) {
+          alert('保存に失敗したため、保存前のデータへ戻しました。');
+        } else {
+          // 復元も失敗＝ストレージ上のデータが不整合の可能性がある。成功を装わず、編集を止めて救出を促す
+          console.warn('保存前状態の復元にも失敗しました', restored.errors);
+          enterRestoreFailureMode();
+        }
         return false;
       }
     }
@@ -1073,29 +1129,80 @@
     window.addEventListener('error', showFatalErrorNotice);
     window.addEventListener('unhandledrejection', showFatalErrorNotice);
 
-    // --- 別タブ・別端末での保存を検知して警告する（レビュー指摘3・5対応） ---
-    // 保存は localStorage への丸ごと上書きのため、同じHTMLを複数タブで開いて書き込むと後勝ちで消える。
-    // 警告バーを出して手動リロードを促す（自動リロードは編集中の入力を失うため行わない）。
-    // storage イベント（他タブの書き込みで発火）と、guardedSet の世代不一致検知の両方から呼ばれる。
-    function showStorageConflictBar() {
-      if (document.getElementById('storageConflictBar')) return; // 表示は1回だけ
+    // --- 編集ロック（再レビュー指摘2・3・5対応） ---
+    // 「これ以上書き込んではいけない状態」を1つの真偽値で表し、全変更経路の入口（mutateStorage）と
+    // 個別の変更関数の先頭で canEdit() を確認する。以前はロック変数に代入するだけで誰も見ておらず、
+    // 競合警告後も一括削除・インポート・各種設定を操作できてしまっていた。
+    // ロック時は DOM も無効化するが、DOM 経由でない呼び出し（コンソール・タイマー・イベント委譲）も
+    // canEdit() で止まるため、二重に防いでいる。
+    // data-allow-when-locked を持つ操作（書き出し・再読み込み）だけはロック対象外にして、
+    // 現在の内容をファイルへ救出できる道を必ず残す。
+    let editingLocked = false;
+    function canEdit() { return !editingLocked; }
+    function disableEditingUI() {
+      try {
+        document.querySelectorAll('button, input, select, textarea').forEach(el => {
+          if (!el.matches('[data-allow-when-locked]')) el.disabled = true;
+        });
+      } catch (err) { console.warn('操作の停止に失敗しました', err); }
+    }
+    // 警告バーを出す（種類ごとに文言・色を変える）。表示は1回だけ。
+    function showAlertBar(id, message, withReload) {
+      if (document.getElementById(id)) return;
       try {
         const bar = document.createElement('div');
-        bar.id = 'storageConflictBar';
+        bar.id = id;
         bar.className = 'alert-bar';
-        bar.textContent = '⚠️ 別のタブ／端末でデータが更新されました。このまま書き込むと上書きで消えます。ページを再読み込みしてください。';
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.textContent = '再読み込み';
-        btn.onclick = () => location.reload();
-        bar.appendChild(btn);
-        document.body.prepend(bar);
+        bar.textContent = message;
+        if (withReload) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.textContent = '再読み込み';
+          btn.setAttribute('data-allow-when-locked', '');
+          btn.onclick = () => location.reload();
+          bar.appendChild(btn);
+        }
+        (document.body || document.documentElement).prepend(bar);
       } catch (err) { console.warn('警告バーの表示に失敗しました', err); }
     }
+    // 別タブ・別端末が先に書き込んだ（世代不一致 or storage イベント）
+    function enterConflictMode() {
+      if (editingLocked) return;
+      editingLocked = true;
+      editingId = null;
+      editingTimeId = null;
+      showAlertBar('storageConflictBar',
+        '⚠️ 別のタブ／端末でデータが更新されました。このタブの変更操作を停止しました。「⬆️ 書き出し」で今の内容を保存できます。ページを再読み込みしてください。', true);
+      disableEditingUI();
+    }
+    // 保存に失敗し、保存前状態への復元にも失敗した（ストレージが不整合の可能性）
+    function enterRestoreFailureMode() {
+      editingLocked = true;
+      editingId = null;
+      editingTimeId = null;
+      showAlertBar('restoreFailureBar',
+        '⚠️ 保存に失敗し、保存前の状態へ戻すこともできませんでした。保存データが不整合の可能性があります。変更操作を停止しました。「⬆️ 書き出し」で内容を書き出してから、ページを再読み込みしてください。', true);
+      disableEditingUI();
+    }
+    // localStorage 自体が使えない環境（プライベートモード・Cookieブロック・サンドボックス埋め込み）
+    function enterStorageFailureMode() {
+      editingLocked = true;
+      showAlertBar('storageUnavailableBar',
+        '⚠️ この環境では保存できません。変更操作を停止しました。「⬆️ 書き出し」でデータをファイルへ書き出してから、保存できるブラウザで開いてください。', false);
+      disableEditingUI();
+    }
+    // 後方互換：既存の呼び出し名を残しつつ、実体はロック付きの競合モードにする
+    function showStorageConflictBar() { enterConflictMode(); }
     window.addEventListener('storage', (e) => {
       // このアプリのキー以外（同一オリジンの別アプリ等）の変更は無視。key === null は clear() による全消去
       if (e.key !== null && !Object.values(KEYS).includes(e.key)) return;
-      showStorageConflictBar();
+      // 判定は mutateStorage と同じ「世代カウンタが自分の把握より進んでいるか」だけで行う。
+      // 単に storage イベントが来たことでロックすると、location.reload() の最中に
+      // 離脱する側のページが書き込んだ内容が新しいページへイベントとして届き、
+      // 自分自身の書き込みを競合と誤認して、普通の再読み込みごとに操作不能になる。
+      const rev = safeGet(KEYS.rev) || '0';
+      if (rev === lastKnownRev) return; // 同じ世代＝自分が把握済みの内容なので競合ではない
+      enterConflictMode();
     });
 
     // --- 画面上端の一時通知（トースト。変更4） ---
@@ -1289,9 +1396,13 @@
     // ※旧データ（character 単数）→ characters 配列への後方互換移行は normalizeEvents() 内で行っている
     // --- ID基盤（ID化 Phase 1）: イベントを配列の位置（index）ではなくIDで特定できるようにする ---
     // IDの生成（重複しないランダムな文字列。古いブラウザでも動くよう予備の方式も用意）
+    let _idSeq = 0;
     function genId() {
       try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
-      return 'ev-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+      // ※ crypto.randomUUID は HTTPS / localhost 限定。file:// 配布ではこちらが本流になる。
+      //   連番(_idSeq)を混ぜることで、同一ミリ秒に連続生成しても必ず異なるIDになる。
+      return 'ev-' + Date.now().toString(36) + '-' + (++_idSeq).toString(36)
+           + '-' + Math.random().toString(36).slice(2, 8);
     }
     // HTML属性に埋め込んでも安全な文字だけにする（英数字・ハイフン・アンダースコア以外を除去）
     function sanitizeId(id) { return String(id).replace(/[^a-zA-Z0-9_-]/g, ''); }
@@ -1309,8 +1420,22 @@
       });
     }
     // IDから events 配列内の現在位置を引く（見つからなければ -1）
-    // （クリック毎の線形探索 O(n)。現規模では十分。数千件を超えるならID→位置Mapのキャッシュ化を検討。レビュー指摘12）
-    function evIndexById(id) { return events.findIndex(ev => ev && ev.id === id); }
+    // 索引（Map）を使うことで、カード枚数によらず一定時間で引ける。
+    // events の「並び替え」「増減」の直後は必ず索引を捨てる（sortEvents / persistEvents で evIdIndex=null）。レビュー指摘6
+    let evIdIndex = null;
+    function rebuildEvIdIndex() {
+      evIdIndex = new Map();
+      events.forEach((ev, i) => { if (ev && ev.id) evIdIndex.set(ev.id, i); });
+    }
+    function evIndexById(id) {
+      if (!evIdIndex) rebuildEvIdIndex();
+      const i = evIdIndex.get(id);
+      // 索引が古い場合に備えた安全網：指す先のIDが一致しなければ作り直して引き直す
+      if (i !== undefined && events[i] && events[i].id === id) return i;
+      rebuildEvIdIndex();
+      const j = evIdIndex.get(id);
+      return (j === undefined) ? -1 : j;
+    }
     ensureEventIds();
     let memoConcealed = safeGet(KEYS.memoConcealed) === 'true'; // 秘密のメモを非表示中か
     let deathFrom = safeGet(KEYS.deathFrom) || ''; // 死亡推定時刻（開始）
@@ -1322,7 +1447,7 @@
     let editingId = null; // 現在フル編集中のカードのID（nullは編集なし）
     let editingTimeId = null; // 時間バッジをクリックして時間だけ編集中のカードのID（nullはなし）
     let editingFocus = 'start'; // フル編集開始時にフォーカスする欄（start / end）
-    let charFilter = normalizeStringArray(loadJSON(KEYS.charFilter, [])).filter(name => characters.some(c => c.name === name)); // 絞り込み中の人物名（空なら全表示）
+    let charFilter = normalizeStringArray(loadJSON(KEYS.charFilter, [])); // 絞り込み中の人物名（空なら全表示）。孤立参照は後段の normalizeCharacterReferences() で除去する
     // フラグ絞り込み: 'all' / 'flag'（フラグつきのみ） / 'noflag'（フラグなしのみ）
     // 旧データ（true/false の2択）からの移行も行う
     let flagFilter = (() => {
@@ -1332,7 +1457,7 @@
     })();
     let timelineMode = safeGet(KEYS.timelineMode) || 'list'; // 時系列の表示モード（list / compare）
     let hideConcealedInCompare = safeGet(KEYS.showConcealedCompare) === 'true';
-    let compareOrder = normalizeStringArray(loadJSON(KEYS.compareOrder, [])).filter(name => characters.some(c => c.name === name)); // 人物比較ビュー専用の列の並び順（キャラ一覧の順序とは独立）
+    let compareOrder = normalizeStringArray(loadJSON(KEYS.compareOrder, [])); // 人物比較ビュー専用の列の並び順（キャラ一覧の順序とは独立）。孤立参照は後段で除去
     let compareOrderFixed = safeGet(KEYS.compareOrderFixed) === 'true'; // 比較ビューの人物順をリスト表示後も維持するか
     // 人物比較ビューだけの表示倍率（0.1〜2.0）。他の画面には影響しない
     const COMPARE_ZOOM_MIN = 0.1, COMPARE_ZOOM_MAX = 2, COMPARE_ZOOM_STEP = 0.1;
@@ -1343,6 +1468,28 @@
     let deathLabelEditing = false;
     // 表示モード（スマホ版 / PC版）。未設定なら画面幅で自動判定
     let currentView = safeGet(KEYS.view) || (window.innerWidth < 900 ? 'mobile' : 'pc');
+
+    // --- 人物参照の孤立除去（再レビュー指摘8） ---
+    // 手編集・別ツール製・古いバージョンで書き出したファイルを取り込むと、キャラクター一覧には
+    // 存在しない人物名がカードの登場人物・絞り込み・比較列順・「あなたのキャラクター」に残ることがある。
+    // 残ったままだと、色が引けないバッジ・押しても効かない絞り込み・空列といった不整合が起きるため、
+    // 「現存する人物名の集合」を基準に全参照を1か所で正規化する。
+    // 起動時（下の即時実行）と、インポート直後の reload 後の起動時に必ず通る。
+    // 保存はしない（読み取り専用の補正）。次回の通常保存で正しい形が書き込まれる。
+    function normalizeCharacterReferences() {
+      const known = new Set(characters.map(c => c.name));
+      const keep = names => normalizeStringArray(names).filter(name => known.has(name));
+      events.forEach(ev => {
+        const names = keep(ev.characters);
+        ev.characters = names;
+        ev.character = names[0] || '';
+      });
+      charFilter = keep(charFilter);
+      compareOrder = keep(compareOrder);
+      newEventChars = keep(newEventChars);
+      if (playerCharacter !== null && !known.has(playerCharacter)) playerCharacter = null;
+    }
+    normalizeCharacterReferences();
     const memoInput = document.getElementById('memoInput');
     const sessionNameInput = document.getElementById('sessionNameInput');
     const sessionNameDisplay = document.getElementById('sessionNameDisplay');
@@ -1359,16 +1506,10 @@
     // 呼び出し順には依存関係がある（例: updateTimelineModeBtn でモードボタンの文言が確定した後でないと
     // 2回目の applyView の折返し判定が正しく測れない）ため、順序を入れ替えないこと。
     function init() {
-      // §1-3 ストレージが使えない環境では警告バーを出す
-      if (!canUseLocalStorage()) {
-        try {
-          const bar = document.createElement('div');
-          bar.id = 'storageConflictBar';
-          bar.className = 'alert-bar';
-          bar.textContent = 'この環境では保存できません。データを書き出してから、保存可能なブラウザで開いてください。';
-          document.body.prepend(bar);
-        } catch (e) {}
-      }
+      // §1-3／再レビュー指摘5：保存できない環境では警告だけでなく変更操作を止める。
+      // 書き出しだけは data-allow-when-locked で有効に残すため、今の入力内容はファイルへ救出できる。
+      // 呼び出し位置は init() 末尾（全描画の後）。先に呼ぶと、描画で作られるボタンが無効化から漏れる。
+      const storageUsable = canUseLocalStorage();
       // メモと、キャラクター・色のスタイルを適用
       memoInput.value = safeGet(KEYS.memo) || '';
       renderSessionName();
@@ -1391,13 +1532,31 @@
       sortEvents();
       renderEvents();
       updateCardColorCss(); // キャラクターごとのCSSを生成
+      // 全描画が終わったこの位置でロックを適用する（動的生成ボタンも無効化対象に含めるため）
+      if (!storageUsable) enterStorageFailureMode();
     }
 
     // --- メモ帳の自動保存（キー入力ごとの書き込みをデバウンス） ---
+    // 保存状態を見出し横に表示する（再レビュー指摘4）。以前は保存失敗が画面に出ず、
+    // 「自動保存されます」というプレースホルダーだけを信じて再読み込みすると入力が消えていた。
     let memoSaveTimer = null;
+    let memoDirty = false; // 入力後まだ保存していない変更があるか
+    function setMemoSaveState(state) {
+      const el = document.getElementById('memoSaveState');
+      if (!el) return;
+      const label = { saving: '保存中…', saved: '保存済み', unsaved: '未保存' }[state] || '';
+      el.textContent = label;
+      el.className = 'memo-save-state' + (state ? ' state-' + state : '');
+    }
     memoInput.addEventListener('input', () => {
       clearTimeout(memoSaveTimer);
-      memoSaveTimer = setTimeout(() => guardedSet(KEYS.memo, memoInput.value), 300);
+      memoDirty = true;
+      setMemoSaveState('saving');
+      memoSaveTimer = setTimeout(() => {
+        const ok = guardedSet(KEYS.memo, memoInput.value);
+        if (ok) memoDirty = false;
+        setMemoSaveState(ok ? 'saved' : 'unsaved');
+      }, 300);
     });
     // タブを閉じる・リロード・アプリ切替の直前に、デバウンス待ちのメモを確実に保存する
     // （300ms以内に閉じられた場合の取りこぼし防止。pagehideはモバイルSafariでも確実に発火する）
@@ -1407,11 +1566,18 @@
     function flushMemoSave() {
       if (skipMemoFlush) return; // reload 直前は保存しない（巻き戻り防止。レビュー指摘19）
       clearTimeout(memoSaveTimer);
-      guardedSet(KEYS.memo, memoInput.value);
+      // 内容が変わっていないときは書き込まない。無条件に保存すると、タブ切替や普通の再読み込みだけで
+      // 世代カウンタが進み、他のタブが「別タブが更新した」と誤検知して操作不能になる。
+      if (memoDirty && memoInput.value !== (safeGet(KEYS.memo) || '')) {
+        const ok = guardedSet(KEYS.memo, memoInput.value);
+        if (ok) memoDirty = false;
+        setMemoSaveState(ok ? 'saved' : 'unsaved');
+      }
       // 編集途中のセッション名も閉じる直前に保存する（レビュー指摘7・案B）。
       // 普段の確定操作（✓ボタン / Enter2回）は変えず、閉じたときの入力消失だけを防ぐ
       if (sessionNameInput.style.display !== 'none') {
-        safeSet(KEYS.sessionName, sessionNameInput.value.trim());
+        const nextName = sessionNameInput.value.trim();
+        if (nextName !== (safeGet(KEYS.sessionName) || '')) safeSet(KEYS.sessionName, nextName);
       }
     }
     window.addEventListener('pagehide', flushMemoSave);
@@ -1482,7 +1648,8 @@
     function finishSessionNameEdit() {
       sessionNameEnterPending = false;
       clearTimeout(sessionNameEnterTimer);
-      safeSet(KEYS.sessionName, sessionNameInput.value.trim());
+      // セッション名も版番号の管理下に入れる（🟡4）。別タブが先に書き込んでいれば保存されず警告が出る。
+      guardedSet(KEYS.sessionName, sessionNameInput.value.trim());
       sessionNameInput.style.display = 'none';
       sessionNameDisplay.style.display = '';
       sessionNameDisplayPc.style.display = '';
@@ -1601,6 +1768,10 @@
       return btn.getBoundingClientRect().height > lineH * 1.5 + frame;
     }
     function applyView() {
+      // view-compact（PC選択のまま2カラムを保つ縮小表示）を許可する最小の画面幅。
+      // これ未満では左カラム300px＋時系列が入りきらず横スクロールが出るため、素のスマホ表示にする。
+      // 720px（テストのタブレット/200%相当）では2カラムが成立するので、それより下に閾値を置く。
+      const COMPACT_MIN_WIDTH = 640;
       let effective = 'mobile';
       if (currentView === 'pc') {
         // まずPCレイアウトを当てて、モードバーが潰れていないか測る
@@ -1611,8 +1782,12 @@
       document.body.classList.toggle('view-pc', effective === 'pc');
       document.body.classList.toggle('view-mobile', effective === 'mobile');
       // PC選択のまま自動縮小したときは、レイアウト（左のキャラ一覧・メモの2カラム）は
-      // PC版のまま保ち、時系列パネルの中身だけスマホ表示にする（view-compact）
-      document.body.classList.toggle('view-compact', currentView === 'pc' && effective === 'mobile');
+      // PC版のまま保ち、時系列パネルの中身だけスマホ表示にする（view-compact）。
+      // ただし2カラム（左300px＋時系列）が物理的に入らない狭幅では、2カラムを保つと
+      // 時系列パネルが潰れて横スクロールが出る。その幅では view-compact を付けず、
+      // 素のスマホ表示（1カラム）へ切り替える（左カラムも縦に積む）。
+      const twoColumnFits = window.innerWidth >= COMPACT_MIN_WIDTH;
+      document.body.classList.toggle('view-compact', currentView === 'pc' && effective === 'mobile' && twoColumnFits);
       // トグルボタンは「ユーザーが選んだ設定」を示す（自動縮小中もPC選択を保持）
       document.getElementById('btnPC').classList.toggle('active', currentView === 'pc');
       document.getElementById('btnMobile').classList.toggle('active', currentView === 'mobile');
@@ -1645,15 +1820,26 @@
     function exportData() {
       try {
         const data = { app: 'madamisu', version: 1, exportedAt: new Date().toISOString(), data: {} };
+        // ① まずストレージから読む。生の getItem は Cookieブロック等で SecurityError を投げ
+        //    「最後の救出手段」であるはずの書き出しごと失敗する。保護つき safeGet を使う（🟡17）。
         Object.values(KEYS).forEach(key => {
-          const val = localStorage.getItem(key);
+          const val = safeGet(key);
           if (val !== null) data.data[key] = val;
         });
+        // ② ストレージから取れなかった項目は、画面（メモリ上の状態）から補う。
+        //    保存やストレージ読み取りが失敗している状況でも、見えている内容をファイルへ救出できる（🔴1・案C）。
+        if (data.data[KEYS.events] === undefined) data.data[KEYS.events] = JSON.stringify(events);
+        if (data.data[KEYS.characters] === undefined) data.data[KEYS.characters] = JSON.stringify(characters);
+        if (data.data[KEYS.memo] === undefined && memoInput) data.data[KEYS.memo] = memoInput.value;
+        if (data.data[KEYS.sessionName] === undefined && sessionNameInput) {
+          const nameOnScreen = sessionNameInput.value.trim();
+          if (nameOnScreen) data.data[KEYS.sessionName] = nameOnScreen;
+        }
         const json = JSON.stringify(data, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        const sessionTitle = (safeGet(KEYS.sessionName) || '').trim() || 'マダミス';
+        const sessionTitle = (data.data[KEYS.sessionName] || '').trim() || 'マダミス';
         const safeSessionTitle = sessionTitle.replace(/[\\/:*?"<>|]/g, '_');
         const now = new Date();
         const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
@@ -1701,28 +1887,19 @@
           return;
         }
         if (!confirm('現在の保存データを、選んだファイルの内容で置き換えます。\nこの操作は元に戻せません。よろしいですか？')) return;
-        // 途中で失敗しても元に戻せるよう、既存の値を退避しておく
-        const backup = {};
-        // 退避の読み取りも保護（読めない環境では、この後の書き込み側 try が失敗を拾って中断する）
-        validKeys.forEach(k => { backup[k] = safeGet(k); });
-        try {
-          validKeys.forEach(k => localStorage.removeItem(k));
-          importable.forEach(k => {
+        // 世代確認・スナップショット退避・途中失敗時の復元は mutateStorage() に一元化する（再レビュー指摘1）。
+        // rev は mutateStorage 側が採番するため、取り込み対象からは外す（古いファイルの rev で巻き戻さない）。
+        const importKeys = validKeys.filter(k => k !== KEYS.rev);
+        const committed = mutateStorage(() => {
+          importKeys.forEach(removeKeyOrThrow);
+          importKeys.forEach(k => {
+            if (!(k in payload)) return;
             const v = payload[k];
-            if (typeof v === 'string') localStorage.setItem(k, v);
+            if (typeof v !== 'string') return; // 文字列以外は保存形式外なので取り込まない
+            if (!safeSet(k, v)) throw new Error(`${k} の取り込みに失敗しました`);
           });
-        } catch (e) {
-          console.warn('インポートに失敗しました', e);
-          // 部分的に書き換わった状態を、退避しておいた元の内容へ戻す
-          try {
-            validKeys.forEach(k => localStorage.removeItem(k));
-            validKeys.forEach(k => { if (backup[k] !== null) localStorage.setItem(k, backup[k]); });
-          } catch (restoreErr) {
-            console.warn('元データの復元にも失敗しました', restoreErr);
-          }
-          alert('インポートに失敗しました（ブラウザの容量制限などの可能性があります）。元のデータのままにしました。');
-          return;
-        }
+        });
+        if (!committed) return; // 競合・容量超過。警告表示とロールバックは mutateStorage が済ませている
         // 取り込んだデータに旧人物色（500系）が残っていれば、この時点で新色（400系）へ読み替える。
         // reload 後の起動時にも同じ処理が走るが、冪等なので二重に適用されても問題ない。
         migrateStoredCharacterColors();
@@ -1736,8 +1913,12 @@
     // すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除する
     function clearAllData() {
       if (!confirm('すべての保存データ（キャラクター・メモ・時系列・各種設定）を削除します。\nこの操作は元に戻せません。よろしいですか？\n\n※心配な場合は、いったんキャンセルして「⬆️ 書き出し」から\n今のセッションの記録を外部ファイルとして保存しておくこともできます。')) return;
-      try { Object.values(KEYS).forEach(k => localStorage.removeItem(k)); }
-      catch (e) { console.warn('データ削除に失敗しました', e); }
+      // 全削除も世代確認を通す（再レビュー指摘1）。別タブが先に書き込んでいたら中断して警告する。
+      // rev 自体は mutateStorage が採番し直すため、mutator 内では削除しない。
+      const committed = mutateStorage(() => {
+        Object.values(KEYS).filter(k => k !== KEYS.rev).forEach(removeKeyOrThrow);
+      });
+      if (!committed) return;
       skipMemoFlush = true; // reload で削除したメモが書き戻らないようにする（レビュー指摘19）
       location.reload();
     }
@@ -1745,18 +1926,18 @@
     // キャラクターとカード上の登場人物だけをすべて削除する（メモ・カード・各種設定は残す）
     function clearAllCharacters() {
       if (!confirm('登録したキャラクターをすべて削除します。\nカード・メモ・その他の設定は残ります。よろしいですか？')) return;
-      try {
-        events.forEach(ev => {
-          ev.characters = [];
-          ev.character = '';
-        });
-        safeSet(KEYS.events, JSON.stringify(events));
-        localStorage.removeItem(KEYS.characters);
-        localStorage.removeItem(KEYS.charFilter);
-        localStorage.removeItem(KEYS.compareOrder); // 旧キャラ名が比較ビューの列順に残らないよう掃除する（レビュー指摘16）
-        localStorage.removeItem(KEYS.playerCharacter); // プレーヤーキャラ選択も掃除
-        localStorage.removeItem(KEYS.charRegDone); // 登録終了状態も解除
-      } catch (e) { console.warn('キャラクター削除に失敗しました', e); }
+      // 保存が確定するまでメモリ上の events を書き換えない（再レビュー指摘1・4）。
+      // 以前は events を直接空にしてから safeSet していたため、別タブが先に「出来事を追加」していると
+      // 古い events（＝追加分を含まない）で上書きされ、新しい出来事が消えていた。
+      const nextEvents = events.map(ev => ({ ...ev, characters: [], character: '' }));
+      const committed = mutateStorage(() => {
+        if (!safeSet(KEYS.events, JSON.stringify(nextEvents))) throw new Error('events');
+        [KEYS.characters, KEYS.charFilter, KEYS.compareOrder,
+         KEYS.playerCharacter, KEYS.charRegDone].forEach(removeKeyOrThrow);
+      });
+      if (!committed) return;
+      events = nextEvents; // 保存成功後だけメモリ上の状態を確定する
+      skipMemoFlush = true;
       location.reload();
     }
 
@@ -1769,21 +1950,25 @@
     // 時系列（タイムライン）のカードだけをすべて削除する（キャラクターやメモは残す）
     function clearAllTimelineData() {
       if (!confirm('時系列（タイムライン）のカードをすべて削除します。\nキャラクターやメモは残ります。よろしいですか？')) return;
-      try {
-        localStorage.removeItem(KEYS.events);
-        localStorage.removeItem(KEYS.charFilter);
-        localStorage.removeItem(KEYS.flagFilter);
-      } catch (e) { console.warn('タイムライン削除に失敗しました', e); }
+      // 世代確認を通す（再レビュー指摘1）。別タブが先にカードを追加していたら中断して警告する。
+      const committed = mutateStorage(() => {
+        [KEYS.events, KEYS.charFilter, KEYS.flagFilter].forEach(removeKeyOrThrow);
+      });
+      if (!committed) return;
+      skipMemoFlush = true;
       location.reload();
     }
 
     // 秘密のメモの表示/非表示を切り替える
     function applyMemoConceal() {
       document.getElementById('memoPanel').classList.toggle('concealed', memoConcealed);
+      // 隠しているかを支援技術へ伝える（再レビュー指摘7）
+      document.getElementById('memoConcealBtn').setAttribute('aria-pressed', String(memoConcealed));
     }
     function toggleMemoConceal() {
-      memoConcealed = !memoConcealed;
-      safeSet(KEYS.memoConcealed, memoConcealed);
+      const next = !memoConcealed;
+      if (!guardedSet(KEYS.memoConcealed, String(next))) return; // 保存成功後だけ確定（再レビュー指摘4）
+      memoConcealed = next;
       applyMemoConceal();
     }
 
@@ -1987,28 +2172,43 @@
       if (characters[index].locked) return;
       const name = characters[index].name;
       if (!confirm(`キャラクター「${name}」を削除しますか？\nこの人物は各カードの登場人物から外れます（カード自体は残ります）。`)) return;
-      removeCharacterReferences(name);
-      newEventChars = newEventChars.filter(n => n !== name);
-      characters.splice(index, 1);
 
-      const ok = mutateStorage(() => {
-        if (!safeSet(KEYS.characters, JSON.stringify(characters))) throw new Error('characters');
-        if (!safeSet(KEYS.events, JSON.stringify(events))) throw new Error('events');
-        if (!safeSet(KEYS.charFilter, JSON.stringify(charFilter))) throw new Error('charFilter');
-        if (!safeSet(KEYS.compareOrder, JSON.stringify(compareOrder))) throw new Error('compareOrder');
-        if (!safeSet(KEYS.playerCharacter, playerCharacter || '')) throw new Error('playerCharacter');
+      // --- 保存が確定するまで、いまの状態は一切変更しない（🟡9） ---
+      // removeCharacterReferences はその場で書き換える作りなので、いったん書き換えて結果を控え、元へ戻す。
+      const prevEvents = events;
+      const prevCharFilter = charFilter;
+      const prevCompareOrder = compareOrder;
+      const prevPlayerChar = playerCharacter;
+
+      removeCharacterReferences(name); // ここで events / charFilter / compareOrder / playerCharacter が変わる
+      const nextEvents = events;
+      const nextCharFilter = charFilter;
+      const nextCompareOrder = compareOrder;
+      const nextPlayerChar = playerCharacter;
+      const nextChars = characters.filter((_, i) => i !== index);
+      const nextNewEventChars = newEventChars.filter(n => n !== name);
+
+      // いったん元へ戻してから保存を試す（保存成功後にまとめて確定する）
+      events = prevEvents; charFilter = prevCharFilter;
+      compareOrder = prevCompareOrder; playerCharacter = prevPlayerChar;
+
+      const committed = mutateStorage(() => {
+        if (!safeSet(KEYS.characters, JSON.stringify(nextChars))) throw new Error('characters');
+        if (!safeSet(KEYS.events, JSON.stringify(nextEvents))) throw new Error('events');
+        if (!safeSet(KEYS.charFilter, JSON.stringify(nextCharFilter))) throw new Error('charFilter');
+        if (!safeSet(KEYS.compareOrder, JSON.stringify(nextCompareOrder))) throw new Error('compareOrder');
+        if (!safeSet(KEYS.playerCharacter, nextPlayerChar || '')) throw new Error('playerCharacter');
       });
-      if (!ok) {
-        characters = normalizeCharacters(loadJSON(KEYS.characters, []));
-        events = normalizeEvents(loadJSON(KEYS.events, []));
-        charFilter = normalizeStringArray(loadJSON(KEYS.charFilter, []));
-        compareOrder = normalizeStringArray(loadJSON(KEYS.compareOrder, []));
-        playerCharacter = safeGet(KEYS.playerCharacter) || null;
-        renderCharacters();
-        updateCardColorCss();
-        renderEvents();
-        return;
-      }
+      if (!committed) return; // 失敗時は何も変わっていないので、戻す処理そのものが不要
+
+      // 保存成功後だけメモリ上の状態を確定する（newEventChars の戻し忘れも起こらない）
+      characters = nextChars;
+      events = nextEvents;
+      charFilter = nextCharFilter;
+      compareOrder = nextCompareOrder;
+      playerCharacter = nextPlayerChar;
+      newEventChars = nextNewEventChars;
+
       renderCharacters();
       updateCardColorCss();
       renderEvents();
@@ -2333,12 +2533,16 @@
         popup.classList.add('open');
         fitPopupToViewport(popup);
       }
+      // 開閉状態を支援技術へ伝える（再レビュー指摘7）
+      document.getElementById('charSelectBtn').setAttribute('aria-expanded', String(willOpen));
     }
 
     // 開いている人物ポップアップをすべて閉じる
     function closeAllCharPopups() {
       document.querySelectorAll('.char-select-popup.open, .char-assign-popup.open').forEach(p => p.classList.remove('open'));
       document.querySelectorAll('.timeline-item.char-popup-open').forEach(c => c.classList.remove('char-popup-open'));
+      const selectBtn = document.getElementById('charSelectBtn');
+      if (selectBtn) selectBtn.setAttribute('aria-expanded', 'false');
     }
 
     // --- キャラ絞り込みフィルタ（D-2） ---
@@ -2379,22 +2583,28 @@
         bar.appendChild(chip);
       });
     }
+    // 絞り込み・並び順の変更は「次の値を作る → 保存成功 → 代入 → 描画」の順で行う（再レビュー指摘4）。
+    // 先に代入してから保存すると、保存が失敗した絞り込みが画面上は反映済みに見え、再読み込みで消える。
     function toggleCharFilter(name) {
-      if (charFilter.includes(name)) charFilter = charFilter.filter(n => n !== name);
-      else charFilter.push(name);
-      guardedSet(KEYS.charFilter, JSON.stringify(charFilter));
+      const next = charFilter.includes(name)
+        ? charFilter.filter(n => n !== name)
+        : [...charFilter, name];
+      if (!guardedSet(KEYS.charFilter, JSON.stringify(next))) return; // 失敗時は現状維持（警告は保存側が出す）
+      charFilter = next;
       renderCharFilter();
       renderEvents();
     }
     function clearCharFilter() {
+      if (charFilter.length === 0) return;
+      if (!guardedSet(KEYS.charFilter, JSON.stringify([]))) return;
       charFilter = [];
-      guardedSet(KEYS.charFilter, JSON.stringify(charFilter));
       renderCharFilter();
       renderEvents();
     }
     function setFlagFilter(mode) {
-      flagFilter = flagFilter === mode ? 'all' : mode; // 同じチップを再度押すと解除
-      safeSet(KEYS.flagFilter, flagFilter);
+      const next = flagFilter === mode ? 'all' : mode; // 同じチップを再度押すと解除
+      if (!guardedSet(KEYS.flagFilter, next)) return;
+      flagFilter = next;
       renderCharFilter();
       renderEvents();
     }
@@ -2413,26 +2623,30 @@
     }
 
     // カードの登場人物ポップアップを開閉する（B-5：後から人物を追加/削除）
-    // suffix：同じ期間イベントの開始カードと終了カードはindexが同じので、idの重複を避けるため
+    // suffix：同じ期間イベントの開始カードと終了カードは同じIDなので、名札の重複を避けるため
     // 終了カード側だけ '-end' を付ける（レビュー指摘6）。未指定は空文字（開始/通常カード）。
-    function toggleCardCharPopup(e, index, suffix) {
+    // カードは「何番目か」ではなく「どのカードか（ID）」で指す方針に統一する（レビュー指摘18）。
+    function toggleCardCharPopupById(e, id, suffix) {
       e.stopPropagation();
       suffix = suffix || '';
-      const popup = document.getElementById(`charAssign-${index}${suffix}`);
+      const popup = document.getElementById(`charAssign-${sanitizeId(id)}${suffix}`);
+      if (!popup) return;
       const willOpen = !popup.classList.contains('open');
       closeAllCharPopups();
       if (!willOpen) return;
-      renderCardCharPopup(index, suffix);
+      renderCardCharPopupById(id, suffix);
       popup.classList.add('open');
       fitPopupToViewport(popup);
       // ポップアップが他カードのボタンに覆われないよう、カードを前面へ
       const popupItem = popup.closest('.timeline-item');
       if (popupItem) popupItem.classList.add('char-popup-open');
     }
-    function renderCardCharPopup(index, suffix) {
+    function renderCardCharPopupById(id, suffix) {
       suffix = suffix || '';
-      const popup = document.getElementById(`charAssign-${index}${suffix}`);
+      const popup = document.getElementById(`charAssign-${sanitizeId(id)}${suffix}`);
       if (!popup) return;
+      const index = evIndexById(id);
+      if (index < 0) return;
       if (characters.length === 0) {
         popup.innerHTML = '<div class="char-select-empty">先にキャラクターを登録してください</div>';
         return;
@@ -2446,14 +2660,16 @@
         row.innerHTML = `<input type="checkbox" ${checked}><span class="dot" style="background:${safeColor(char.color)}"></span><span>${escapeHtml(char.name)}</span>`;
         row.querySelector('input').addEventListener('change', (e) => {
           e.stopPropagation();
-          toggleCardChar(index, char.name, suffix);
+          toggleCardCharById(id, char.name, suffix);
         });
         popup.appendChild(row);
       });
     }
-    // カードの登場人物を追加/削除する
-    function toggleCardChar(index, name, suffix) {
+    // カードの登場人物を追加/削除する（IDから毎回いまの位置を引き直すので、並べ替え中でも正しいカードを指す）
+    function toggleCardCharById(id, name, suffix) {
       suffix = suffix || '';
+      const index = evIndexById(id);
+      if (index < 0) return;
       const list = eventCharNames(events[index]).slice();
       const pos = list.indexOf(name);
       if (pos >= 0) list.splice(pos, 1); else list.push(name);
@@ -2467,9 +2683,9 @@
       renderEvents();
       window.scrollTo(scrollX, scrollY);
       // 再描画でポップアップが作り直されるので、続けて操作できるよう開き直す
-      const popup = document.getElementById(`charAssign-${index}${suffix}`);
+      const popup = document.getElementById(`charAssign-${sanitizeId(id)}${suffix}`);
       if (popup) {
-        renderCardCharPopup(index, suffix);
+        renderCardCharPopupById(id, suffix);
         popup.classList.add('open');
         fitPopupToViewport(popup);
         const popupItem = popup.closest('.timeline-item');
@@ -2552,11 +2768,25 @@
     }
 
     // 不詳（時刻なし）カードの基本位置。実時刻（0〜1439分）より十分大きな値にして末尾側に置く
-    // 並べ替えに使う実効な時刻値。時刻ありはその分、不詳は手動位置（anchor）か基本位置(100000)
+    // ※比較ビューの lastTimeT（後方）もこの前提に依存しているため、変更時は両方を確認すること
+    const UNKNOWN_TIME_BASE = 100000;
+    // 並べ替えに使う実効な時刻値。時刻ありはその分、不詳は手動位置（anchor）か基本位置(UNKNOWN_TIME_BASE)
     function effectiveSortMinutes(ev) {
       const t = timeToMinutes(ev.time);
       if (t !== Infinity) return t;
-      return (typeof ev.anchor === 'number') ? ev.anchor : 100000;
+      return (typeof ev.anchor === 'number') ? ev.anchor : UNKNOWN_TIME_BASE;
+    }
+
+    // 手動並べ替えで「中間位置」を繰り返し取ると隙間が枯渇し、約53回で上下が同値になり順序が壊れる。
+    // これ以上隙間が狭くなったら振り直す閾値（🟡15）
+    const ANCHOR_MIN_GAP = 0.001;
+    // 不詳（時刻なし）カードの anchor を等間隔に振り直す（隙間が枯渇したときの復旧処理）
+    function reseatUnknownAnchors() {
+      const unknowns = events
+        .map((ev, i) => ({ ev, i, t: effectiveSortMinutes(ev) }))
+        .filter(x => timeToMinutes(x.ev.time) === Infinity)
+        .sort((a, b) => a.t - b.t);
+      unknowns.forEach((x, k) => { x.ev.anchor = UNKNOWN_TIME_BASE + k; });
     }
 
     // 早い順に並べ替える。同じ開始時刻では、単一時刻を先、期間を後にする。
@@ -2566,6 +2796,7 @@
         if (timeDiff !== 0) return timeDiff;
         return Number(isRangeEvent(a)) - Number(isRangeEvent(b));
       });
+      evIdIndex = null; // 並びが変わったので索引を捨てる（🟡6）
     }
 
     // --- 死亡推定時刻（トグル式） ---
@@ -2616,8 +2847,18 @@
       const tm = toMSel.value;
       deathFrom = (fh && fm) ? `${fh}:${fm}` : '';
       deathTo = (th && tm) ? `${th}:${tm}` : '';
-      safeSet(KEYS.deathFrom, deathFrom);
-      safeSet(KEYS.deathTo, deathTo);
+      // 開始・終了は必ずセットで保存する（片方だけ成功して「開始は新・終了は旧」の逆転範囲を作らない。🟡4）。
+      // 版番号の管理下にも入るため、別タブが先に書き込んでいたら保存されず警告が出る。
+      const okDeath = mutateStorage(() => {
+        if (!safeSet(KEYS.deathFrom, deathFrom)) throw new Error('deathFrom');
+        if (!safeSet(KEYS.deathTo, deathTo)) throw new Error('deathTo');
+      });
+      if (!okDeath) {
+        // 保存できなかったので、画面の値もストレージの内容へ戻す（保存済みに見せない）
+        deathFrom = safeGet(KEYS.deathFrom) || '';
+        deathTo = safeGet(KEYS.deathTo) || '';
+        applyDeathSelectValues();
+      }
       updateDeathWarn();
       if (deathEnabled) renderEvents();
     }
@@ -2650,6 +2891,8 @@
     function updateTimelineModeBtn() {
       document.getElementById('modeListBtn').classList.toggle('active', timelineMode === 'list');
       document.getElementById('modeCompareBtn').classList.toggle('active', timelineMode === 'compare');
+      // 兄弟セレクタ(~)依存をやめ、親要素に現在モードの目印を付ける（CSSはこれを見る。🟡14）
+      document.querySelector('.timeline-mode-toggle').classList.toggle('compare-active', timelineMode === 'compare');
     }
 
     // 人物比較の表示倍率を 0.1〜2.0 の範囲に丸める
@@ -2698,11 +2941,26 @@
       renderEvents();
     }
     function toggleCompareOrderFixed() {
-      compareOrderFixed = document.getElementById('compareOrderFixedToggle').checked;
-      safeSet(KEYS.compareOrderFixed, compareOrderFixed ? 'true' : 'false');
+      const toggle = document.getElementById('compareOrderFixedToggle');
+      const previousFixed = compareOrderFixed;
+      const previousOrder = [...compareOrder];
+      // normalizedCompareOrder() は現在の compareOrderFixed を見るため、いったん反映してから並びを作る
+      compareOrderFixed = toggle.checked;
       // ONにしたときはその時点の並びを確定させる。OFFに戻しても並びはそのまま維持し、矢印だけ動かせるようにする
-      compareOrder = normalizedCompareOrder();
-      guardedSet(KEYS.compareOrder, JSON.stringify(compareOrder));
+      const nextOrder = normalizedCompareOrder();
+      // 固定フラグと並び順は一体の設定なので、1回の保存としてまとめる（再レビュー指摘4）
+      const committed = mutateStorage(() => {
+        if (!safeSet(KEYS.compareOrderFixed, compareOrderFixed ? 'true' : 'false')) throw new Error('compareOrderFixed');
+        if (!safeSet(KEYS.compareOrder, JSON.stringify(nextOrder))) throw new Error('compareOrder');
+      });
+      if (!committed) {
+        // 保存できなかったので、チェックボックスの見た目まで元へ戻す（保存済みに見せない）
+        compareOrderFixed = previousFixed;
+        compareOrder = previousOrder;
+        toggle.checked = previousFixed;
+        return;
+      }
+      compareOrder = nextOrder;
       if (timelineMode === 'compare') renderEvents();
     }
 
@@ -2771,6 +3029,7 @@
       const btn = document.getElementById('deathToggleBtn');
       btn.classList.toggle('active', deathEnabled);
       btn.textContent = deathEnabled ? 'ON' : 'OFF';
+      btn.setAttribute('aria-pressed', String(deathEnabled)); // 再レビュー指摘7
     }
 
     // 指定の時刻が死亡推定時刻の範囲内か判定する
@@ -2785,16 +3044,8 @@
     }
 
     function saveEvents() {
-      const ok = mutateStorage(() => {
-        if (!safeSet(KEYS.events, JSON.stringify(events))) throw new Error('events');
-      });
-      if (!ok) {
-        events = normalizeEvents(loadJSON(KEYS.events, []));
-      }
-      const scrollX = window.scrollX;
-      const scrollY = window.scrollY;
-      renderEvents();
-      window.scrollTo(scrollX, scrollY);
+      persistEvents();               // 保存ロジックは persistEvents に集約（🔵26）
+      renderEventsPreservingScroll();
     }
 
     // 編集フォームの再描画で、ブラウザのスクロールアンカーが位置を変えないようにする
@@ -2809,6 +3060,7 @@
     // （保存は毎回全件をJSON化する。現規模では十分軽いが、件数が数千を超えるなら
     //   メモ保存と同じ300msデバウンス化を検討。レビュー指摘11）
     function persistEvents() {
+      evIdIndex = null; // 保存＝内容が変わったとみなし索引を捨てる（🟡6）
       const ok = mutateStorage(() => {
         if (!safeSet(KEYS.events, JSON.stringify(events))) throw new Error('events');
       });
@@ -2892,14 +3144,18 @@
     // 新規追加用のフラグを切り替える
     function toggleNewFlag() {
       newEventFlag = !newEventFlag;
-      document.getElementById('flagToggleBtn').classList.toggle('active', newEventFlag);
+      const btn = document.getElementById('flagToggleBtn');
+      btn.classList.toggle('active', newEventFlag);
+      btn.setAttribute('aria-pressed', String(newEventFlag)); // 状態を支援技術へ伝える（再レビュー指摘7）
     }
 
     // 「期間（開始〜終了）」入力のオン/オフを切り替える
     function toggleRangeMode() {
       newEventRange = !newEventRange;
       document.getElementById('addEventGroup').classList.toggle('range-mode', newEventRange);
-      document.getElementById('rangeToggleBtn').classList.toggle('active', newEventRange);
+      const btn = document.getElementById('rangeToggleBtn');
+      btn.classList.toggle('active', newEventRange);
+      btn.setAttribute('aria-pressed', String(newEventRange)); // 再レビュー指摘7
       if (!newEventRange) document.getElementById('endTimeInput').value = '';
     }
 
@@ -3004,11 +3260,6 @@
       if (index < 0) { renderEventsPreservingScroll(); return; }
       startCompareEdit(index, btn);
     }
-    function toggleCardCharPopupById(e, id, suffix) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEventsPreservingScroll(); return; }
-      toggleCardCharPopup(e, index, suffix || '');
-    }
     // 保存系：編集内容が失われるので、ひと言知らせてから最新表示に戻す
     function saveEditEventById(id, btnEl) {
       const index = evIndexById(id);
@@ -3108,6 +3359,14 @@
       } else {       // 下へ：rows[dest] のさらに下に入る
         aboveT = rows[dest].sortT;
         belowT = dest + 1 < rows.length ? rows[dest + 1].sortT : aboveT + 60;
+      }
+      // 隙間が枯渇していたら、先に等間隔へ振り直してから配置する（🟡15）
+      if (aboveT !== belowT && Math.abs(belowT - aboveT) < ANCHOR_MIN_GAP) {
+        reseatUnknownAnchors();
+        sortEvents();
+        saveEvents();
+        showToast('並び位置を整理しました。もう一度お試しください');
+        return;
       }
       ev.anchor = (aboveT === belowT) ? aboveT + (dir < 0 ? -0.5 : 0.5) : (aboveT + belowT) / 2;
       sortEvents();
@@ -3327,8 +3586,9 @@
           const endEff = e < s ? e + 1440 : e;
           // 期間の途中に別のイベントがある場合だけ、開始行・終了行に分割する。
           // 日跨ぎも考慮し、マーカー時刻 t を開始 s の直後〜翌日 (s, s+1440] に正規化して s<t<endEff で判定する。
-          // （総当たりで O(n²) だが、マダミス想定規模〜数百件では十分速い。
-          //   数千件を超える用途では markers をソートして二分探索に置き換えること。レビュー指摘10）
+          // 【意図的に総当たり（O(n²)）のままにしている】マダミス想定規模〜数百件では十分速く、
+          //   二分探索化は日跨ぎ・自己マーカー除外が絡み表示崩れの危険があるため採用しない。
+          //   数千件級を日常的に扱う用途が生じたら、markers をソートして二分探索へ置き換えること。レビュー指摘7
           const hasBetween = markers.some(m => {
             if (m.index === index) return false;
             let t = m.t;
@@ -3562,7 +3822,7 @@
               <div class="controls edit-controls compare-edit-actions">
                 <div class="card-char-wrap">
                   <button type="button" class="btn-add-char-card" onclick="toggleCardCharPopupById(event, '${sanitizeId(ev.id)}', '-end')" title="登場人物を追加/削除">👥</button>
-                  <div class="char-assign-popup" id="charAssign-${index}-end"></div>
+                  <div class="char-assign-popup" id="charAssign-${sanitizeId(ev.id)}-end"></div>
                 </div>
                 <button type="button" class="compare-edit-save" onclick="saveEditEventById('${sanitizeId(ev.id)}', this)" title="保存"><span class="edit-check">✓</span></button>
                 <button type="button" class="compare-edit-cancel" onclick="cancelEditEvent()" title="取消">✕</button>
@@ -3650,7 +3910,7 @@
             <div class="controls edit-controls compare-edit-actions">
               <div class="card-char-wrap">
                 <button type="button" class="btn-add-char-card" onclick="toggleCardCharPopupById(event, '${sanitizeId(ev.id)}')" title="登場人物を追加/削除">👥</button>
-                <div class="char-assign-popup" id="charAssign-${index}"></div>
+                <div class="char-assign-popup" id="charAssign-${sanitizeId(ev.id)}"></div>
               </div>
               <button type="button" class="compare-edit-save" onclick="saveEditEventById('${sanitizeId(ev.id)}', this)" title="保存"><span class="edit-check">✓</span></button>
               <button type="button" class="compare-edit-cancel" onclick="cancelEditEvent()" title="取消">✕</button>
@@ -3680,7 +3940,7 @@
               <button class="btn-edit-card" onclick="startEditEventById('${sanitizeId(ev.id)}')" title="時間・内容を編集">✏️</button>
               <div class="card-char-wrap">
                 <button class="btn-add-char-card" onclick="toggleCardCharPopupById(event, '${sanitizeId(ev.id)}')" title="登場人物を追加/削除">👥</button>
-                <div class="char-assign-popup" id="charAssign-${index}"></div>
+                <div class="char-assign-popup" id="charAssign-${sanitizeId(ev.id)}"></div>
               </div>
               <button class="btn-flag-card ${ev.flag ? 'active' : ''}" onclick="toggleEventFlagById('${sanitizeId(ev.id)}')" title="フラグ切り替え"><span class="flag-glyph">🚩</span></button>
               <button class="btn-conceal" onclick="toggleEventConcealById('${sanitizeId(ev.id)}')" title="内容の表示/非表示">👁️</button>
@@ -3806,6 +4066,7 @@
         const width = window.innerWidth;
         if (width === lastViewportWidth) return;
         lastViewportWidth = width;
+        controlsRowWidthCache.clear(); // 🔵28: 幅が変わったら測り直す（ズーム・文字サイズ変更にも追従）
         applyView(); // 画面幅の変化でPC↔スマホの境界をまたいだら切り替える
         // レーン幅の自動調整は領域幅に依存するので、リストビューは再描画して再計算する
         // （編集用の入力欄が開いているときは、編集内容を消さないようスキップ）
@@ -3864,7 +4125,8 @@
     // 人物比較ビュー専用の並び順を正規化する（既存の順を尊重し、未登録のキャラは characters の順で末尾に補う）
     function normalizedCompareOrder() {
       const known = compareOrder.filter(n => characters.some(c => c.name === n));
-      characters.forEach(c => { if (!known.includes(c.name)) known.push(c.name); });
+      const knownSet = new Set(known);
+      characters.forEach(c => { if (!knownSet.has(c.name)) { known.push(c.name); knownSet.add(c.name); } });
       return known;
     }
     // 人物比較ビューの列（絞り込み適用後）を、比較専用の並び順で並べて返す
@@ -3886,8 +4148,9 @@
       const bi = order.indexOf(cols[targetVis].name);
       if (ai < 0 || bi < 0) return;
       [order[ai], order[bi]] = [order[bi], order[ai]];
+      // 保存成功後だけ並びを確定する（再レビュー指摘4）
+      if (!guardedSet(KEYS.compareOrder, JSON.stringify(order))) return;
       compareOrder = order;
-      guardedSet(KEYS.compareOrder, JSON.stringify(compareOrder));
       renderEvents(); // 比較ビューを再描画
     }
 
@@ -4005,6 +4268,11 @@
       });
       interUntimed.forEach(ev => {
         [...new Set(eventCharNames(ev))].forEach(n => { const b = interByName.get(n); if (b) b.push(ev); });
+      });
+      // 「時間なし」行のカードも同じ方式で先に仕分けておく（列ごとの全走査を避ける。🔵25-1）
+      const bottomByName = new Map(colNames.map(n => [n, []]));
+      bottomUntimed.forEach(ev => {
+        [...new Set(eventCharNames(ev))].forEach(n => { const b = bottomByName.get(n); if (b) b.push(ev); });
       });
       const colLanes = colNames.map(name => {
         const timedEvs = timedByName.get(name); // 登録順を保持
@@ -4129,7 +4397,7 @@
       if (bottomUntimed.length > 0) {
         html += '<tr><td class="time-col">時間なし</td>';
         colLanes.forEach(col => {
-          const items = bottomUntimed.filter(ev => eventCharNames(ev).includes(col.name));
+          const items = bottomByName.get(col.name) || [];
           // 時間なしカード（⬆⬇付き＝6アイコン）がある列は広い最小幅にする
           const untimedCls = items.length > 0 ? ' compare-lane-untimed' : '';
           html += `<td class="compare-cell${untimedCls}" colspan="${col.laneCount}">${items.map(ev => pointCard(ev, col.name)).join('')}</td>`;
