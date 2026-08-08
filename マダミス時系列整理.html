@@ -173,7 +173,7 @@
 
     /* 色選択（ボタンを押すとカラーパレットが開く） */
     .color-picker-wrap { position: relative; display: inline-flex; }
-    .color-picker-btn { width: 44px; height: 44px; min-width: 44px; min-height: 44px; border: none; border-radius: 4px; cursor: pointer; padding: 0; background: #60a5fa; }
+    .color-picker-btn { width: 40px; height: 36px; border: none; border-radius: 4px; cursor: pointer; padding: 0; background: #60a5fa; }
     .color-palette-popup { display: none; position: absolute; top: calc(100% + 6px); right: 0; z-index: 10; background: #20303e; border: 1px solid #3d5166; border-radius: 6px; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.35); grid-template-columns: repeat(7, 1fr); gap: 6px; width: max-content; max-width: calc(100vw - 20px); box-sizing: border-box; }
     .color-palette-popup.open { display: grid; }
     .color-palette-popup .color-swatch { width: 24px; height: 24px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; box-sizing: border-box; transition: transform 0.1s; }
@@ -186,19 +186,17 @@
     .timeline-header h2 { margin-bottom: 0; }
     .timeline-title { display: flex; align-items: center; gap: 8px; }
     .timeline-title h2 { padding-bottom: 0; }
-    .btn-help { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 44px; min-height: 44px; width: auto; height: auto; padding: 4px; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 50%; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.75rem; line-height: 1; }
+    .btn-help { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; width: 1.1rem; height: 1.1rem; padding: 0; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 50%; cursor: pointer; font-weight: bold; color: #334155; font-size: 0.75rem; line-height: 1; }
     .btn-help:hover { background: #dbe4e8; }
     .death-time-group { display: flex; align-items: center; gap: 6px; font-size: 0.85rem; flex-wrap: wrap; }
     .death-label-wrap { display: inline-flex; align-items: center; gap: 2px; min-width: 0; max-width: 100%; }
     #deathLabelDisplay { min-width: 0; overflow-wrap: anywhere; }
-    /* 再レビュー指摘6：19×15.2px しかなくタップしづらかったため 44×44px を確保する。
-       見た目の位置を変えないよう、背景は透明のまま当たり判定だけを広げる */
-    .death-label-edit-btn { background: transparent; border: none; padding: 0; cursor: pointer; font-size: 0.95rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 44px; min-height: 44px; position: relative; top: 2px; }
+    .death-label-edit-btn { background: transparent; border: none; padding: 0; cursor: pointer; font-size: 0.95rem; line-height: 1; display: inline-flex; align-items: center; position: relative; top: 2px; }
     .death-label-edit-btn.editing { font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif; }
     .death-label-input { width: 8em; min-width: 0; padding: 3px 5px !important; font-size: 0.85rem !important; }
     /* 🔴2・案A：入りきらなければ折り返し・縮めるようにして、スマホ幅で画面外へ突き抜けないようにする */
     .death-range { display: inline-flex; align-items: center; flex-wrap: wrap; min-width: 0; max-width: 100%; box-sizing: border-box; background: #64748b; border: 1px solid #64748b; border-radius: 4px; padding: 0 5px; }
-    .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 8px 4px; min-width: 44px; min-height: 44px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
+    .death-range select { background: transparent; color: #e2e8f0; border: none; border-radius: 0; padding: 4px 1px; font-size: 0.85rem; cursor: pointer; -webkit-appearance: none; appearance: none; text-align: center; }
     /* 再レビュー指摘6：outline:none を廃止。キーボード操作位置が見えないとselectを追えなくなる。
        マウス操作時に枠が出ないよう :focus ではなく :focus-visible を使う */
     .death-range select:focus-visible { outline: 3px solid #facc15; outline-offset: 3px; }
@@ -217,8 +215,7 @@
     .help-modal h4 { margin: 16px 0 4px; color: #1e40af; }
     .help-modal ul { margin: 4px 0 10px; padding-left: 20px; }
     .help-modal li { margin-bottom: 4px; }
-    /* 再レビュー指摘6：30×30px → 44×44px */
-    .help-close { position: absolute; top: 12px; right: 12px; background: #f1f5f9; border: none; border-radius: 6px; width: 44px; height: 44px; min-width: 44px; min-height: 44px; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; cursor: pointer; font-size: 1rem; color: #334155; }
+    .help-close { position: absolute; top: 12px; right: 12px; background: #f1f5f9; border: none; border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 1rem; color: #334155; }
     .help-close:hover { background: #e2e8f0; }
     
     /* 時系列カード（色分け対応・1行表示＋備考メモ列） */
@@ -653,8 +650,7 @@
     /* メモパネル（キャラクター一覧の下へ移動） */
     .memo-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 0.83em; }
     .memo-header h2 { padding-bottom: 0; margin-bottom: 0; line-height: 1.2; }
-    /* 再レビュー指摘6：39×25.2px → 44×44px */
-    .memo-conceal-btn { display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; min-width: 44px; min-height: 44px; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; padding: 4px 9px; font-size: 0.95rem; line-height: 1; }
+    .memo-conceal-btn { display: inline-flex; align-items: center; justify-content: center; background: #ecf0f1; border: 1px solid #3d5166; border-radius: 4px; cursor: pointer; padding: 4px 9px; font-size: 0.95rem; line-height: 1; }
     /* メモの保存状態表示（保存中／保存済み／未保存）。見出しと👁️の間に置く */
     .memo-save-state { margin-left: auto; margin-right: 8px; font-size: 0.75rem; color: #94a3b8; white-space: nowrap; }
     .memo-save-state.state-saved { color: #4ade80; }
