@@ -13028,8 +13028,11 @@ async function gmMapPrepareFile(file,mode,isCurrent=()=>true){
     if(mode!=='original'){
       const scale=Math.min(1,4096/Math.max(decoded.width,decoded.height)); const width=Math.max(1,Math.round(decoded.width*scale)),height=Math.max(1,Math.round(decoded.height*scale));
       const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d',{alpha:true});ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(decoded.source,0,0,width,height);
-      const lossless=gmMapLooksLossless(ctx,width,height,mime); const targetMime=lossless?'image/png':'image/webp'; const converted=await gmMapCanvasBlob(canvas,targetMime,lossless?undefined:.92);check();
-      if(converted && (scale<1 || converted.size<file.size)){outBlob=converted;outMime=targetMime;}
+      const lossless=gmMapLooksLossless(ctx,width,height,mime); const targetMime=lossless?'image/png':'image/webp'; let converted=await gmMapCanvasBlob(canvas,targetMime,lossless?undefined:.92);check();
+      let convertedMime=converted?await gmMapSniff(converted):'';
+      // SafariはWebPを書き出せずPNGを返すため、透過のない写真はJPEGで作り直す
+      if(converted&&!lossless&&mime!=='image/webp'&&convertedMime!=='image/webp'){converted=await gmMapCanvasBlob(canvas,'image/jpeg',.9);check();convertedMime=converted?await gmMapSniff(converted):'';}
+      if(converted && convertedMime && (scale<1 || converted.size<file.size)){outBlob=converted;outMime=convertedMime;}
     }
     if(outBlob.size>GM_MAP_MAX_BYTES) throw new Error('埋め込む画像が10MBを超えています。自動最適化を選ぶか、画像を小さくしてください。');
     const outDecoded=outBlob===file?decoded:await gmMapDecode(outBlob); try{check();const signature=await gmMapSignature(outBlob);check();return {blob:outBlob,mimeType:outMime,width:outDecoded.width,height:outDecoded.height,originalWidth:decoded.width,originalHeight:decoded.height,originalSize:file.size,byteSize:outBlob.size,contentSignature:signature,qualityMode:mode==='original'?'original':'auto'};}finally{if(outDecoded!==decoded)outDecoded.close();}
