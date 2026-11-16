@@ -2578,11 +2578,16 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
     function safeJsonParse(text) { return JSON.parse(text, jsonNoProtoReviver); }
     // localStorage の入出力ヘルパー（破損・容量超過・プライベートモードでも落ちないように）
     function loadJSON(key, fallback) {
+      let raw = null;
       try {
-        const raw = localStorage.getItem(key);
+        raw = localStorage.getItem(key);
         return raw ? safeJsonParse(raw) : fallback;
       } catch (e) {
         console.warn(`${key} の読み込みに失敗しました。初期化します`, e);
+        if (raw) {
+          try { localStorage.setItem(key + '_corrupt', raw); } catch (_) {}
+          setTimeout(() => showToast('保存データの一部が壊れていたため初期化しました（元データは退避済み）'), 0);
+        }
         return fallback;
       }
     }

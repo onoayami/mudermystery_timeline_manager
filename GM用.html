@@ -3850,6 +3850,22 @@
         })();
         return gmStorageKeyPromise;
       }
+      // 読み込み専用：鍵がないときに新しく作らない（作ると古い保存データが二度と読めなくなる）
+      async function gmStorageKeyForRead() {
+        if (!window.crypto || !crypto.subtle) throw new Error("WebCrypto unavailable");
+        const db = await gmDbOpen();
+        try {
+          const key = await new Promise((resolve, reject) => {
+            const req = db.transaction("keys", "readonly").objectStore("keys").get("gm-local-key-v1");
+            req.onsuccess = () => resolve(req.result || null);
+            req.onerror = () => reject(req.error || new Error("Key read failed"));
+          });
+          if (!key) throw Object.assign(new Error("保存用の鍵が見つかりません"), { code: "GM_LOCAL_DECRYPT" });
+          return key;
+        } finally {
+          db.close();
+        }
+      }
       async function encryptGmLocal(text) {
         const key = await gmStorageKey();
         const iv = crypto.getRandomValues(new Uint8Array(12));
@@ -3878,7 +3894,7 @@
           data = packB64ToBytes(env.data);
         if (iv.length !== 12 || data.length > MAX_IMPORT_BYTES)
           throw new Error("Invalid local envelope");
-        const key = await gmStorageKey();
+        const key = await gmStorageKeyForRead();
         const plain = await crypto.subtle.decrypt(
           { name: "AES-GCM", iv: iv },
           key,
@@ -3926,17 +3942,18 @@
         try {
           parsed = JSON.parse(raw);
         } catch (_) {
-          try {
-            localStorage.removeItem(KEYS.gmPack);
-          } catch (_) {}
-          return null;
+          const e = new Error("保存データが壊れているため読み込みを止めました。保存データは消さずに残しています。");
+          e.code = "GM_LOCAL_DECRYPT";
+          throw e;
         }
         if (parsed && parsed.format === GM_LOCAL_FORMAT) {
           try {
             return await decryptGmLocal(parsed);
           } catch (error) {
-            gmSaveFailed(error);
-            return null;
+            console.warn("保存データを復号できませんでした", error);
+            const e = new Error("このブラウザに保存された作業データを復号できませんでした（保存用の鍵が消えた可能性があります）。保存データは消さずに残しています。");
+            e.code = "GM_LOCAL_DECRYPT";
+            throw e;
           }
         }
         // 不正な旧保存を消さない。正常な旧保存だけ、従来どおり暗号化へ移行する。
@@ -12075,7 +12092,7 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
           const loaded = await loadEncryptedGmPack();
           if (loaded) gmPack = normalizeGmPack(loaded);
         } catch (error) {
-          if (!error || !["GM_WORK_IDENTITY", "GM_MAP_RECOVERY"].includes(error.code)) throw error;
+          if (!error || !["GM_WORK_IDENTITY", "GM_MAP_RECOVERY", "GM_LOCAL_DECRYPT"].includes(error.code)) throw error;
           gmIdentityLoadBlocked = true;
           const state = document.getElementById("gmSaveState");
           if (state) {
@@ -12089,8 +12106,28 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
           notice.style.borderColor = "var(--warning)";
           notice.textContent = "保存データの読み込みと自動保存を止めました。\n" + error.message +
             "\n保存済みの内容は削除・上書きしていません。この画面で初期化せず、元のファイルを残してご相談ください。";
+          if (error.code === "GM_LOCAL_DECRYPT") {
+            const escapeBtn = document.createElement("button");
+            escapeBtn.type = "button";
+            escapeBtn.dataset.gmEscape = "1";
+            escapeBtn.textContent = "読めないデータを退避して、新しく始める";
+            escapeBtn.addEventListener("click", () => {
+              if (!confirm("読めない保存データを別の名前で残し、空の状態から始めます。よろしいですか？")) return;
+              try {
+                const raw = localStorage.getItem(KEYS.gmPack);
+                if (raw) localStorage.setItem(KEYS.gmPack + "_unreadable_" + Date.now(), raw);
+                localStorage.removeItem(KEYS.gmPack);
+              } catch (_) {
+                alert("退避できませんでした。ブラウザの保存容量をご確認ください。");
+                return;
+              }
+              location.reload();
+            });
+            notice.appendChild(document.createElement("br"));
+            notice.appendChild(escapeBtn);
+          }
           document.getElementById("mainContent").prepend(notice);
-          const lockControls = () => document.querySelectorAll("button, input, textarea, select")
+          const lockControls = () => document.querySelectorAll("button:not([data-gm-escape]), input, textarea, select")
             .forEach((el) => { el.disabled = true; });
           lockControls();
           // 後続の地図scriptが追加する操作欄も、同じ停止状態にする。
