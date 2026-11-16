@@ -1713,6 +1713,15 @@
             >
               📦 パック書き出し
             </button>
+            <button
+              type="button"
+              class="sub"
+              id="gmBackupBtn"
+              onclick="exportGmBackup()"
+              title="GMメモ・全合言葉・地図を含む作業データを、マスターパスワードで暗号化して保存します（GM専用。プレイヤーには渡さないでください）"
+            >
+              💾 GMバックアップ
+            </button>
             <input
               type="file"
               id="gmCsvInput"
@@ -1732,8 +1741,8 @@
         </div>
         <div class="gm-note">
           マーダーミステリーのGM向けツールです。<br />①でフェーズとキャラクターを登録します。<br />②で「どのフェーズで、誰に向けた情報を、どの合言葉で開く」を決めて登録します。<br />③右上の「📦
-          パック書き出し」を押すと、配布ファイル「パック名.mmpack.json」ができます。<br />⚠ この書き出しには、GMメモや全合言葉などを戻せるGM作業データも入ります。読みにくくしているだけ（難読化）で、解析すれば読めるため、秘密を守る仕組みではありません。<br />・GM用HTMLは参加者に渡さず、PL用HTMLと配布ファイルだけを渡してください。<br />・作成中の内容はこのブラウザに自動保存されます。ブラウザ保存は暗号化されますが、共有端末では専用プロファイルを使用してください。<br />・同じGM用HTMLを複数のタブで同時に編集しないでください。後から保存された内容で上書きされることがあります。<br />・書き出したファイルは、「📂
-          パック取り込み」に取り込むことで、合言葉なしで編集状態に戻せます。<br />・情報の行は⠳をつかんでドラッグしても並べ替えられます。情報・文章・🎯目標・特殊欄・得点計算をまとめて登録したい時は「📄
+          パック書き出し」を押すと、配布ファイル「パック名.mmpack.json」ができます。<br />⚠ 配布ファイルには、GMメモや合言葉の一覧は入りません。GMの作業を丸ごと残したいときは「💾 GMバックアップ」で保存してください（マスターパスワードで暗号化されます）。<br />・GM用HTMLは参加者に渡さず、PL用HTMLと配布ファイルだけを渡してください。<br />・作成中の内容はこのブラウザに自動保存されます。ブラウザ保存は暗号化されますが、共有端末では専用プロファイルを使用してください。<br />・同じGM用HTMLを複数のタブで同時に編集しないでください。後から保存された内容で上書きされることがあります。<br />・「💾 GMバックアップ」で保存したファイルは、「📂
+          パック取り込み」からマスターパスワードを入れると編集状態に戻せます。配布ファイルも、各パックの合言葉を入れれば取り込めます。<br />・情報の行は⠳をつかんでドラッグしても並べ替えられます。情報・文章・🎯目標・特殊欄・得点計算をまとめて登録したい時は「📄
           テンプレCSV」を埋めて「📂
           CSV取り込み」してください。「項目」の欄で、情報・文章・目標・目標詳細・得点規定・特殊欄・特殊欄詳細・採点項目・結果設定を分けられます。「見出し」がタイトル、「内容」が本文で、「目標詳細」「得点規定」「特殊欄詳細」の行はすぐ上の目標・特殊欄にタブを分けて足されます。特殊欄は「項目」に『特殊欄：🏛 館内ルール』のように書くと、その名前（絵文字も可）がPLの小見出しになり、同じパック内の次の特殊欄にも引き継がれます。名前を書かない特殊欄はPLでは「✨ 特殊欄」にまとまります。特殊欄は通常のフェーズでも使えます（「フェーズ種別」を特殊欄にすると、そのフェーズ全体が特殊欄だけになり、開いたあとも残ります）。得点計算を使うときは「フェーズ種別」に得点計算と書いてください（地図・投票・質問はCSVでは扱えません）。「項目」の欄がない旧形式のCSVもこれまでどおり読み込めます。<br />・CSVは何回でも、一度に何ファイルでも取り込めます。<b>すでに登録されているのとまったく同じ行・同じ目標は増えず、新しいものだけが追加されます</b>（修正した行は「別の新しい行」として追加されるので、古い行は手で消してください）。<br /><br />書き出したファイルをプレイヤーに配り、PL用アプリの「🔐
           配布パック」から読み込んでもらい、合言葉を入力すると、登録した情報が共有されます。
@@ -9675,6 +9684,25 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
           };
         });
       }
+      async function exportGmBackup() {
+        if (gmMapCommitBusy || gmIdentityLoadBlocked) return;
+        const pass = prompt("GMバックアップのマスターパスワードを決めてください（8文字以上）。\n※忘れると復元できません。");
+        if (pass === null) return;
+        if (normalizePackPass(pass).length < 8) { alert("8文字以上にしてください。"); return; }
+        const again = prompt("確認のため、もう一度入力してください。");
+        if (again === null) return;
+        if (normalizePackPass(again) !== normalizePackPass(pass)) { alert("一致しませんでした。もう一度やり直してください。"); return; }
+        try {
+          await flushGmSave();
+          const envelope = await packEncrypt(pass, await gmWorkDataWithMapAssets());
+          const out = { format: BACKUP_FORMAT, version: BACKUP_VERSION, createdAt: new Date().toISOString(), envelope };
+          downloadPackJson(out, safeFileName((gmPack.title || "GM").trim() + "_GMバックアップ") + ".json");
+          showToast("GMバックアップを書き出しました");
+        } catch (error) {
+          console.warn("GMバックアップの書き出しに失敗しました", error);
+          alert("GMバックアップを書き出せませんでした。今の作業内容は変更していません。");
+        }
+      }
       // 配布ファイルを保存する
       function downloadPackJson(out, fileName) {
         const blob = new Blob([JSON.stringify(out)], {
@@ -10790,15 +10818,7 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
             createdAt: new Date().toISOString(),
             phases: phases,
           };
-          // このGM用アプリだけが読める作業データを入れておく（取り込みのときに合言葉を聞かないため）
-          // salt / iv は packEncrypt が毎回乱数で作るので、ファイルごとに異なる
-          try {
-            out.gmMeta = await packEncrypt(GM_META_PASS, await gmWorkDataWithMapAssets());
-          } catch (e) {
-            console.warn("作業データの同梱に失敗しました", e);
-            alert("GMの作業データを含められなかったため、パックの書き出しを中止しました。\nファイルは保存していません。今の作業は消していません。\nもう一度、書き出しをお試しください。");
-            return;
-          }
+          // 配布ファイルにはGM作業データ（全合言葉）を入れない。GMの保存は「💾 GMバックアップ」で行う
           const base = out.title || "配布パック";
           const one = exportMode === "set" ? usable[0] : null;
           const recipient =
