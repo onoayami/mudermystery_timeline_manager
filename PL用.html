@@ -10615,11 +10615,15 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
           if (!unlockGroups.has(key)) unlockGroups.set(key, []);
           unlockGroups.get(key).push(ph);
         });
+        const derivedKeyBySalt = new Map();
         for (const phases of unlockGroups.values()) {
           const first = phases[0];
-          let derivedKey;
-          try { derivedKey = await packDeriveKey(pass, packB64ToBytes(first.salt), PACK_KDF_ITERATIONS); }
-          catch (e) { continue; }
+          let derivedKey = derivedKeyBySalt.get(first.salt);
+          if (!derivedKey) {
+            try { derivedKey = await packDeriveKey(pass, packB64ToBytes(first.salt), PACK_KDF_ITERATIONS); }
+            catch (e) { continue; }
+            derivedKeyBySalt.set(first.salt, derivedKey);
+          }
           for (const ph of phases) {
             try { matches.push(await decryptPackPhaseForUnlock(pass, ph, derivedKey)); }
             catch (e) { /* このパックの合言葉ではない、またはこの封筒だけが壊れている→次を試す */ }

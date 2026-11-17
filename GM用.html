@@ -2835,6 +2835,10 @@
         return packEncryptWithKey(key, salt, iv, payload, meta);
       }
       function createPackUnlockGroupEncryptor() {
+        // salt はファイルごとに乱数。ファイル内で共通にして、PLが1回の鍵計算で全封筒を試せるようにする
+        const fileSalt = crypto.getRandomValues(new Uint8Array(16));
+        const keyByPass = new Map();
+        const ivsByPass = new Map();
         const groups = new Map();
         return async function encryptGroup(unlockGroupId, pass, payload, meta) {
           if (!validPackUnlockGroupId(unlockGroupId)) throw new Error("解錠グループIDがありません");
@@ -2842,8 +2846,11 @@
           if (!normalizedPass) throw new Error("解錠グループの合言葉がありません");
           let group = groups.get(unlockGroupId);
           if (!group) {
-            const salt = crypto.getRandomValues(new Uint8Array(16));
-            group = { pass: normalizedPass, salt, key: await packDeriveKey(normalizedPass, salt, PACK_KDF_ITERATIONS), ivs: new Set() };
+            if (!keyByPass.has(normalizedPass)) {
+              keyByPass.set(normalizedPass, await packDeriveKey(normalizedPass, fileSalt, PACK_KDF_ITERATIONS));
+              ivsByPass.set(normalizedPass, new Set());
+            }
+            group = { pass: normalizedPass, key: keyByPass.get(normalizedPass), ivs: ivsByPass.get(normalizedPass) };
             groups.set(unlockGroupId, group);
           } else if (group.pass !== normalizedPass) {
             throw new Error("同じ解錠グループ内で合言葉が一致しません");
@@ -2857,7 +2864,7 @@
           }
           if (!iv) throw new Error("同じ解錠グループ内でIVが重複したため書き出しを中止しました");
           group.ivs.add(ivText);
-          return packEncryptWithKey(group.key, group.salt, iv, payload, meta);
+          return packEncryptWithKey(group.key, fileSalt, iv, payload, meta);
         };
       }
 
