@@ -10750,19 +10750,26 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
                   unlockPass: x.unlockPass.trim(),
                 })),
               };
-            if (storyLockRows.length > 0)
-              payload.storyLocks = storyLockRows
-                .map((r) => ({
-                  id: r.infoId || genId(),
-                  pass: normalizePackPass(r.unlockPass || ""),
-                  text: r.text.trim(),
+            if (storyLockRows.length > 0) {
+              payload.storyLocks = [];
+              for (const r of storyLockRows) {
+                const storyPass = normalizePackPass(r.unlockPass || "");
+                const text = r.text.trim();
+                if (!storyPass || !text) continue;
+                const id = r.infoId || genId();
+                const storyMeta = { id: "story:" + id, order: 0, name: "", kind: "story" };
+                const inner = {
+                  text,
                   annotation: r.annotationEnabled === true && String(r.annotation || "").trim() ? String(r.annotation) : "",
-                  owner: owner,
-                  ownerId: pl ? pl.id : "",
-                  persons: owner,
-                  phaseType: ph.type,
-                }))
-                .filter((x) => x.pass && x.text);
+                };
+                // 文章の合言葉でしか開けない封筒。本文と合言葉は平文で配らない
+                const enc = await encryptUnlockGroup("story-" + id, storyPass, inner, storyMeta);
+                payload.storyLocks.push({
+                  id, owner, ownerId: pl ? pl.id : "", persons: owner, phaseType: ph.type,
+                  envelope: Object.assign({}, storyMeta, enc),
+                });
+              }
+            }
             payload.specialConditions = specialConditions;
             if (ph.type === "special") payload.specialPersistent = true;
             // payload内の追加項目。暗号照合データ(meta/AAD)とPACK_VERSIONは変更しない。
@@ -11160,6 +11167,30 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
         }
       }
 
+      // 文章別合言葉の封筒を開き、取り込み処理が読める従来形（pass/text/annotation）に戻す
+      async function gmOpenStoryEnvelopes(payload, known) {
+        if (!payload || !Array.isArray(payload.storyLocks)) return true;
+        for (const row of payload.storyLocks) {
+          if (!row || typeof row !== "object" || !row.envelope) continue;
+          let inner = null, usedPass = "";
+          for (const cand of known) {
+            inner = await packDecrypt(cand, row.envelope);
+            if (inner) { usedPass = cand; break; }
+          }
+          while (!inner) {
+            const ans = prompt("文章別合言葉の行（" + (row.owner || "共有") + "）の合言葉を入れてください。\n（キャンセルすると取り込みを中止します）");
+            if (ans === null) return false;
+            inner = await packDecrypt(ans, row.envelope);
+            if (inner) { usedPass = ans; known.push(ans); } else alert("合言葉が違うようです。");
+          }
+          row.pass = normalizePackPass(usedPass);
+          row.text = typeof inner.text === "string" ? inner.text : "";
+          row.annotation = typeof inner.annotation === "string" ? inner.annotation : "";
+          delete row.envelope;
+        }
+        return true;
+      }
+
       // --- 配布ファイルの取り込み（各パックの合言葉が必要） ---
       function gmFindOrAddPhase(name, show, keepId) {
         const key = normalizePackPass(name);
@@ -11282,6 +11313,7 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
           }
           if (!object(payload) || typeof payload.scenarioId !== "string" || payload.scenarioId.trim() !== scenarioId)
             return fail("配布ファイルと中身のシナリオの識別情報が一致しないため取り込めません。");
+          if (!(await gmOpenStoryEnvelopes(payload, known))) return { ok: false, cancelled: true };
           opened.push({ ph, payload, usedPass, questionEnvelope: ph.id.startsWith("question-envelope:") });
         }
 
@@ -12001,6 +12033,10 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
               } else alert("合言葉が違うようです。");
             }
             if (!payload) {
+              skipped++;
+              continue;
+            }
+            if (!(await gmOpenStoryEnvelopes(payload, known))) {
               skipped++;
               continue;
             }

@@ -9423,23 +9423,37 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       const rows = payload && Array.isArray(payload.storyLocks) ? payload.storyLocks : [];
       let changed = false;
       rows.forEach(r => {
-        if (!r || !r.pass || !r.text) return;
+        if (!r) return;
+        const sealed = !!(r.envelope && typeof r.envelope === 'object' && !Array.isArray(r.envelope));
+        if (!sealed && (!r.pass || !r.text)) return;
+        if (sealed && !(typeof r.id === 'string' && r.id)) return;
         const sourceInfoId = (typeof r.id === 'string' && r.id) ? r.id : ('legacy-' + stablePackHash(r.text));
         const id = (phase.id || '') + ':' + sourceInfoId;
         const persons = (typeof r.persons === 'string' && r.persons.trim()) ? r.persons.trim() : (r.owner || '');
-        const annotation = typeof r.annotation === 'string' ? r.annotation.slice(0, 20000) : '';
         const next = {
           phase: phase.name || '', phaseId: phase.phaseId || '', sourcePackId: phase.id || '',
           sourceInfoId: sourceInfoId, sourceKind: phase.kind === 'personal' ? 'personal' : 'shared',
-          sourceRevision: Number(phase.revision) || 0, pass: normalizePackPass(r.pass),
-          text: r.text, annotation: annotation, owner: r.owner || '',
+          sourceRevision: Number(phase.revision) || 0, owner: r.owner || '',
           ownerId: typeof r.ownerId === 'string' ? r.ownerId : '', persons: persons
         };
+        if (sealed) {
+          next.envelope = r.envelope;
+        } else {
+          next.pass = normalizePackPass(r.pass);
+          next.text = r.text;
+          next.annotation = typeof r.annotation === 'string' ? r.annotation.slice(0, 20000) : '';
+        }
         const existing = storyLocks.find(x => x.id === id);
         if (existing) {
-          const rowChanged = ['phase','phaseId','sourcePackId','sourceInfoId','sourceKind','sourceRevision','pass','text','annotation','owner','ownerId','persons'].some(key => existing[key] !== next[key]);
+          const rowChanged = Object.keys(next).some(key => key === 'envelope'
+            ? JSON.stringify(existing.envelope || null) !== JSON.stringify(next.envelope)
+            : existing[key] !== next[key]);
           Object.keys(next).forEach(key => { existing[key] = next[key]; });
-          if (rowChanged) { existing.unlocked = false; changed = true; }
+          if (rowChanged) {
+            existing.unlocked = false;
+            if (sealed) { existing.text = ''; existing.annotation = ''; delete existing.pass; }
+            changed = true;
+          }
           return;
         }
         storyLocks.push(Object.assign({ id: id, unlocked: false }, next));
@@ -10629,7 +10643,25 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
             catch (e) { /* このパックの合言葉ではない、またはこの封筒だけが壊れている→次を試す */ }
           }
         }
-        const storyMatches = storyLocks.filter(x => !x.unlocked && normalizePackPass(x.pass) === normalizePackPass(pass));
+        const storyMatches = [];
+        for (const x of storyLocks) {
+          if (x.unlocked) continue;
+          if (x.envelope) {
+            try {
+              let key = derivedKeyBySalt.get(x.envelope.salt);
+              if (!key) {
+                key = await packDeriveKey(pass, packB64ToBytes(x.envelope.salt), PACK_KDF_ITERATIONS);
+                derivedKeyBySalt.set(x.envelope.salt, key);
+              }
+              const inner = await packDecryptWithKey(key, x.envelope);
+              x.text = typeof inner.text === 'string' ? inner.text : '';
+              x.annotation = typeof inner.annotation === 'string' ? inner.annotation.slice(0, 20000) : '';
+              if (x.text) storyMatches.push(x);
+            } catch (e) { /* この文章の合言葉ではない */ }
+          } else if (normalizePackPass(x.pass) === normalizePackPass(pass)) {
+            storyMatches.push(x);
+          }
+        }
         if (matches.length === 0 && storyMatches.length === 0) { alert('合言葉が合いませんでした。ご確認ください。'); return; }
         // MM-12〜MM-16：適用を始める前に、開けた中身を全件検査する。1つでも不正なら何も適用しない
         for (const m of matches) {
