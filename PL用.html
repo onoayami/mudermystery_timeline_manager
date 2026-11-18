@@ -2096,6 +2096,15 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
   font-size: inherit;
 }
 </style>
+<style id="pl-ios-input-zoom-fix">
+  @media (pointer: coarse) {
+    input[type="text"], input[type="password"], input[type="number"], input:not([type]),
+    select, textarea,
+    #addEventGroup #timeInput, #addEventGroup #endTimeInput, #addEventGroup #eventInput {
+      font-size: 16px;
+    }
+  }
+</style>
 </head>
 <body>
   <!-- 画面上端の一時通知（トースト）。リスト・人物比較ビュー共通で使う -->
