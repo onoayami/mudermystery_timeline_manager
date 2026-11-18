@@ -5636,19 +5636,6 @@
           fitPackSelectWidths(document);
         } catch (e) {}
       });
-      (function () {
-        if (typeof renderPacks !== "function") {
-          return;
-        }
-        var gmOrigRenderPacks = renderPacks;
-        renderPacks = function () {
-          var r = gmOrigRenderPacks.apply(this, arguments);
-          try {
-            fitPackSelectWidths(document);
-          } catch (e) {}
-          return r;
-        };
-      })();
       if (document.fonts && document.fonts.ready) {
         document.fonts.ready.then(function () {
           try {
@@ -5656,19 +5643,6 @@
           } catch (e) {}
         });
       }
-      (function () {
-        if (typeof renderAll !== "function") {
-          return;
-        }
-        var gmOrigRenderAll = renderAll;
-        renderAll = function () {
-          var r = gmOrigRenderAll.apply(this, arguments);
-          try {
-            fitPackSelectWidths(document);
-          } catch (e) {}
-          return r;
-        };
-      })();
       const GM_SPECIAL_EMOJI = [
         "✨",
         "🎯",
@@ -8267,6 +8241,12 @@
       });
 
       function renderPacks() {
+        renderPacksCore();
+        try { fitPackSelectWidths(document); } catch (e) {}
+        // 地図scriptは後から読み込まれるため、定義済みのときだけ呼ぶ
+        if (typeof gmMapDecoratePacks === "function") gmMapDecoratePacks();
+      }
+      function renderPacksCore() {
         const el = document.getElementById("gmPackList");
         if (!el) return;
         const charPack = renderCharPack();
@@ -13201,7 +13181,6 @@ document.addEventListener('dragover',e=>{const item=gmMapDragSurface(e.target),t
 document.addEventListener('drop',e=>{const item=gmMapDragSurface(e.target),targetId=gmMapDragSurfaceId(item);if(!item||!gmMapOrderDragId||!targetId||targetId===gmMapOrderDragId)return;e.preventDefault();const rect=item.getBoundingClientRect(),after=e.clientY-rect.top>rect.height/2;gmMapMoveTo(gmMapOrderDragId,targetId,after);gmMapOrderDragId='';gmMapClearDragUi();});
 document.addEventListener('dragend',()=>{gmMapOrderDragId='';gmMapClearDragUi();});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&gmMapDialogState)gmMapCloseDialog();});
-const gmMapOriginalRenderPacks=renderPacks;renderPacks=function(){gmMapOriginalRenderPacks();gmMapDecoratePacks();};
 // 全情報削除は本体で地図と暗号化した作業の保存完了を待つ。
 document.addEventListener('click',e=>{const b=e.target.closest('button[data-act="del-pack"]');if(!b)return;const pk=packById(b.dataset.kid),assets=pk?gmMapList(pk).map(map=>map.assetId):[];setTimeout(()=>{if(!packById(b.dataset.kid))assets.forEach(asset=>gmMapDelete(asset).catch(console.warn));},0);},true);
 renderPacks();
