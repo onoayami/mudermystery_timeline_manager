@@ -2121,7 +2121,7 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       <div class="data-actions-break"></div>
       <button type="button" class="btn-danger data-actions-gap" onclick="clearAllCharacters()" title="登録したキャラクターをすべて削除します">👤 全キャラクター削除</button>
       <button type="button" class="btn-danger" onclick="clearAllTimelineData()" title="時系列のカードだけをすべて削除します">🧹 全時系列データ削除</button>
-      <button type="button" class="btn-danger" onclick="clearAllData()" title="キャラクター・メモ・時系列など、すべての保存データを削除します">🗑️ 全データ削除</button>
+      <button type="button" id="clearAllDataBtn" class="btn-danger" onclick="clearAllData()" title="キャラクター・メモ・時系列など、すべての保存データを削除します">🗑️ 全データ削除</button>
     </div>
     <div class="view-toggle">
       <button type="button" id="btnMobile" onclick="setView('mobile')">📱 スマホ版</button>
@@ -3205,7 +3205,7 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       document.body.classList.remove('session-data-mobile');
       if (currentView !== 'pc' || !sessionDataExpanded || !document.body.classList.contains('view-pc')) return;
       const actions = document.getElementById('sessionDataActions');
-      const deleteBtn = actions ? actions.querySelector('button[onclick="clearAllData()"]') : null;
+      const deleteBtn = actions ? actions.querySelector('#clearAllDataBtn') : null;
       const mobileBtn = document.getElementById('btnMobile');
       if (!deleteBtn || !mobileBtn) return;
       const gap = mobileBtn.getBoundingClientRect().left - deleteBtn.getBoundingClientRect().right;
@@ -11135,18 +11135,6 @@ async function plCompactPackStateForStorage(state){
   for(let i=0;i<cs.length;i++)await compactList(cs[i]&&cs[i].phases,ls[i]&&ls[i].phases,'snapshot-'+i);
   return clone;
 }
-async function plMapExportBackupAssets(){
-  const maps=[],packEnvelopes=[],entries=await plDbEntries(PL_MAP_STORE);
-  const totalBytes=entries.reduce((sum,[key,value])=>sum+(value instanceof Blob?value.size:0),0),limitBytes=200*1024*1024;
-  if(totalBytes>limitBytes){
-    const error=new Error('バックアップを書き出せません。\n地図画像の合計が、復元できる上限の200 MBを超えています。\n画像合計：'+totalBytes.toLocaleString('ja-JP')+' バイト\n上限：'+limitBytes.toLocaleString('ja-JP')+' バイト（200 MB）\n\n今回の書き出し操作では、保存データを変更していません。');
-    error.name='PLBackupMapLimitError';
-    throw error;
-  }
-  for(const [key,value] of entries){if(value instanceof Blob)maps.push({key:String(key),mimeType:value.type||'application/octet-stream',data:await plBlobToB64(value)});}
-  for(const [key,value] of await plDbEntries(PL_PACK_STORE)){if(typeof value==='string')packEnvelopes.push({key:String(key),data:value});}
-  return{version:1,maps,packEnvelopes};
-}
 async function plMapRestoreBackupAssets(raw,applyText){
   const source=raw&&typeof raw==='object'?raw:{maps:[],packEnvelopes:[]};
   if(Array.isArray(source)||(source.maps!==undefined&&!Array.isArray(source.maps))||(source.packEnvelopes!==undefined&&!Array.isArray(source.packEnvelopes)))throw new Error('invalid backup assets');
@@ -11192,8 +11180,67 @@ async function plMapRestoreBackupAssets(raw,applyText){
     });
   }finally{db.close();}
 }
-exportData=async function(){if(plBackupImportBusy||plBackupExportBusy){alert(plBackupExportBusy?'バックアップを書き出し中です。完了するまでお待ちください。':'バックアップを取り込み中です。完了するまでお待ちください。');return;}plBackupExportBusy=true;try{const data={app:'madamisu',version:2,exportedAt:new Date().toISOString(),data:{},mapAssets:await plMapExportBackupAssets()};Object.values(KEYS).forEach(key=>{const val=plBackupRecoveryData?plBackupRecoveryData.data[key]:localStorage.getItem(key);if(val!==null)data.data[key]=val;});const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a'),sessionTitle=((plBackupRecoveryData?plBackupRecoveryData.data[KEYS.sessionName]:safeGet(KEYS.sessionName))||'').trim()||'マダミス',safeSessionTitle=sessionTitle.replace(/[\\/:*?"<>|]/g,'_'),now=new Date(),date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');a.href=url;a.download=safeSessionTitle+(plBackupRecoveryData?'_復旧用':'')+'_時系列データ_'+date+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){console.warn('エクスポートに失敗しました',e);if(e&&e.name==='PLBackupMapLimitError'){const guidance=plBackupRecoveryData?'復旧が未完了です。復旧用の文字データはこのページ内だけにあるため、ページを閉じたり再読み込みしたりせず、作業を中止してください。':'地図欄の「保存」で、表示できる画像を個別に退避できます。ただし、個別保存は全体バックアップの代わりにはなりません。200 MBを超える画像を含む全体バックアップには対応していません。元データを消す全削除やバックアップの取り込みは行わないでください。';alert(e.message+'\n\n'+guidance);}else{alert('エクスポートに失敗しました。');}}finally{plBackupExportBusy=false;}};
-clearAllData=async function(){if(!confirm('すべての保存データ（キャラクター・メモ・時系列・地図・各種設定）を削除します。\nこの操作は元に戻せません。よろしいですか？\n\n※心配な場合は、いったんキャンセルして「⬆️ 書き出し」から\n今のセッションの記録を外部ファイルとして保存しておくこともできます。'))return;try{await plDbClearAll();Object.values(KEYS).forEach(k=>localStorage.removeItem(k));}catch(e){console.warn('データ削除に失敗しました',e);alert('一部のデータを削除できませんでした。');return;}skipMemoFlush=true;location.reload();};
+window.exportData = async function () {
+  if (plBackupImportBusy || plBackupExportBusy) {
+    alert(plBackupExportBusy ? 'バックアップを書き出し中です。完了するまでお待ちください。' : 'バックアップを取り込み中です。完了するまでお待ちください。');
+    return;
+  }
+  plBackupExportBusy = true;
+  try {
+    const textData = {};
+    Object.values(KEYS).forEach(key => {
+      const val = plBackupRecoveryData ? plBackupRecoveryData.data[key] : localStorage.getItem(key);
+      if (val !== null && val !== undefined) textData[key] = val;
+    });
+    const mapEntries = (await plDbEntries(PL_MAP_STORE)).filter(([, value]) => value instanceof Blob);
+    const totalBytes = mapEntries.reduce((sum, [, blob]) => sum + blob.size, 0), limitBytes = 200 * 1024 * 1024;
+    if (totalBytes > limitBytes) {
+      const error = new Error('バックアップを書き出せません。\n地図画像の合計が、復元できる上限の200 MBを超えています。\n画像合計：' + totalBytes.toLocaleString('ja-JP') + ' バイト\n上限：' + limitBytes.toLocaleString('ja-JP') + ' バイト（200 MB）\n\n今回の書き出し操作では、保存データを変更していません。');
+      error.name = 'PLBackupMapLimitError';
+      throw error;
+    }
+    // 巨大な1本の文字列を作らないよう、部品の配列からBlobを組み立てる（中身の形式は従来と同じ）
+    const parts = ['{"app":"madamisu","version":2,"exportedAt":', JSON.stringify(new Date().toISOString()),
+      ',"data":', JSON.stringify(textData), ',"mapAssets":{"version":1,"maps":['];
+    for (let i = 0; i < mapEntries.length; i++) {
+      const [key, blob] = mapEntries[i];
+      parts.push((i ? ',' : '') + '{"key":' + JSON.stringify(String(key)) + ',"mimeType":' + JSON.stringify(blob.type || 'application/octet-stream') + ',"data":"');
+      parts.push(await plBlobToB64(blob));
+      parts.push('"}');
+    }
+    parts.push('],"packEnvelopes":[');
+    const packEntries = (await plDbEntries(PL_PACK_STORE)).filter(([, value]) => typeof value === 'string');
+    packEntries.forEach(([key, value], i) => {
+      parts.push((i ? ',' : '') + '{"key":' + JSON.stringify(String(key)) + ',"data":', JSON.stringify(value), '}');
+    });
+    parts.push(']}}');
+    const blob = new Blob(parts, { type: 'application/json' });
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    const sessionTitle = ((plBackupRecoveryData ? plBackupRecoveryData.data[KEYS.sessionName] : safeGet(KEYS.sessionName)) || '').trim() || 'マダミス';
+    const safeSessionTitle = sessionTitle.replace(/[\\/:*?"<>|]/g, '_');
+    const now = new Date();
+    const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+    a.href = url;
+    a.download = safeSessionTitle + (plBackupRecoveryData ? '_復旧用' : '') + '_時系列データ_' + date + '.json';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
+  } catch (e) {
+    console.warn('エクスポートに失敗しました', e);
+    if (e && e.name === 'PLBackupMapLimitError') {
+      const guidance = plBackupRecoveryData
+        ? '復旧が未完了です。復旧用の文字データはこのページ内だけにあるため、ページを閉じたり再読み込みしたりせず、作業を中止してください。'
+        : '地図欄の「保存」で、表示できる画像を個別に退避できます。ただし、個別保存は全体バックアップの代わりにはなりません。200 MBを超える画像を含む全体バックアップには対応していません。元データを消す全削除やバックアップの取り込みは行わないでください。';
+      alert(e.message + '\n\n' + guidance);
+    } else {
+      alert('エクスポートに失敗しました。');
+    }
+  } finally {
+    plBackupExportBusy = false;
+  }
+};
+window.clearAllData=async function(){if(!confirm('すべての保存データ（キャラクター・メモ・時系列・地図・各種設定）を削除します。\nこの操作は元に戻せません。よろしいですか？\n\n※心配な場合は、いったんキャンセルして「⬆️ 書き出し」から\n今のセッションの記録を外部ファイルとして保存しておくこともできます。'))return;try{await plDbClearAll();Object.values(KEYS).forEach(k=>localStorage.removeItem(k));Object.keys(localStorage).filter(k=>k.startsWith('madamisu_')&&k.endsWith('_corrupt')).forEach(k=>localStorage.removeItem(k));}catch(e){console.warn('データ削除に失敗しました',e);alert('一部のデータを削除できませんでした。');return;}skipMemoFlush=true;location.reload();};
 renderMaps();
 if (/^https?:$/.test(location.protocol)) plMapRequestPersistence();
 
