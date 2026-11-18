@@ -12868,6 +12868,7 @@ const GM_MAP_MAX_BYTES = 10 * 1024 * 1024;
 const GM_MAP_TOTAL_MAX_BYTES = 40 * 1024 * 1024;
 const GM_MAP_MAX_SOURCE_BYTES = 64 * 1024 * 1024;
 const GM_MAP_MAX_PIXELS = 100000000;
+const GM_MAP_MAX_NEW_PIXELS = (window.matchMedia && matchMedia('(pointer: coarse)').matches) ? 25000000 : GM_MAP_MAX_PIXELS;
 const GM_MAP_STORAGE_WARNING_FACTOR = 1.5;
 let gmMapDialogState = null;
 let gmMapPreviewUrls = [];
@@ -12877,8 +12878,8 @@ let gmMapPersistenceRequested = false;
 // 地図は全件を検証してから保存する。配布形式・暗号の仕様は変更しない。
 function gmMapFailure(code,message){const e=new Error(message);e.code=code;return e;}
 function gmMapAssetError(map,reason){return gmMapFailure('GM_MAP_INVALID','「'+((map&&(map.title||map.fileName||map.id))||'地図')+'」：'+reason);}
-async function gmMapCheckPixelHeader(blob,mime){
-  const b=new Uint8Array(await blob.arrayBuffer()),v=new DataView(b.buffer,b.byteOffset,b.byteLength);let width=0,height=0;
+async function gmMapCheckPixelHeader(blob,mime,maxPixels=GM_MAP_MAX_PIXELS){
+  const b=new Uint8Array(await blob.slice(0,Math.min(blob.size,512*1024)).arrayBuffer()),v=new DataView(b.buffer,b.byteOffset,b.byteLength);let width=0,height=0;
   if(mime==='image/png'&&b.length>=24){width=v.getUint32(16);height=v.getUint32(20);}
   if(mime==='image/jpeg'){
     let p=2;while(p+3<b.length){if(b[p++]!==0xff)continue;while(p<b.length&&b[p]===0xff)p++;const m=b[p++];if(m===0xda||m===0xd9)break;if(m===0x01||(m>=0xd0&&m<=0xd7))continue;if(p+2>b.length)break;const n=v.getUint16(p);if(n<2||p+n>b.length)break;if([0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf].includes(m)&&n>=7){height=v.getUint16(p+3);width=v.getUint16(p+5);break;}p+=n;}
@@ -12890,7 +12891,7 @@ async function gmMapCheckPixelHeader(blob,mime){
       if(kind==='VP8 '&&n>=10){width=v.getUint16(q+6,true)&0x3fff;height=v.getUint16(q+8,true)&0x3fff;break;}p=q+n+(n%2);
     }
   }
-  if(width&&height&&width*height>GM_MAP_MAX_PIXELS)throw new Error('画像の縦横サイズが大きすぎます（上限1億画素）。');
+  if(width&&height&&width*height>maxPixels)throw new Error('画像の縦横サイズが大きすぎます（上限'+Math.floor(maxPixels/10000)+'万画素）。');
 }
 async function gmMapValidateImage(blob,meta){
   if(!(blob instanceof Blob)||blob.size<=0||blob.size>GM_MAP_MAX_BYTES)throw gmMapAssetError(meta,'画像が空、または10MBを超えています。');
@@ -13088,10 +13089,10 @@ async function gmMapPrepareFile(file,mode,isCurrent=()=>true){
   if(file.size>GM_MAP_MAX_SOURCE_BYTES) throw new Error('読み込み元の画像が大きすぎます（上限64MB）。');
   const check=()=>{if(!isCurrent())throw gmMapFailure('GM_MAP_STALE','新しい画像の選択に切り替わりました。');};check();
   const mime=await gmMapSniff(file);check(); if(!mime) throw new Error('PNG・JPEG・WebP画像を選択してください。');
-  await gmMapCheckPixelHeader(file,mime);check();
+  await gmMapCheckPixelHeader(file,mime,GM_MAP_MAX_NEW_PIXELS);check();
   const decoded=await gmMapDecode(file); let outBlob=file, outMime=mime;
   try{
-    check();if(!decoded.width||!decoded.height||decoded.width*decoded.height>GM_MAP_MAX_PIXELS) throw new Error('画像の縦横サイズが大きすぎます（上限1億画素）。');
+    check();if(!decoded.width||!decoded.height||decoded.width*decoded.height>GM_MAP_MAX_NEW_PIXELS) throw new Error('画像の縦横サイズが大きすぎます（上限'+Math.floor(GM_MAP_MAX_NEW_PIXELS/10000)+'万画素）。');
     if(mode!=='original'){
       const scale=Math.min(1,4096/Math.max(decoded.width,decoded.height)); const width=Math.max(1,Math.round(decoded.width*scale)),height=Math.max(1,Math.round(decoded.height*scale));
       const canvas=document.createElement('canvas');canvas.width=width;canvas.height=height;const ctx=canvas.getContext('2d',{alpha:true});ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';ctx.drawImage(decoded.source,0,0,width,height);
