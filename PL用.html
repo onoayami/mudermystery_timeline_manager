@@ -10946,6 +10946,7 @@ let plMapViewerState=null;
 
 function plMapOpenDb(){return new Promise((resolve,reject)=>{if(!('indexedDB' in window)){reject(new Error('IndexedDB unavailable'));return;}const req=indexedDB.open(PL_MAP_DB_NAME,1);req.onupgradeneeded=()=>{const db=req.result;if(!db.objectStoreNames.contains(PL_MAP_STORE))db.createObjectStore(PL_MAP_STORE);if(!db.objectStoreNames.contains(PL_PACK_STORE))db.createObjectStore(PL_PACK_STORE);};req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error||new Error('IndexedDB open failed'));});}
 async function plDbPut(storeName,key,value){const db=await plMapOpenDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(storeName,'readwrite');tx.objectStore(storeName).put(value,key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}finally{db.close();}}
+async function plDbPutMany(storeName,entries){const db=await plMapOpenDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(storeName,'readwrite');const store=tx.objectStore(storeName);entries.forEach(([key,value])=>store.put(value,key));tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}finally{db.close();}}
 async function plDbGet(storeName,key){if(!key)return null;const db=await plMapOpenDb();try{return await new Promise((resolve,reject)=>{const r=db.transaction(storeName,'readonly').objectStore(storeName).get(key);r.onsuccess=()=>resolve(r.result===undefined?null:r.result);r.onerror=()=>reject(r.error);});}finally{db.close();}}
 async function plDbDelete(storeName,key){if(!key)return;const db=await plMapOpenDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction(storeName,'readwrite');tx.objectStore(storeName).delete(key);tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);});}finally{db.close();}}
 async function plDbClearAll(){const db=await plMapOpenDb();try{await new Promise((resolve,reject)=>{const tx=db.transaction([PL_MAP_STORE,PL_PACK_STORE],'readwrite');tx.objectStore(PL_MAP_STORE).clear();tx.objectStore(PL_PACK_STORE).clear();tx.oncomplete=()=>resolve();tx.onerror=()=>reject(tx.error);tx.onabort=()=>reject(tx.error);});}finally{db.close();}}
@@ -11058,7 +11059,7 @@ async function plApplyMapsFromMatches(matches){
   }
   await plMapRequestPersistence();
   const staged=[];
-  try{for(const item of prepared){await plDbPut(PL_MAP_STORE,item.assetId,item.blob);staged.push({action:item.action,assetId:item.assetId});}}
+  try{await plDbPutMany(PL_MAP_STORE,prepared.map(item=>[item.assetId,item.blob]));prepared.forEach(item=>staged.push({action:item.action,assetId:item.assetId}));}
   catch(e){
     for(const x of staged)plDbDelete(PL_MAP_STORE,x.assetId).catch(()=>{});
     console.warn('地図画像の保存に失敗しました',e);
