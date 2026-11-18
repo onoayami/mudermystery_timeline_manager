@@ -5148,11 +5148,6 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       if (index < 0) { renderEventsPreservingScroll(); return; }
       startEditEvent(index, focusEnd);
     }
-    function startEditTimeById(id) {
-      const index = evIndexById(id);
-      if (index < 0) { renderEventsPreservingScroll(); return; }
-      startEditTime(index);
-    }
     function startCompareEditById(id, btn) {
       const index = evIndexById(id);
       if (index < 0) { renderEventsPreservingScroll(); return; }
@@ -8325,12 +8320,6 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       if (gmCharacterId && localCharacterById(localCharacterId)) packCharacterLinks[key] = localCharacterId;
       else delete packCharacterLinks[key];
     }
-    function clearScenarioPackCharacterLinks(state) {
-      const scenario = packScenarioIdForState(state || packState);
-      Object.keys(packCharacterLinks).forEach(key => {
-        try { const parts = JSON.parse(key); if (Array.isArray(parts) && parts[0] === scenario) delete packCharacterLinks[key]; } catch (_) {}
-      });
-    }
     // 同じシナリオ内の別人物リンクは残し、選択した人物／PL人物に競合するリンクだけを更新する。
     // これにより同一端末で人物A→人物B→人物Aと切り替えても、人物別の投票・質問状態を復元できる。
     function setExclusivePackCharacterLink(gmCharacterId, localCharacterId, state) {
@@ -8666,52 +8655,6 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
     // 更新対象の配布パックから届いた情報だけを消す。
     // 現行データは配布パックIDで厳密に限定し、旧データはフェーズID＋種別が一意な場合だけ削除する。
     // 自分で書いた情報（origin === 'manual'）と、判定が曖昧な旧データは消さない。
-    function removePackSourceInfos(targets) {
-      const list = (Array.isArray(targets) ? targets : []).filter(t => t && typeof t === 'object').map(t => ({
-        packId: typeof t.packId === 'string' ? t.packId : '',
-        phaseId: typeof t.phaseId === 'string' ? t.phaseId : '',
-        kind: t.kind === 'personal' ? 'personal' : 'shared',
-        name: typeof t.name === 'string' ? t.name : ''
-      }));
-      const del = [];
-      let ambiguous = 0, disclosed = 0, localModified = 0;
-      const scopeCount = t => {
-        const phases = packState && Array.isArray(packState.phases) ? packState.phases : [];
-        if (t.phaseId) return phases.filter(ph => ph && ph.phaseId === t.phaseId && ph.kind === t.kind).length;
-        return phases.filter(ph => ph && packPhaseDisplayName(ph) === t.name && ph.kind === t.kind).length;
-      };
-      sharedInfos.forEach(it => {
-        if (!it || it.origin === 'manual') return;
-        const sourceKind = it.sourceKind === 'personal' ? 'personal' : (it.sourceKind === 'shared' ? 'shared' : (it.disclosed ? 'personal' : infoKind(it)));
-        let match = null;
-        if (it.sourcePackId) match = list.find(t => t.packId && t.packId === it.sourcePackId) || null;
-        else if (it.phaseId) {
-          const candidates = list.filter(t => t.phaseId && t.phaseId === it.phaseId && t.kind === sourceKind);
-          if (candidates.length === 1 && scopeCount(candidates[0]) === 1) match = candidates[0];
-          else if (candidates.length > 0) ambiguous++;
-        } else {
-          const candidates = list.filter(t => t.name && t.name === (it.phase || '') && t.kind === sourceKind);
-          if (candidates.length === 1 && scopeCount(candidates[0]) === 1) match = candidates[0];
-          else if (candidates.length > 0) ambiguous++;
-        }
-        if (!match) return;
-        del.push(it);
-        if (it.disclosed) disclosed++;
-        if (it.localModified) localModified++;
-      });
-      let cards = 0;
-      del.forEach(it => {
-        for (let i = events.length - 1; i >= 0; i--) {
-          const ev = events[i];
-          if ((ev.srcId && ev.srcId === it.id) || (it.eventId && ev.id === it.eventId)) { events.splice(i, 1); cards++; }
-        }
-      });
-      for (let i = sharedInfos.length - 1; i >= 0; i--) if (del.includes(sharedInfos[i])) sharedInfos.splice(i, 1);
-      if (cards > 0) saveEvents();
-      if (del.length > 0) saveSharedInfos();
-      updateSharedTransferAllBtn();
-      return { removed: del.length, cards: cards, ambiguous: ambiguous, disclosed: disclosed, localModified: localModified };
-    }
     // ① GM側でフェーズ名を変えたことを、フェーズID（変わらない目印）で見つける
     // GM側でフェーズ名を変えたことを、フェーズID（変わらない目印）で見つける。
     function collectPhaseRenames(next) {
@@ -9561,16 +9504,6 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       renderSpecialConditions();
     }
     // 旧版の全体開閉から呼ばれた場合は、現在ある欄をまとめて開閉する。
-    function applySpecialCollapsed(){renderSpecialConditions();}
-    function toggleSpecialPanel(){
-      specialCollapsed=!specialCollapsed;
-      safeSet(KEYS.specialCollapsed,String(specialCollapsed));
-      const names=[];
-      specialConditions.forEach(x=>{const name=specialSectionName(x);if(names.indexOf(name)===-1)names.push(name);});
-      names.forEach(name=>{specialSectionCollapsed[name]=specialCollapsed;});
-      safeSet(KEYS.specialSectionCollapsed,JSON.stringify(specialSectionCollapsed));
-      renderSpecialConditions();
-    }
     function unlockStoryLocksByPass(pass, matches) {
       const targets = Array.isArray(matches) ? matches : [];
       if (!targets.length) return 0;
@@ -9989,16 +9922,6 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       // MM-13：新形式は人物IDだけで判定する（表示名の一致では振り分けない＝名前フォールバック廃止）
       const activeId = activePackCharacterId();
       return !!activeId && targets.ids.includes(activeId);
-    }
-    function questionSetTargetsCurrentCharacterLegacyUnused(set) {
-      const targets = questionSetTargetList(set);
-      const activeId = activePackCharacterId();
-      // 新形式はIDだけで判定し、表示名が一致しても別人物向け質問を追加しない。
-      if (targets.ids.length) return !!activeId && targets.ids.includes(activeId);
-      // IDを持たない旧配布ファイルだけ、GM設定名で互換判定する。
-      const active = activePackCharacter();
-      const sourceName = active ? active.name : playerName;
-      return !!sourceName && targets.names.some(name => normalizePackPass(name) === normalizePackPass(sourceName));
     }
     function questionSetsFromPayload(payload) { return payload && Array.isArray(payload.questionSets) ? payload.questionSets.filter(x => x && typeof x === 'object') : []; }
     function applyOneQuestionGroupManifest(group) {

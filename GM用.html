@@ -7760,9 +7760,6 @@
           "配布先を「" + (pl.name || "選択した人物") + "」へ再設定しました",
         );
       }
-      function gmQuestionSetSummary(pk) {
-        return "投票＋質問" + pk.questions.length + "件";
-      }
       function gmQuestionSetNeedsSetup(pk) {
         if (!normalizePackPass(effectivePass(pk))) return true;
         if (!pk.targetPlayerIds.length || pk.orphanedRecipients.length) return true;
@@ -7806,67 +7803,6 @@
             });
         });
         return entries;
-      }
-      function selectedGmQuestionRecipient(phase, packs) {
-        const entries = gmQuestionRecipientEntries(phase, packs);
-        let key = selectedGmQuestionRecipientByPhase[phase.id];
-        if (!entries.some((x) => x.key === key))
-          key = entries.length ? entries[0].key : "";
-        selectedGmQuestionRecipientByPhase[phase.id] = key;
-        return entries.find((x) => x.key === key) || null;
-      }
-      function gmQuestionRecipientStatus(phase, entry, packs) {
-        if (entry.kind === "orphan")
-          return { cls: "warn", label: "再設定が必要", meta: "書き出し不可" };
-        if (gmQuestionPhaseExcludedIds(phase).includes(entry.id))
-          return {
-            cls: "only",
-            label: "配布対象外",
-            meta: "このフェーズでは配布しません",
-          };
-        const sets = packs.filter((pk) =>
-          normalizeGmQuestionSetPack(pk).targetPlayerIds.includes(entry.id),
-        );
-        if (!sets.length)
-          return { cls: "warn", label: "要設定", meta: "合言葉：未入力" };
-        if (
-          sets.some(
-            (pk) =>
-              pk.targetPlayerIds.length + pk.orphanedRecipients.length > 1,
-          )
-        )
-          return {
-            cls: "shared",
-            label: "共同配布・未分割",
-            meta: "分割前の設定",
-          };
-        if (sets.some(gmQuestionSetNeedsSetup))
-          return {
-            cls: "warn",
-            label: "要設定",
-            meta: sets.some((pk) => !normalizePackPass(effectivePass(pk)))
-              ? "合言葉：未入力"
-              : "入力内容を確認",
-          };
-        const qCount = sets.reduce((n, pk) => n + pk.questions.length, 0);
-        const passes = new Set(
-          sets.map((pk) => normalizePackPass(effectivePass(pk))).filter(Boolean),
-        );
-        return {
-          cls: "",
-          label: "質問" + qCount + "件",
-          meta:
-            passes.size > 1
-              ? "合言葉：" + passes.size + "種類"
-              : "合言葉：" + (effectivePass(sets[0]) || "未入力"),
-        };
-      }
-      function gmQuestionRecipientInitial(entry) {
-        const raw =
-          entry && entry.kind === "player"
-            ? String(entry.name || "").trim()
-            : "?";
-        return Array.from(raw)[0] || "?";
       }
       
       function gmqsV12Chevron() {
@@ -8792,20 +8728,6 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
         ].join("\u0000");
       }
       // 🎯 目標は必須欄・目標詳細・得点規定がすべて同じなら「同じ目標」
-      function gmGoalSignature(g) {
-        const ti = g && typeof g.title === "string" ? g.title : "";
-        const details = gmGoalDetails(g).map((v) =>
-          v.replace(/\r\n/g, "\n").trim(),
-        );
-        const scoringRules = gmGoalScoringRules(g).map((v) =>
-          v.replace(/\r\n/g, "\n").trim(),
-        );
-        return [
-          ti.trim(),
-          JSON.stringify(details),
-          JSON.stringify(scoringRules),
-        ].join("\u0000");
-      }
       // CSVは何ファイルでも、何回でも取り込める。すでにある内容と同じ行は足さず、差分だけ入れる
       function importGmCsv(input) {
         const files = input.files
@@ -13000,10 +12922,8 @@ function gmMapOpenDb(){
 async function gmMapStoreRun(mode,work){
   const db=await gmMapOpenDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(GM_MAP_STORE,mode),store=tx.objectStore(GM_MAP_STORE);let value,failure=null;tx.oncomplete=()=>resolve(value);tx.onerror=()=>{if(!failure)failure=tx.error;};tx.onabort=()=>reject(failure||tx.error||new Error('IndexedDB transaction aborted'));try{value=work(store);}catch(e){failure=e;try{tx.abort();}catch(_){reject(e);}}});}finally{db.close();}
 }
-async function gmMapPut(id,blob){ if(!id || !(blob instanceof Blob)) throw new Error('Invalid map asset'); await gmMapStoreRun('readwrite',s=>s.put(blob,id)); }
 async function gmMapGet(id){ if(!id) return null; const db=await gmMapOpenDb(); try{return await new Promise((resolve,reject)=>{const tx=db.transaction(GM_MAP_STORE,'readonly'); const r=tx.objectStore(GM_MAP_STORE).get(id); r.onsuccess=()=>resolve(r.result instanceof Blob?r.result:null); r.onerror=()=>reject(r.error);});}finally{db.close();} }
 async function gmMapDelete(id){ if(id) await gmMapStoreRun('readwrite',s=>s.delete(id)); }
-async function gmMapClear(){await gmMapStoreRun('readwrite',s=>s.clear());}
 function gmMapBytesToB64(bytes){ let out=''; const step=0x8000; for(let i=0;i<bytes.length;i+=step) out+=String.fromCharCode.apply(null,bytes.subarray(i,i+step)); return btoa(out); }
 function gmMapB64ToBytes(b64){ const raw=atob(String(b64||'')); const out=new Uint8Array(raw.length); for(let i=0;i<raw.length;i++) out[i]=raw.charCodeAt(i); return out; }
 async function gmMapBlobToB64(blob){ return gmMapBytesToB64(new Uint8Array(await blob.arrayBuffer())); }
@@ -13166,7 +13086,6 @@ function gmMapOrderedEntries(){
 function gmMapEnsureDisplayOrders(){
   const entries=gmMapOrderedEntries();entries.forEach((entry,index)=>{if(!Number.isFinite(Number(entry.map.displayOrder))||Number(entry.map.displayOrder)<=0)entry.map.displayOrder=index+1;});return entries;
 }
-function gmMapNextDisplayOrder(){const entries=gmMapEnsureDisplayOrders();return entries.reduce((max,entry)=>Math.max(max,Number(entry.map.displayOrder)||0),0)+1;}
 function gmMapOrderPosition(mapId){const entries=gmMapEnsureDisplayOrders(),index=entries.findIndex(entry=>entry.map.id===mapId);return{index:index<0?0:index+1,total:entries.length};}
 function gmMapCommitOrder(entries){
   const touchedPhases=new Set();let changed=false;entries.forEach((entry,index)=>{const order=index+1,current=Number(entry.map.displayOrder)||0;if(current===order)return;entry.map.displayOrder=order;entry.map.revision=Math.max(1,Number(entry.map.revision)||1)+1;touchedPhases.add(entry.pk.phaseId);changed=true;});if(!changed)return false;touchedPhases.forEach(id=>{const ph=phaseById(id);if(ph)ph.revision=Math.max(1,Number(ph.revision)||1)+1;});saveGmPack('packs');showToast('PLでの地図表示順を更新しました');return true;
