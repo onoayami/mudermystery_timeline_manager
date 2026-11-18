@@ -3139,7 +3139,7 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
     }
     deathLabelInput.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') { e.preventDefault(); cancelDeathLabelEdit(); }
-      if (e.key === 'Enter') { e.preventDefault(); finishDeathLabelEdit(true); }
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); finishDeathLabelEdit(true); }
     });
 
     // 時間欄で、半角の数字だけが入ったら区切りの「:」を自動で挿入して見せる（入力ミス防止）。
@@ -5541,7 +5541,7 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
 
     // 時間だけ編集中のキー操作：Enterで保存、Escでキャンセル
     function handleEditTimeKeydown(e, index) {
-      if (e.key === 'Enter') { e.preventDefault(); saveEditTime(index); }
+      if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); saveEditTime(index); }
       else if (e.key === 'Escape') { e.preventDefault(); cancelEditTime(); }
     }
 
@@ -11095,7 +11095,7 @@ function toggleMapPanel(){plMapCollapsed=!plMapCollapsed;safeSet(KEYS.mapCollaps
 function plToggleMapHidden(id){const map=plMaps.find(x=>x.id===id);if(!map)return;map.hidden=!map.hidden;plSaveMaps();}
 function plMapSafeFile(map){const base=(map.fileName||map.title||'地図').replace(/[\\/:*?"<>|\u0000-\u001f]/g,'_').replace(/[. ]+$/g,'').slice(0,120)||'地図';if(/\.(png|jpe?g|webp)$/i.test(base))return base;return base+(map.mimeType==='image/png'?'.png':map.mimeType==='image/jpeg'?'.jpg':'.webp');}
 async function plMapGetBlob(map){const blob=await plDbGet(PL_MAP_STORE,map.assetId);if(!(blob instanceof Blob))throw new Error('画像データが見つかりません');return blob;}
-async function plSaveMap(id){const map=plMaps.find(x=>x.id===id);if(!map)return;try{const blob=await plMapGetBlob(map),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=plMapSafeFile(map);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){alert('地図画像を保存できませんでした。');}}
+async function plSaveMap(id){const map=plMaps.find(x=>x.id===id);if(!map)return;try{const blob=await plMapGetBlob(map),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=plMapSafeFile(map);document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60*1000);}catch(e){alert('地図画像を保存できませんでした。');}}
 function plMapEnsureViewer(){let v=document.getElementById('mapViewer');if(v)return v;v=document.createElement('div');v.id='mapViewer';v.className='map-viewer-overlay';v.innerHTML='<div class="map-viewer-toolbar"><div class="map-viewer-title" id="mapViewerTitle"></div><button type="button" data-map-view="out">−</button><span class="map-viewer-zoom" id="mapViewerZoom">100%</span><button type="button" data-map-view="in">＋</button><button type="button" data-map-view="fit">全体</button><button type="button" data-map-view="actual">100%</button><button type="button" data-map-view="fullscreen">全面表示</button><button type="button" class="map-popout" data-map-view="popout">↗ 別ウィンドウ</button><a id="mapViewerSave" download>保存</a><button type="button" data-map-view="close">閉じる</button></div><div class="map-viewer-stage" id="mapViewerStage"><div class="map-viewer-canvas" id="mapViewerCanvas"><img class="map-viewer-image" id="mapViewerImage" alt="地図"></div></div>';
   document.body.appendChild(v);const stage=v.querySelector('#mapViewerStage');stage.addEventListener('wheel',e=>{if(!plMapViewerState)return;e.preventDefault();plViewerZoom(e.deltaY<0?1.15:1/1.15);},{passive:false});const pts=new Map();let drag=null,pinch=null;stage.addEventListener('pointerdown',e=>{if(!plMapViewerState)return;stage.setPointerCapture(e.pointerId);pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pts.size===1){drag={x:e.clientX,y:e.clientY,tx:plMapViewerState.x,ty:plMapViewerState.y};stage.classList.add('dragging');}else if(pts.size===2){const a=Array.from(pts.values());pinch={distance:Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y),scale:plMapViewerState.scale};}});stage.addEventListener('pointermove',e=>{if(!pts.has(e.pointerId)||!plMapViewerState)return;pts.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pts.size===1&&drag){plMapViewerState.x=drag.tx+e.clientX-drag.x;plMapViewerState.y=drag.ty+e.clientY-drag.y;plViewerApply();}else if(pts.size===2&&pinch){const a=Array.from(pts.values()),d=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y);plMapViewerState.scale=Math.min(8,Math.max(.25,pinch.scale*d/Math.max(1,pinch.distance)));plViewerApply();}});const end=e=>{pts.delete(e.pointerId);if(pts.size<2)pinch=null;if(pts.size===0){drag=null;stage.classList.remove('dragging');}};stage.addEventListener('pointerup',end);stage.addEventListener('pointercancel',end);return v;}
 function plViewerApply(){if(!plMapViewerState)return;const c=document.getElementById('mapViewerCanvas');c.style.transform='translate('+plMapViewerState.x+'px,'+plMapViewerState.y+'px) scale('+plMapViewerState.scale+')';document.getElementById('mapViewerZoom').textContent=Math.round(plMapViewerState.scale*100)+'%';}

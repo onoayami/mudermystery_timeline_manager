@@ -1532,7 +1532,7 @@
 .score-content-option input{accent-color:#5e9fe8}
 .score-content-option .score-content-option-note{margin-top:3px}
 .score-phase-actions .score-content-back{background:#294155}
-@media(max-width:720px){.score-phase-overlay{padding:8px}.score-phase-dialog{max-height:calc(100dvh - 16px)}.score-phase-dialog>header{padding:12px}.score-phase-body{padding:12px}.score-phase-option{min-height:44px;padding:10px}.score-phase-actions{padding:10px 12px}.score-phase-actions button{flex:1;min-height:44px;padding:7px 8px}.score-content-dialog .score-phase-actions .score-phase-cancel,.score-content-dialog .score-phase-actions .score-content-back{flex:.75}.score-content-dialog .score-phase-actions .score-phase-confirm{flex:1.5}.score-content-heading{align-items:flex-start}.score-content-progress{min-width:48px;padding:3px 6px}}
+@media(max-width:720px){.score-phase-overlay{padding:8px}.score-phase-dialog{max-height:calc(100vh - 16px);max-height:calc(100dvh - 16px)}.score-phase-dialog>header{padding:12px}.score-phase-body{padding:12px}.score-phase-option{min-height:44px;padding:10px}.score-phase-actions{padding:10px 12px}.score-phase-actions button{flex:1;min-height:44px;padding:7px 8px}.score-content-dialog .score-phase-actions .score-phase-cancel,.score-content-dialog .score-phase-actions .score-content-back{flex:.75}.score-content-dialog .score-phase-actions .score-phase-confirm{flex:1.5}.score-content-heading{align-items:flex-start}.score-content-progress{min-width:48px;padding:3px 6px}}
 .score-import-help{margin-left:0;top:0}
 .score-import-help .help-pop{left:auto;right:0;width:380px;max-width:calc(100vw - 48px)}
 .score-section .gm-warn.score-unlock-warn{margin:8px 0 0}
@@ -2115,6 +2115,12 @@
         BACKUP_VERSION = 1;
       // このGM用アプリだけが読む作業データの鍵（v11.11 と同じ値。古い配布パックも読める）
       const GM_META_PASS = "mm-gm-workdata-v1";
+      // "__proto__" などの危険な項目を読み込み時に捨てる（PL用と同じ）
+      function jsonNoProtoReviver(key, value) {
+        if (key === "__proto__") return undefined;
+        if ((key === "constructor" || key === "prototype") && value && typeof value === "object") return undefined;
+        return value;
+      }
       function safeFileName(v) {
         return (
           String(v || "")
@@ -2464,6 +2470,10 @@
 
       // --- CSV（文字コード・区切り文字の自動判定。PL用アプリと同じ実装） ---
       function decodeSharedCsvBuffer(buf) {
+        const head = new Uint8Array(buf, 0, Math.min(2, buf.byteLength));
+        // Excelの「Unicodeテキスト」はUTF-16（先頭にBOM）
+        if (head[0] === 0xff && head[1] === 0xfe) return new TextDecoder("utf-16le").decode(buf);
+        if (head[0] === 0xfe && head[1] === 0xff) return new TextDecoder("utf-16be").decode(buf);
         try {
           return new TextDecoder("utf-8", { fatal: true }).decode(buf);
         } catch (e) {
@@ -2742,7 +2752,7 @@
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
+          setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
         } catch (e) {
           console.warn("テンプレートの作成に失敗しました", e);
           alert("テンプレートの作成に失敗しました。");
@@ -2896,7 +2906,7 @@
             key,
             packB64ToBytes(env.data),
           );
-          return JSON.parse(new TextDecoder().decode(plain));
+          return JSON.parse(new TextDecoder().decode(plain), jsonNoProtoReviver);
         } catch (e) {
           return null;
         }
@@ -3920,7 +3930,7 @@
           key,
           data,
         );
-        return JSON.parse(new TextDecoder().decode(plain));
+        return JSON.parse(new TextDecoder().decode(plain), jsonNoProtoReviver);
       }
       function gmSaveFailed(error) {
         console.warn("暗号化した自動保存に失敗しました", error);
@@ -8591,7 +8601,7 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
         els.forEach((el) => {
           el.style.height = "auto";
         });
-        const hs = els.map((el) => el.scrollHeight + 2); // 先にまとめて測る（再計算を減らす）
+        const hs = els.map((el) => Math.min(el.scrollHeight + 2, 240)); // 入力中（autoGrowText）と同じ上限
         els.forEach((el, i) => {
           el.style.height = hs[i] + "px";
         });
@@ -9706,7 +9716,7 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        setTimeout(() => URL.revokeObjectURL(url), 60 * 1000);
       }
       function characterNameProblemPlayerId() {
         const seen = new Set();
@@ -11770,7 +11780,7 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
         }
         let data = null;
         try {
-          data = JSON.parse(await file.text());
+          data = JSON.parse(await file.text(), jsonNoProtoReviver);
         } catch (e) {
           data = null;
         }
