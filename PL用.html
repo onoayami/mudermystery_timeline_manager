@@ -2571,8 +2571,12 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       doneHiddenPersonal: 'madamisu_done_hidden_personal',     // 反映済みボックスを隠すか（個人）
       hideConcealedShared: 'madamisu_hide_concealed_shared',   // 非表示アイテムを隠すか（共有）
       hideConcealedPersonal: 'madamisu_hide_concealed_personal', // 非表示アイテムを隠すか（個人）
+      lastFilePath: 'madamisu_last_file_path', // 前回開いたHTMLの場所（別コピーとの共有に気づくため）
       rev: 'madamisu_rev' // 保存のたびに+1する世代カウンタ。複数タブの後勝ち上書き検知に使う（レビュー指摘5）
     };
+    if (!window.crypto || !window.crypto.subtle) {
+      alert('この開き方では暗号機能が使えないため、合言葉の解錠や保存ができません。\nHTMLファイルを直接開くか、https:// のサイトに置いて開いてください。');
+    }
     // --- 外部から受け取ったJSONの「プロトタイプ汚染」を落とす（U-16／MM-22 対応） ---
     // 保存データ・バックアップファイル・配布パック・復号後の payload に
     // "__proto__" ・ "constructor" ・ "prototype" という名前の項目が混ざっていると、
@@ -2692,6 +2696,15 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       if (e.key !== null && !Object.values(KEYS).includes(e.key)) return;
       showStorageConflictBar();
     });
+
+    (function warnSharedFileStorage() {
+      if (location.protocol !== 'file:') return;
+      const prevPath = safeGet(KEYS.lastFilePath);
+      if (prevPath && prevPath !== location.pathname) {
+        setTimeout(() => showToast('別の場所のPL用HTMLと保存データを共有しています。別のセッションなら「⬆️ 書き出し」後に「🗑️ 全データ削除」をしてください。'), 0);
+      }
+      if (prevPath !== location.pathname) safeSet(KEYS.lastFilePath, location.pathname);
+    })();
 
     // --- 画面上端の一時通知（トースト。変更4） ---
     // スマホ表示専用の⬆⬇ボタンは title のホバー吹き出しが出ないため、操作結果を短く知らせる。
@@ -11182,6 +11195,7 @@ async function plMapRestoreBackupAssets(raw,applyText){
 exportData=async function(){if(plBackupImportBusy||plBackupExportBusy){alert(plBackupExportBusy?'バックアップを書き出し中です。完了するまでお待ちください。':'バックアップを取り込み中です。完了するまでお待ちください。');return;}plBackupExportBusy=true;try{const data={app:'madamisu',version:2,exportedAt:new Date().toISOString(),data:{},mapAssets:await plMapExportBackupAssets()};Object.values(KEYS).forEach(key=>{const val=plBackupRecoveryData?plBackupRecoveryData.data[key]:localStorage.getItem(key);if(val!==null)data.data[key]=val;});const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a'),sessionTitle=((plBackupRecoveryData?plBackupRecoveryData.data[KEYS.sessionName]:safeGet(KEYS.sessionName))||'').trim()||'マダミス',safeSessionTitle=sessionTitle.replace(/[\\/:*?"<>|]/g,'_'),now=new Date(),date=[now.getFullYear(),String(now.getMonth()+1).padStart(2,'0'),String(now.getDate()).padStart(2,'0')].join('-');a.href=url;a.download=safeSessionTitle+(plBackupRecoveryData?'_復旧用':'')+'_時系列データ_'+date+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}catch(e){console.warn('エクスポートに失敗しました',e);if(e&&e.name==='PLBackupMapLimitError'){const guidance=plBackupRecoveryData?'復旧が未完了です。復旧用の文字データはこのページ内だけにあるため、ページを閉じたり再読み込みしたりせず、作業を中止してください。':'地図欄の「保存」で、表示できる画像を個別に退避できます。ただし、個別保存は全体バックアップの代わりにはなりません。200 MBを超える画像を含む全体バックアップには対応していません。元データを消す全削除やバックアップの取り込みは行わないでください。';alert(e.message+'\n\n'+guidance);}else{alert('エクスポートに失敗しました。');}}finally{plBackupExportBusy=false;}};
 clearAllData=async function(){if(!confirm('すべての保存データ（キャラクター・メモ・時系列・地図・各種設定）を削除します。\nこの操作は元に戻せません。よろしいですか？\n\n※心配な場合は、いったんキャンセルして「⬆️ 書き出し」から\n今のセッションの記録を外部ファイルとして保存しておくこともできます。'))return;try{await plDbClearAll();Object.values(KEYS).forEach(k=>localStorage.removeItem(k));}catch(e){console.warn('データ削除に失敗しました',e);alert('一部のデータを削除できませんでした。');return;}skipMemoFlush=true;location.reload();};
 renderMaps();
+if (/^https?:$/.test(location.protocol)) plMapRequestPersistence();
 
   </script>
 

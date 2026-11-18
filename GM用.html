@@ -1924,6 +1924,9 @@
       // パック形式：mm-pack v4（バージョン付きJSON）。PL用アプリの「🔐 配布パック」と同じ形式。
       // 構成：①フェーズ登録（共通の合言葉＋GM専用メモ）／キャラクター登録　②配布情報パック（フェーズ×種別×合言葉＋情報の行）
       const KEYS = { gmPack: "madamisu_gm_pack" };
+      if (!window.crypto || !window.crypto.subtle) {
+        alert('この開き方では暗号機能が使えないため、合言葉の解錠や保存ができません。\nHTMLファイルを直接開くか、https:// のサイトに置いて開いてください。');
+      }
       // PL用アプリと同じキャラクター色パレット
       const PALETTE_COLORS = [
         "#f87171",
