@@ -3993,6 +3993,7 @@
         } catch (_) {}
         return parsed;
       }
+      let gmLastSaved = { snapshot: null, raw: null };
       function commitGmSave() {
         if (gmIdentityLoadBlocked || gmMapCommitBusy) return Promise.resolve(false);
         let snapshot;
@@ -4005,6 +4006,9 @@
           gmSaveFailed(error);
           return Promise.resolve(false);
         }
+        try {
+          if (saveRevision === persistedRevision && snapshot === gmLastSaved.snapshot && localStorage.getItem(KEYS.gmPack) === gmLastSaved.raw) return saveChain;
+        } catch (_) {}
         const revision = ++saveRevision;
         const savingState = document.getElementById("gmSaveState");
         if (savingState) {
@@ -4015,7 +4019,9 @@
         saveChain = saveChain.then(async () => {
           try {
             const envelope = await encryptGmLocal(snapshot);
-            localStorage.setItem(KEYS.gmPack, JSON.stringify(envelope));
+            const savedRaw = JSON.stringify(envelope);
+            localStorage.setItem(KEYS.gmPack, savedRaw);
+            gmLastSaved = { snapshot, raw: savedRaw };
             persistedRevision = Math.max(persistedRevision, revision);
             const st = document.getElementById("gmSaveState");
             const err = document.getElementById("gmSaveError");
