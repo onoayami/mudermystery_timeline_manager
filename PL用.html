@@ -1960,6 +1960,7 @@ body.view-mobile:not(.view-compact) .shared-story-frame.shared-line .shared-line
 <style id="pl-question-feature-styles">
 #questionList{display:flex;flex-direction:column;gap:10px;padding:10px 14px 14px}.question-card{border:1px solid #3d5166;border-radius:8px;background:#20303e;overflow:hidden}.question-phase{padding:8px 11px;background:#24384a;color:#e2e8f0;font-weight:700}.question-main{padding:10px}.question-number{color:#9fb6cc;font-size:.76rem;font-weight:600;margin-bottom:5px}.question-prompt{padding:10px 11px;border-left:3px solid #5e9fe8;background:#213447;color:#f1f5f9;font-size:.95rem;font-weight:700;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere}.question-updated{margin-top:8px;padding:7px 9px;border:1px solid #8a6236;border-radius:6px;background:rgba(240,179,126,.1);color:#f0b37e;font-size:.78rem}.question-options{display:flex;flex-direction:column;gap:7px;margin-top:9px}.question-choice{width:100%;min-height:44px;padding:8px 11px;border:2px solid #526a80;border-radius:8px;background:#2a394c;color:#e2e8f0;text-align:center;font:inherit;font-weight:700;cursor:pointer}.question-choice:hover{border-color:#b76582;background:#343744}.question-choice.selected{border-color:#b76582;background:#3d3440;box-shadow:inset 0 0 0 1px rgba(183,101,130,.2)}.question-textarea{width:100%;min-height:112px;margin-top:9px;padding:10px 11px;border:1px solid #526a80;border-radius:8px;background:#2a394c;color:#e2e8f0;line-height:1.6;resize:vertical}.question-textarea:focus{outline:2px solid #5e9fe8;outline-offset:1px}.question-count{margin-top:4px;color:#8fa3b8;font-size:.72rem;text-align:right}.question-actions{display:flex;justify-content:flex-end;margin-top:9px}.question-finalize{width:100%;min-height:44px;border:0;border-radius:7px;background:#6f263d;color:#fff;font-weight:700;cursor:pointer}.question-finalize:hover:not(:disabled){background:#5d1f33}.question-finalize:disabled{opacity:.45;cursor:not-allowed}.question-result-before,.question-result-after{text-align:center;font-weight:700}.question-result-before{margin:10px 0 8px}.question-result-after{margin:8px 0 0}.question-result-card{min-height:46px;display:flex;align-items:center;justify-content:center;padding:9px 12px;border:2px solid #b76582;border-radius:8px;background:#3d3440;color:#fff;font-weight:700;white-space:pre-wrap;overflow-wrap:anywhere}.question-result-card.is-text{justify-content:center;text-align:left;line-height:1.6}.question-result-value{display:block;width:max-content;max-width:100%;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left}.question-result-card.is-text.is-multiline{justify-content:flex-start}.question-result-card.is-text.is-multiline .question-result-value{width:100%}.question-retry-row{display:flex;justify-content:flex-end;margin-top:9px}.question-retry{min-height:40px;padding:7px 12px;border:1px solid #526a80;border-radius:7px;background:transparent;color:#cbd5e1;cursor:pointer}.question-saved-note{margin-top:8px;color:#91c8a6;font-size:.75rem;text-align:center}.question-empty{padding:10px;color:#9fb6cc}.question-card button:focus-visible,.question-textarea:focus-visible{outline:2px solid #5e9fe8;outline-offset:2px}
 @media(max-width:719px){#questionList{padding:9px 10px 12px}.question-main{padding:9px}.question-prompt{font-size:.9rem}.question-choice,.question-finalize{min-height:46px}}
+.question-multi-note{margin:6px 0 4px;font-size:.75rem;color:#9fb3c8}
 </style>
 
 <style id="info-tabs-row-clearance-v2">
@@ -9757,7 +9758,8 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       const local = typeof meCharacter === 'function' ? meCharacter() : null;
       return local ? ('local-id:' + encodeURIComponent(local.id)) : 'unlinked';
     }
-    function questionSignatureValue(prompt, answerType, options) { return JSON.stringify([prompt, answerType, options.map(o => [o.id, o.label])]); }
+    // 複数選択は既存の署名に影響させないよう、ONのときだけ末尾に加える
+    function questionSignatureValue(prompt, answerType, options, multiSelect) { const v = [prompt, answerType, options.map(o => [o.id, o.label])]; if (answerType === 'single' && multiSelect === true) v.push('multi'); return JSON.stringify(v); }
     function normalizeQuestionRecords(list) {
       if (!Array.isArray(list)) return [];
       return list.filter(q => q && typeof q === 'object').map((q, index) => {
@@ -9778,8 +9780,9 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
           phaseOrder: Number.isFinite(Number(q.phaseOrder)) ? Number(q.phaseOrder) : 0,
           questionOrder: Number.isFinite(Number(q.questionOrder)) ? Number(q.questionOrder) : index,
           prompt, answerType, options,
+          multiSelect: answerType === 'single' && q.multiSelect === true,
           showRetryAfterConfirm: q.showRetryAfterConfirm === true,
-          signature: typeof q.signature === 'string' && q.signature ? q.signature : questionSignatureValue(prompt, answerType, options)
+          signature: typeof q.signature === 'string' && q.signature ? q.signature : questionSignatureValue(prompt, answerType, options, q.multiSelect === true)
         };
       }).filter(q => q.prompt && (q.answerType !== 'single' || q.options.length >= 2));
     }
@@ -9833,7 +9836,9 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       let selectedId = typeof raw.selectedId === 'string' ? raw.selectedId : '';
       if (q.answerType !== 'text' && !q.options.some(o => o.id === selectedId)) selectedId = '';
       if (q.answerType === 'text') selectedId = '';
-      return questionAnswers[key] = { selectedId, text, confirmed: raw.confirmed === true && (q.answerType === 'text' ? !!text.trim() : !!selectedId), signature: typeof raw.signature === 'string' ? raw.signature : q.signature, updated: raw.updated === true };
+      let selectedIds = q.multiSelect ? (Array.isArray(raw.selectedIds) ? raw.selectedIds : []).filter((id, i, list) => typeof id === 'string' && list.indexOf(id) === i && q.options.some(o => o.id === id)) : [];
+      if (q.multiSelect) selectedId = '';
+      return questionAnswers[key] = { selectedId, selectedIds, text, confirmed: raw.confirmed === true && (q.answerType === 'text' ? !!text.trim() : q.multiSelect ? selectedIds.length > 0 : !!selectedId), signature: typeof raw.signature === 'string' ? raw.signature : q.signature, updated: raw.updated === true };
     }
     function persistQuestionData(render) {
       guardedSet(KEYS.questions, JSON.stringify(gmQuestions));
@@ -9879,7 +9884,8 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
         const options = normalizeQuestionOptions(q.options, answerType);
         if (!prompt || (answerType === 'single' && options.length < 2)) return;
         const questionId = typeof q.id === 'string' && q.id ? q.id : 'question-' + (index + 1);
-        const signature = questionSignatureValue(prompt, answerType, options);
+        const multiSelect = answerType === 'single' && q.multiSelect === true;
+        const signature = questionSignatureValue(prompt, answerType, options, multiSelect);
         made.push({
           id: scope + ':' + setId + ':' + questionId, setId, packId: setId, questionId,
           linkId: typeof q.linkId === 'string' && q.linkId ? q.linkId : questionId,
@@ -9887,13 +9893,13 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
           phase: typeof set.phase === 'string' && set.phase ? set.phase : (outerPhase && outerPhase.name ? outerPhase.name : 'GM質問'),
           phaseId: typeof set.phaseId === 'string' ? set.phaseId : (outerPhase && outerPhase.phaseId ? outerPhase.phaseId : ''),
           phaseOrder: Number.isFinite(Number(set.phaseOrder)) ? Number(set.phaseOrder) : (outerPhase && Number.isFinite(Number(outerPhase.order)) ? Number(outerPhase.order) : 0),
-          questionOrder: index, prompt, answerType, options,
+          questionOrder: index, prompt, answerType, options, multiSelect,
           showRetryAfterConfirm: q.showRetryAfterConfirm === true, signature
         });
         const key = questionStateKey(scope, setId, questionId), prev = questionAnswers[key];
-        if (prev && prev.signature !== signature) preservedAnswers[key] = { selectedId: '', text: '', confirmed: false, signature, updated: true };
+        if (prev && prev.signature !== signature) preservedAnswers[key] = { selectedId: '', selectedIds: [], text: '', confirmed: false, signature, updated: true };
         else if (prev) preservedAnswers[key] = prev;
-        else preservedAnswers[key] = { selectedId: '', text: '', confirmed: false, signature, updated: false };
+        else preservedAnswers[key] = { selectedId: '', selectedIds: [], text: '', confirmed: false, signature, updated: false };
       });
       const oldComparable = gmQuestions.filter(q => q.characterScope === scope && q.setId === setId).map(q => [q.questionId,q.prompt,q.answerType,q.options,q.showRetryAfterConfirm,q.signature]);
       const nextComparable = made.map(q => [q.questionId,q.prompt,q.answerType,q.options,q.showRetryAfterConfirm,q.signature]);
@@ -9990,7 +9996,8 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
       return gmQuestions.filter(q => q.characterScope === scope).slice().sort((a,b) => (a.phaseOrder - b.phaseOrder) || String(a.phaseId).localeCompare(String(b.phaseId)) || (a.questionOrder - b.questionOrder));
     }
     function questionByStateKey(key) { return gmQuestions.find(q => questionStateKey(q) === key) || null; }
-    function questionAnswerReady(q, a) { return q.answerType === 'text' ? !!a.text.trim() : !!a.selectedId && q.options.some(o => o.id === a.selectedId); }
+    function questionAnswerReady(q, a) { if (q.answerType === 'text') return !!a.text.trim(); if (q.multiSelect) return Array.isArray(a.selectedIds) && a.selectedIds.some(id => q.options.some(o => o.id === id)); return !!a.selectedId && q.options.some(o => o.id === a.selectedId); }
+    function questionChoiceSelected(q, a, optionId) { return q.multiSelect ? Array.isArray(a.selectedIds) && a.selectedIds.includes(optionId) : a.selectedId === optionId; }
     let questionAnswerAlignFrame = 0;
     function syncQuestionTextAnswerAlignment() {
       cancelAnimationFrame(questionAnswerAlignFrame);
@@ -10017,13 +10024,13 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
         const updateNote = a.updated ? '<div class="question-updated">質問が更新されました。もう一度回答してください。</div>' : '';
         let control = '';
         if (a.confirmed) {
-          const answerLabel = q.answerType === 'text' ? a.text : ((q.options.find(o => o.id === a.selectedId) || {}).label || '');
+          const answerLabel = q.answerType === 'text' ? a.text : q.multiSelect ? q.options.filter(o => a.selectedIds.includes(o.id)).map(o => o.label).join('、') : ((q.options.find(o => o.id === a.selectedId) || {}).label || '');
           control = '<div class="question-result-before">あなたの回答</div><div class="question-result-card' + (q.answerType === 'text' ? ' is-text' : '') + '"><span class="question-result-value">' + escapeHtml(answerLabel) + '</span></div><div class="question-result-after">として回答しました</div>' + (q.showRetryAfterConfirm ? '<div class="question-retry-row"><button type="button" class="question-retry" data-question-act="retry" data-question-key="' + escapeHtml(key) + '">回答をやり直す</button></div>' : '');
         } else if (q.answerType === 'text') {
           control = '<input type="text" class="question-text-input" data-question-text data-question-key="' + escapeHtml(key) + '" value="' + escapeHtml(a.text) + '" placeholder="回答を入力してください" autocomplete="off"><div class="question-actions"><button type="button" class="question-finalize" data-question-act="finalize" data-question-key="' + escapeHtml(key) + '"' + (questionAnswerReady(q,a) ? '' : ' disabled') + '>回答を確定する</button></div>';
         } else {
-          const choices = q.options.map(o => '<button type="button" class="question-choice' + (a.selectedId === o.id ? ' selected' : '') + '" data-question-choice="' + escapeHtml(o.id) + '" data-question-key="' + escapeHtml(key) + '" aria-pressed="' + String(a.selectedId === o.id) + '">' + escapeHtml(o.label) + '</button>').join('');
-          control = '<div class="question-options">' + choices + '</div><div class="question-actions"><button type="button" class="question-finalize" data-question-act="finalize" data-question-key="' + escapeHtml(key) + '"' + (questionAnswerReady(q,a) ? '' : ' disabled') + '>回答を確定する</button></div>';
+          const choices = q.options.map(o => '<button type="button" class="question-choice' + (questionChoiceSelected(q, a, o.id) ? ' selected' : '') + '" data-question-choice="' + escapeHtml(o.id) + '" data-question-key="' + escapeHtml(key) + '" aria-pressed="' + String(questionChoiceSelected(q, a, o.id)) + '">' + escapeHtml(o.label) + '</button>').join('');
+          control = (q.multiSelect ? '<div class="question-multi-note">複数選択できます</div>' : '') + '<div class="question-options">' + choices + '</div><div class="question-actions"><button type="button" class="question-finalize" data-question-act="finalize" data-question-key="' + escapeHtml(key) + '"' + (questionAnswerReady(q,a) ? '' : ' disabled') + '>回答を確定する</button></div>';
         }
         return '<section class="question-card"><div class="question-phase">' + escapeHtml(q.phase || 'GM質問') + '</div><div class="question-main"><div class="question-number">質問' + (index + 1) + '</div><div class="question-prompt">' + escapeHtml(q.prompt) + '</div>' + updateNote + control + '</div></section>';
       }).join('');
@@ -10033,7 +10040,7 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
     function toggleQuestionPanel() { questionCollapsed = !questionCollapsed; safeSet(KEYS.questionCollapsed, String(questionCollapsed)); applyQuestionCollapsed(); }
     document.addEventListener('click', e => {
       const choice = e.target.closest && e.target.closest('[data-question-choice]');
-      if (choice) { const q = questionByStateKey(choice.getAttribute('data-question-key')); if (!q) return; const a = answerForQuestion(q); if (a.confirmed) return; a.selectedId = choice.getAttribute('data-question-choice') || ''; a.signature = q.signature; persistQuestionData(); return; }
+      if (choice) { const q = questionByStateKey(choice.getAttribute('data-question-key')); if (!q) return; const a = answerForQuestion(q); if (a.confirmed) return; const optionId = choice.getAttribute('data-question-choice') || ''; if (q.multiSelect) { const ids = Array.isArray(a.selectedIds) ? a.selectedIds.slice() : []; const at = ids.indexOf(optionId); if (at >= 0) ids.splice(at, 1); else if (q.options.some(o => o.id === optionId)) ids.push(optionId); a.selectedIds = q.options.map(o => o.id).filter(id => ids.includes(id)); } else a.selectedId = optionId; a.signature = q.signature; persistQuestionData(); return; }
       const btn = e.target.closest && e.target.closest('[data-question-act]'); if (!btn) return;
       const q = questionByStateKey(btn.getAttribute('data-question-key')); if (!q) return;
       const a = answerForQuestion(q), act = btn.getAttribute('data-question-act');
