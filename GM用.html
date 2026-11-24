@@ -5823,7 +5823,11 @@
         const ph = phaseById(phaseId);
         if (!ph) return false;
         const labels = specialLabelsInPhase(phaseId);
-        const base = labels.length ? labels[0] : (ph.name || "").trim();
+        const base = labels.length
+          ? labels[0]
+          : ph.type === "special"
+            ? (ph.name || "").trim()
+            : "";
         if (!base) return false;
         const em = specialEmojiInPhase(phaseId);
         let changed = false;
@@ -5870,7 +5874,8 @@
       function syncSpecialPhaseName(pk, oldLabel) {
         if (!pk) return false;
         const ph = phaseById(pk.phaseId);
-        if (!ph || ph.syncName !== true) return false;
+        // フェーズ名を合わせるのは「特殊欄」フェーズだけ。通常フェーズの名前は特殊欄の改名で変えない。
+        if (!ph || ph.syncName !== true || ph.type !== "special") return false;
         const labels = specialLabelsInPhase(ph.id);
         if (labels.length === 1 && labels[0]) {
           // 名前が1つなら常にそれに合わせる
@@ -5878,7 +5883,6 @@
           ph.name = labels[0];
           return true;
         }
-        if (ph.type !== "special") return false; // 他のフェーズ名は「特殊欄」へ戻さない
         const cur = (ph.name || "").trim();
         const prev = (typeof oldLabel === "string" ? oldLabel : "").trim();
         if (cur !== "" && cur !== "特殊欄" && cur !== prev) return false;
@@ -8481,7 +8485,10 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
             `<span class="gm-goal-kind-label gm-special-kind" data-kid="${escapeHtml(pk.id)}" data-mode="${mode}">${text}</span>`;
           const phSyncPhase = phaseById(pk.phaseId);
           const phSyncOn = !!(phSyncPhase && phSyncPhase.syncName === true);
-          const syncToggle = `<label class="gm-sync-toggle" title="オンにすると、この「特殊欄を改名（任意）」に合わせて、このフェーズの見出し名も自動で変わります"><input type="checkbox" data-psync="1" data-pid="${escapeHtml(pk.phaseId)}"${phSyncOn ? " checked" : ""}>「特殊欄」という見出し名変更を変更しPL用アプリにも変更した名前で表示する（フェーズ共通設定です）</label>`;
+          const phSyncSpecial = !!(phSyncPhase && phSyncPhase.type === "special");
+          const syncToggle = phSyncSpecial
+            ? `<label class="gm-sync-toggle" title="オンにすると、この「特殊欄を改名（任意）」に合わせて、このフェーズの見出し名も自動で変わります"><input type="checkbox" data-psync="1" data-pid="${escapeHtml(pk.phaseId)}"${phSyncOn ? " checked" : ""}>「特殊欄」という見出し名変更を変更しPL用アプリにも変更した名前で表示する（フェーズ共通設定です）</label>`
+            : `<label class="gm-sync-toggle" title="オンにすると、このフェーズの特殊欄の名前をすべて同じにそろえます（フェーズ名は変わりません）"><input type="checkbox" data-psync="1" data-pid="${escapeHtml(pk.phaseId)}"${phSyncOn ? " checked" : ""}>このフェーズの特殊欄の名前をそろえる（フェーズ共通設定です）</label>`;
           const noteSpan = `<span class="gm-goal-note">${goalNote}（時系列には入りません）</span>`;
           const goalHeadLabel = goalLabel(
             pkGoals.length > 0
@@ -12712,7 +12719,7 @@ ${escapeHtml(text)}</textarea><button type="button" class="gm-goal-part-delete" 
               ph.syncName = t.checked;
               if (t.checked) {
                 const labels = specialLabelsInPhase(ph.id);
-                if (labels.length && labels[0]) ph.name = labels[0];
+                if (ph.type === "special" && labels.length && labels[0]) ph.name = labels[0];
                 unifySpecialLabelsInPhase(ph.id);
               }
               saveGmPack(false);
