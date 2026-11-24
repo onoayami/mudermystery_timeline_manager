@@ -567,7 +567,11 @@
     .event-body { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; row-gap: 2px; }
     .timeline-item.multi-character { background: #dcebf0; }
     
-    .char-badge { font-weight: bold; padding: 4px 10px 2px; border-radius: 20px; font-size: 14px; white-space: nowrap; flex: 0 0 152px; box-sizing: border-box; color: white; display: flex; align-items: center; justify-content: flex-start; gap: 5px; overflow: hidden;}
+    /* 人物タグ：ブラウザごとに日本語フォントが変わると文字の上下位置がずれるため、フォントと行の高さを固定する。
+       ヒラギノは字面がやや上に寄るので、上の余白を1px多くして見た目を上下中央にそろえる。 */
+    .char-badge { font-family: "Hiragino Sans", "Hiragino Kaku Gothic ProN", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Yu Gothic UI", "Noto Sans JP", Meiryo, sans-serif; line-height: 22px; font-weight: bold; padding: 4px 10px 2px; border-radius: 20px; font-size: 14px; white-space: nowrap; flex: 0 0 152px; box-sizing: border-box; color: white; display: flex; align-items: center; justify-content: center; gap: 5px; overflow: hidden;}
+    /* 1人だけのカードではタグがカードと同じ色で見えないため、本文と同じく左揃えにする */
+    .timeline-item:not(.multi-character):not(.color-hidden) .char-badge { justify-content: flex-start; }
     .char-badge-empty { background: transparent !important; }
     .char-badge-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     
