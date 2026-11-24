@@ -2028,7 +2028,7 @@ body.view-pc #personalPanel.info-tabs-inline .shared-actions {
    幅も画像ぶんしか広がらず左寄りになっていた。既定装飾を消し、カード幅を画像に合わせて中央に置く */
 .map-card-media{-webkit-appearance:none;appearance:none;box-sizing:border-box;width:100%;margin:0;padding:0;border:0;border-bottom:1px solid #d8d2c6;border-radius:0;font:inherit;color:inherit}
 .map-card-media img{width:auto;max-width:100%;height:auto}
-.map-card:not(.is-hidden){justify-self:center;width:fit-content;max-width:100%}
+.map-card:not(.is-hidden){justify-self:center;width:fit-content;min-width:min(100%,260px);max-width:100%}
 .map-card:not(.is-hidden) .map-card-body{width:0;min-width:100%;box-sizing:border-box}
 /* 表示中の地図の👁は画像に重ならないよう保存ボタンの右に置き、保存ボタンと同じ高さの正方形にする */
 .map-action-tail{display:inline-flex;gap:6px}
