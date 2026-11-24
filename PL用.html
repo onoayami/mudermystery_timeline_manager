@@ -1331,16 +1331,13 @@ body.view-mobile:not(.view-compact) .shared-story-frame { padding: 5px 6px; }
 .shared-story-frame.shared-line .shared-story-frame-text { grid-column:2; grid-row:1; }
 .shared-story-frame.shared-line .shared-line-actions { grid-column:3; grid-row:1; }
 .shared-story-frame.info-concealed .shared-story-frame-text { color:#8a94a0; font-style:italic; }
-/* 「・」は本文が複数行でも縦中央ではなく、本文の1行目にそろえる */
-.shared-line > .shared-bullet, .shared-line > .shared-text,
+/* GMで「文章」として登録された行の「・」は、本文が複数行でも縦中央ではなく本文の1行目にそろえる。
+   「情報」として登録された行（.shared-bullet）は時刻の真横＝縦中央のままにする */
 .shared-story-frame.shared-line::before, .shared-story-frame.shared-line > .shared-story-frame-text { align-self: baseline; }
 /* 「・」は本文より文字が大きく、ベースライン揃えだと約1px上に寄るため、本文1行目の中央へ下げる */
-.shared-line > .shared-bullet, .shared-story-frame.shared-line::before { line-height: 1; position: relative; top: 0.06rem; }
+.shared-story-frame.shared-line::before { line-height: 1; position: relative; top: 0.06rem; }
 /* 1行だけの本文が、操作ボタン（高さ24px）と同じ行で従来どおり縦中央に見えるよう上だけ余白を足す */
-.shared-line > .shared-text, .shared-story-frame.shared-line > .shared-story-frame-text { padding-top: max(0px, calc((24px - 1.275rem) / 2)); }
-body.view-mobile:not(.view-compact) .shared-line > .shared-text,
-.panel.panel-compact .shared-line > .shared-text,
-.panel.panel-narrow .shared-line > .shared-text,
+.shared-story-frame.shared-line > .shared-story-frame-text { padding-top: max(0px, calc((24px - 1.275rem) / 2)); }
 body.view-mobile:not(.view-compact) .shared-story-frame.shared-line > .shared-story-frame-text,
 .panel.panel-compact .shared-story-frame.shared-line > .shared-story-frame-text,
 .panel.panel-narrow .shared-story-frame.shared-line > .shared-story-frame-text { padding-top: 0; }
